@@ -22,14 +22,7 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| *Coming soon* | Deployment patterns, monitoring, backups | |
-
-### Coming Soon
-
-- **Cron Job Patterns** — Scheduling, heartbeat batching, model assignment for cron tasks
-- **Multi-Channel Setup** — Discord, Telegram, Signal routing and group chat behavior
-- **Backup & Recovery** — Encrypted backups, disaster recovery, restore testing
-- **Skills Development** — Writing custom skills, the AgentSkills spec, skill discovery
+| [Backup & Recovery](infrastructure/backup-recovery.md) | Encrypted backups, restore procedures, disaster recovery, and the 3-2-1 rule | Any |
 
 ### Configuration
 
@@ -38,12 +31,15 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 | [Multi-Model Orchestration](configuration/multi-model-orchestration.md) | Run Opus, Codex, Haiku, and Ollama in one setup with the right model per task | Any |
 | [Memory & Token Optimization](configuration/memory-token-optimization.md) | Three-tier memory architecture with local semantic search and 50-100x token reduction | Any |
 | [Prompt Caching](configuration/prompt-caching.md) | Maximize cache hits, understand bootstrap load order, avoid silent cost leaks | Anthropic |
+| [Skills Development](configuration/skills-development.md) | Write custom skills, structure for discoverability, real-world examples, and skill management | Any |
 
 ### Workflows
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
 | [Sub-Agent Patterns](workflows/sub-agent-patterns.md) | Spawn patterns, model assignment, error handling, orchestration pipelines, and the wrapper script | Any |
+| [Cron Job Patterns](workflows/cron-patterns.md) | Scheduling, heartbeat batching, model assignment for cron, error handling, and quiet hours | Any |
+| [Multi-Channel Setup](workflows/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, cross-channel memory, and access control | Any |
 
 ## Who This Is For
 
