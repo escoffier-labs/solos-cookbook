@@ -4,7 +4,7 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue)
-![Last Updated](https://img.shields.io/badge/updated-2026--03--11-white)
+![Last Updated](https://img.shields.io/badge/updated-2026--03--17-white)
 
 > No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
 
@@ -15,6 +15,7 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 | Guide | Description | Platform |
 |-------|-------------|----------|
 | [Linux Hardening](security/linux-hardening.md) | UFW, SSH hardening, fail2ban, service binding, and defense-in-depth for an OpenClaw host | Ubuntu 24.04 |
+| [WSL2 Hardening](security/wsl-hardening.md) | Windows Firewall, RDP/SSH/SMB lockdown, port proxy hygiene, sleep prevention, and dual-OS defense | Windows 11 + WSL2 |
 
 ### Infrastructure
 
