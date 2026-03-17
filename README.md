@@ -16,6 +16,7 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 |-------|-------------|----------|
 | [Linux Hardening](security/linux-hardening.md) | UFW, SSH hardening, fail2ban, service binding, and defense-in-depth for an OpenClaw host | Ubuntu 24.04 |
 | [WSL2 Hardening](security/wsl-hardening.md) | Windows Firewall, RDP/SSH/SMB lockdown, port proxy hygiene, sleep prevention, and dual-OS defense | Windows 11 + WSL2 |
+| [Agent Security](security/agent-security-hardening.md) | API gateway isolation, RBAC, sandboxing, circuit breakers, and a real post-mortem from a sub-agent nuking a database | Any |
 
 ### Infrastructure
 
@@ -23,17 +24,26 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 |-------|-------------|----------|
 | *Coming soon* | Deployment patterns, monitoring, backups | |
 
+### Coming Soon
+
+- **Cron Job Patterns** — Scheduling, heartbeat batching, model assignment for cron tasks
+- **Multi-Channel Setup** — Discord, Telegram, Signal routing and group chat behavior
+- **Backup & Recovery** — Encrypted backups, disaster recovery, restore testing
+- **Skills Development** — Writing custom skills, the AgentSkills spec, skill discovery
+
 ### Configuration
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| *Coming soon* | Agent setup, skills, hooks, memory management | |
+| [Multi-Model Orchestration](configuration/multi-model-orchestration.md) | Run Opus, Codex, Haiku, and Ollama in one setup with the right model per task | Any |
+| [Memory & Token Optimization](configuration/memory-token-optimization.md) | Three-tier memory architecture with local semantic search and 50-100x token reduction | Any |
+| [Prompt Caching](configuration/prompt-caching.md) | Maximize cache hits, understand bootstrap load order, avoid silent cost leaks | Anthropic |
 
 ### Workflows
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| *Coming soon* | Sub-agent orchestration, multi-channel routing, cron patterns | |
+| [Sub-Agent Patterns](workflows/sub-agent-patterns.md) | Spawn patterns, model assignment, error handling, orchestration pipelines, and the wrapper script | Any |
 
 ## Who This Is For
 
