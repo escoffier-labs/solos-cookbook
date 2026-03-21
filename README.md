@@ -1,12 +1,13 @@
-# OpenClaw Best Practices
+# 🦞 OpenClaw Best Practices
 
 Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in production. Security hardening, infrastructure patterns, agent orchestration, and operational runbooks from real deployments.
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue)
-![Last Updated](https://img.shields.io/badge/updated-2026--03--17-white)
+![Guides](https://img.shields.io/badge/guides-13-red)
+![Last Updated](https://img.shields.io/badge/updated-2026--03--21-white)
 
-> No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
+> 🦞 No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
 
 ## Guides
 
@@ -47,6 +48,8 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 
 Engineers running OpenClaw on real infrastructure: bare metal, VPS, homelab, or enterprise. If you're managing an always-on AI agent that has access to your systems, you need to lock it down properly. These guides assume you're comfortable with Linux administration and want actionable steps, not blog posts.
 
+> 🦞 *Built by an engineer who runs OpenClaw 24/7 on bare metal and broke everything at least once so you don't have to.*
+
 ## Guide Format
 
 Every guide follows the same structure:
@@ -59,7 +62,7 @@ Every guide follows the same structure:
 
 ## Contributing
 
-Found a better approach? Running OpenClaw on a different distro or platform? PRs welcome.
+Found a better approach? Running OpenClaw on a different distro or platform? PRs welcome. 🦞
 
 - Follow the existing guide format
 - Include verification commands
@@ -75,4 +78,4 @@ Found a better approach? Running OpenClaw on a different distro or platform? PRs
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) 🦞
