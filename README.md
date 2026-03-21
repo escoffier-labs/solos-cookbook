@@ -41,6 +41,7 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 | [Cron Job Patterns](workflows/cron-patterns.md) | Scheduling, heartbeat batching, model assignment for cron, error handling, and quiet hours | Any |
 | [Multi-Channel Setup](workflows/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, cross-channel memory, and access control | Any |
 | [Self-Improving Agents](workflows/self-improving-agents.md) | Correction capture, error detection, daily memory sweeps, promotion rules, and pre-task self-audits | Any |
+| [Session Management](workflows/session-management.md) | Why single-chat apps bottleneck your agent, Discord channel layouts, cron isolation, and the hybrid approach | Any |
 
 ## Who This Is For
 
