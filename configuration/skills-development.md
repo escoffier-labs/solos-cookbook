@@ -92,7 +92,7 @@ These are scoped to the project and can reference project-specific patterns, arc
 
 Published skills that others can use. The Open Agent Skills standard (agentskills.io) provides a cross-platform format.
 
-Browse community skills at [ClawhHub](https://clawhub.com) or find them on GitHub.
+Browse community skills at [ClawHub](https://clawhub.ai) or find them on GitHub.
 
 ## Writing Effective Skills
 
