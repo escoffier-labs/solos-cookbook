@@ -4,8 +4,8 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue)
-![Guides](https://img.shields.io/badge/guides-13-red)
-![Last Updated](https://img.shields.io/badge/updated-2026--03--21-white)
+![Guides](https://img.shields.io/badge/guides-15-red)
+![Last Updated](https://img.shields.io/badge/updated-2026--04--19-white)
 
 > 🦞 No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
 
@@ -23,25 +23,27 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Backup & Recovery](infrastructure/backup-recovery.md) | Encrypted backups, restore procedures, disaster recovery, and the 3-2-1 rule | Any |
+| [Backup & Recovery](infrastructure/backup-recovery.md) | Restic to NAS + Google Drive, twice-daily schedule, snapshot mounts, and disaster recovery | Any |
 
 ### Configuration
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Multi-Model Orchestration](configuration/multi-model-orchestration.md) | Run Opus, Codex, Haiku, and Ollama in one setup with the right model per task | Any |
+| [Multi-Model Orchestration](configuration/multi-model-orchestration.md) | Run GPT 5.4, Gemini, ACP Opus, and Ollama in one setup with the right model per task | Any |
+| [claude-cli → ACP Migration](configuration/claude-cli-to-acp-migration.md) | Move Opus off the main-agent slot after Anthropic's April 2026 subscription-OAuth block | Anthropic |
 | [Memory & Token Optimization](configuration/memory-token-optimization.md) | Three-tier memory architecture with local semantic search and 50-100x token reduction | Any |
-| [Prompt Caching](configuration/prompt-caching.md) | Maximize cache hits, understand bootstrap load order, avoid silent cost leaks | Anthropic |
+| [Prompt Caching](configuration/prompt-caching.md) | Cache hygiene across Anthropic, OpenAI, and Gemini — avoid silent cost/quota leaks | Any |
+| [Compaction & Context Tuning](configuration/compaction-and-context-tuning.md) | Compaction, memory flush, context pruning, and session search for long-running agents | Any |
 | [Skills Development](configuration/skills-development.md) | Write custom skills, structure for discoverability, real-world examples, and skill management | Any |
 
 ### Workflows
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Sub-Agent Patterns](workflows/sub-agent-patterns.md) | Spawn patterns, model assignment, error handling, orchestration pipelines, and the wrapper script | Any |
-| [Cron Job Patterns](workflows/cron-patterns.md) | Scheduling, heartbeat batching, model assignment for cron, error handling, and quiet hours | Any |
-| [Multi-Channel Setup](workflows/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, cross-channel memory, and access control | Any |
-| [Self-Improving Agents](workflows/self-improving-agents.md) | Correction capture, error detection, daily memory sweeps, promotion rules, and pre-task self-audits | Any |
+| [Sub-Agent Patterns](workflows/sub-agent-patterns.md) | Spawn patterns, model assignment, ACP escalation, error handling, and the wrapper script | Any |
+| [Cron Job Patterns](workflows/cron-patterns.md) | Scheduling, heartbeat batching, thinking-budget aliases, explicit delivery routing, and quiet hours | Any |
+| [Multi-Channel Setup](workflows/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, ACP threads, and access control | Any |
+| [Self-Improving Agents](workflows/self-improving-agents.md) | Correction capture, behavioral-guard plugins (tool-narration-guard, tokenjuice), daily memory sweeps, promotion rules | Any |
 | [Session Management](workflows/session-management.md) | Why single-chat apps bottleneck your agent, Discord channel layouts, cron isolation, and the hybrid approach | Any |
 
 ## Who This Is For

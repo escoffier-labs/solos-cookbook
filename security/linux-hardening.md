@@ -3,7 +3,7 @@
 Practical hardening runbook for an Ubuntu 24.04 machine running OpenClaw as an always-on AI agent. This covers firewall configuration, SSH lockdown, fail2ban, and service binding to reduce attack surface.
 
 **Tested on:** Ubuntu 24.04 LTS (bare metal, Intel Ultra 250, 64GB DDR5)
-**Last updated:** 2026-03-11
+**Last updated:** 2026-04-19
 
 ---
 
@@ -292,3 +292,5 @@ These are all good next steps depending on your threat model. This guide focuses
 3. **Defense-in-depth is cheap.** The Ollama deny rule costs nothing and protects against drift. Apply this pattern to any service that should stay localhost-only.
 
 4. **Test from another machine.** After applying SSH changes, keep your current session open and test a new connection from a different machine. If you lock yourself out, the existing session still works.
+
+5. **OpenClaw upgrades regenerate the systemd unit.** Every minor upgrade across the 2026.4.x line has silently regenerated `~/.config/systemd/user/openclaw-gateway.service` and dropped custom directives — most painfully `EnvironmentFile=`. Without it, secrets from `~/.openclaw/workspace/.env` don't load and the gateway crash-loops. If you maintain a hardening script, run it after every `openclaw update`, or automate the restore. We use a wrapper script (`~/bin/openclaw-update.sh`) that bumps the version drop-in and re-asserts `EnvironmentFile=` after each upgrade.

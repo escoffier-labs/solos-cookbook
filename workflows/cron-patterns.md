@@ -2,8 +2,8 @@
 
 How to schedule automated tasks in OpenClaw, assign the right model to each job, batch checks into heartbeats, and avoid the pitfalls that waste tokens and break silently.
 
-**Tested on:** OpenClaw with 15+ active cron jobs across Opus, Codex, and Haiku
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw 2026.4.x with 36+ active cron jobs, GPT 5.4 (with `:cron` thinking-low alias) + Gemini + ACP Opus
+**Last updated:** 2026-04-19
 
 ---
 
@@ -93,38 +93,60 @@ Precise scheduled tasks that run in isolated sessions with their own model assig
   "payload": {
     "kind": "agentTurn",
     "message": "Generate a morning briefing: check email for urgent items, review calendar for today, check weather. Keep it concise.",
-    "model": "anthropic/claude-haiku-4-5"
+    "model": "openai-codex/gpt-5.4:cron"
   },
   "delivery": {
-    "mode": "announce"
+    "mode": "announce",
+    "to": "telegram:YOUR_USER_ID"
   },
   "sessionTarget": "isolated",
   "enabled": true
 }
 ```
 
+**Two critical fields here:**
+
+- `model: "openai-codex/gpt-5.4:cron"` routes through the `thinking: low` alias. Same model as main, less thinking budget — perfect for mechanical briefing work.
+- `delivery.to: "telegram:<user_id>"` is explicit. **Always set this.** Bare `"mode": "announce"` with multiple channels enabled guesses wrong and posts to whichever channel the bot *isn't* in. (Incident: 2026-03-02. We patched all 20 cron configs with explicit targets the same day.)
+
 ## Model Assignment for Cron Jobs
 
-Not every cron job needs your most expensive model. Match the model to the task:
+Not every cron job needs the same thinking budget. Match the model and alias to the task:
 
 | Task | Recommended Model | Why |
 |------|------------------|-----|
-| Email triage | Budget (Haiku) | Mechanical scanning |
-| Morning briefing | Budget (Haiku) | Summarization, no judgment needed |
-| Content drafts | Frontier (Opus) | Creative, needs voice and quality |
-| Code reviews | Code-specialized (Codex) | Structured analysis |
-| Backup reports | Budget (Haiku) | Status checking |
-| Job search scanning | Budget (Haiku) | Filtering and matching |
-| Memory sweep | Code-specialized (Codex) | Needs to read and distill |
-| Weekly content | Frontier (Opus) | Creative, strategic |
+| Email triage | `gpt-5.4:cron` (thinking low) | Mechanical scanning, latency-sensitive |
+| Morning briefing | `gpt-5.4:cron` | Summarization, no deep reasoning |
+| Backup reports | `gpt-5.4:cron` | Status checking, minimal reasoning |
+| Job search scanning | `gpt-5.4:cron` | Filtering, classification |
+| Code reviews | `gpt-5.4` (thinking medium) | Structured analysis |
+| Memory sweep | `gpt-5.4` | Read + distill, needs some judgment |
+| Research-heavy pipelines | `google-gemini-cli/gemini-3.1-pro-preview` | Large context |
+| Weekly content polish | `acpx/claude-opus-4-6` via sub-agent spawn | Voice and taste |
+| Creative drafts (public-facing) | Spawn `acp-claude`, don't cron directly | Opus via ACP is a spawn target, not a primary |
+
+### The `:cron` Alias
+
+`openai-codex/gpt-5.4:cron` is the same model as `gpt-5.4` with `thinking: low`. Defined in `agents.defaults.models`:
+
+```json
+{
+  "openai-codex/gpt-5.4:cron": {
+    "alias": "gpt54cron",
+    "params": { "thinking": "low" }
+  }
+}
+```
+
+Use this alias for 80% of your cron jobs. The medium thinking budget is wasteful for most scheduled work.
 
 ### Model Assignment Gotchas
 
-1. **Small local models can fail silently.** We tested qwen3:8b for cron tasks and its thinking/reasoning mode burned all 512 output tokens on internal reasoning, producing empty responses. If using local models, test with your actual cron prompts first.
+1. **Don't put Opus in a cron directly.** Opus runs via ACP as an escalation target, not a primary cron model. If a cron needs Opus quality, have it run a coder pass on GPT 5.4, then the *result* spawns an `acp-claude` polish pass. Keeps the Opus quota targeted.
 
-2. **Budget models hedge on triage.** phi4-mini is fast (71 t/s) but gives ambiguous KEEP/SKIP/URGENT decisions. Not suitable for automated pipelines that need clean classifications.
+2. **Small local models fail silently on reasoning.** We tested qwen3:8b for cron triage and its thinking mode burned all 512 output tokens on internal reasoning, producing empty responses. Test local models with your actual cron prompts before scheduling.
 
-3. **14B models are overkill for most cron tasks.** Save them for code review and complex analysis. A 7-9B model handles email triage and status checks fine.
+3. **GPT 5.3 Codex has a rate limit bug.** It can show 0% weekly usage while returning rate-limit errors. Resets overnight (~3:45 AM). If Codex is broken, coder tasks fail with `FailoverError`. Keep your fallback chain populated (see [multi-model orchestration](../configuration/multi-model-orchestration.md)).
 
 ## Heartbeat Configuration
 
@@ -232,17 +254,19 @@ Control where cron output goes:
 ```json
 {
   "delivery": {
-    "mode": "announce",        // Send to chat channel
-    "channel": "telegram",     // Specific channel
-    "bestEffort": true         // Don't fail if delivery fails
+    "mode": "announce",
+    "to": "telegram:123456789",
+    "bestEffort": true
   }
 }
 ```
 
 Options:
 - `"none"`: Run silently, no output delivery
-- `"announce"`: Send results to configured chat channel
+- `"announce"`: Send results to a specific chat target
 - `"webhook"`: POST results to a URL
+
+**Always set `to`.** The fields `channel` and vague `mode: "announce"` routing are not reliable when multiple channels are enabled — the gateway will pick a channel the bot isn't in and the message disappears. Format is `"telegram:<user_id>"`, `"discord:<channel_id>"`, or `"signal:<contact>"`.
 
 ## Quiet Hours
 
@@ -252,22 +276,61 @@ Respect your own schedule. Don't fire cron announcements at 3am unless they're u
 - Reserve `delivery: "announce"` for tasks during waking hours
 - Use system events for urgent-only notifications outside hours
 
+## Multi-Line Scripts: Use Heredocs
+
+For cron jobs whose `message` is a multi-line script or prompt, store it as a heredoc file on disk and reference it. JSON-embedded multi-line strings get escape-mangled and fail to parse cleanly:
+
+```bash
+cat > ~/.openclaw/workspace/cron-prompts/morning-briefing.md <<'EOF'
+You are running as the morning-briefing cron job.
+
+Steps:
+1. Check email for urgent items (last 12h)
+2. Summarize calendar for today
+3. Check weather for Tampa, FL
+4. Format as a tight bulleted briefing
+
+Keep under 200 words. End with NEXT: <one-line priority>.
+EOF
+```
+
+Then in the cron payload, read from the file at turn time rather than inlining. This also means you can iterate on the prompt without re-editing `openclaw.json`.
+
+## Elevated Cron Jobs
+
+Cron jobs that need to exec commands (run scripts, touch files, call local APIs) require `elevated: true` at the job level:
+
+```json
+{
+  "name": "backup-restic",
+  "schedule": { "kind": "cron", "expr": "0 3,15 * * *", "tz": "America/New_York" },
+  "payload": {
+    "kind": "agentTurn",
+    "message": "Run ~/.openclaw/workspace/scripts/backup-restic.sh and report status.",
+    "model": "openai-codex/gpt-5.4:cron"
+  },
+  "elevated": true,
+  "delivery": { "mode": "announce", "to": "telegram:YOUR_USER_ID" },
+  "sessionTarget": "isolated"
+}
+```
+
+Without `elevated: true`, the cron session inherits the default sandbox and `exec` will deny the command.
+
 ## Verification
 
 ```bash
 # List all active cron jobs
-echo "=== Active Cron Jobs ==="
-# Use the cron tool to list jobs
-# openclaw cron list
+openclaw cron list
 
-# Check for jobs with no recent successful runs
-echo ""
-echo "=== Job Health ==="
-# openclaw cron runs <jobId> --limit 5
+# Check for jobs with stale/failing runs
+openclaw cron runs <jobId> --limit 10
 
-# Verify heartbeat is running
-echo ""
-echo "=== Heartbeat Config ==="
+# Audit delivery targets — every job should have an explicit "to"
+openclaw cron list --json | jq '.[] | select(.delivery.mode == "announce" and .delivery.to == null) | .name'
+# Expected output: nothing. Any name listed is a routing-roulette risk.
+
+# Verify heartbeat config
 cat ~/.openclaw/workspace/HEARTBEAT.md
 ```
 
@@ -282,3 +345,9 @@ cat ~/.openclaw/workspace/HEARTBEAT.md
 4. **Isolated sessions start cold.** Cron jobs with `sessionTarget: "isolated"` don't have your conversation history or memory loaded (unless the prompt explicitly asks to search memory). They get workspace files but no session continuity.
 
 5. **Don't create cron jobs for what heartbeats handle.** If you need "check X every so often and report if something's wrong," that's a heartbeat task. Cron is for "do Y at exactly Z time."
+
+6. **Bare `announce` without `to` is a routing coin-flip.** With both Telegram and Discord enabled, the gateway guesses — and we've confirmed the guess is wrong often enough to treat it as a bug. Always set `"to": "<channel>:<target_id>"`.
+
+7. **Haiku is no longer in the cron roster.** Older versions of this guide recommended Anthropic Haiku for cheap cron work. That path went away with the [claude-cli removal](../configuration/claude-cli-to-acp-migration.md). `gpt-5.4:cron` (thinking low) is the current equivalent and stays on the same subscription envelope as your main agent.
+
+8. **Sub-agents spawned from cron can find destructive API endpoints.** Incident (2026-03-02): Haiku cron found and called `DELETE /api/index` on a local API three times unprompted, wiping 71K indexed chunks. It read the OpenAPI spec, saw a destructive route, and used it. Lock down your local APIs before giving any cron subagent `exec` or HTTP access. See [agent security hardening](../security/agent-security-hardening.md).

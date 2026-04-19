@@ -2,8 +2,8 @@
 
 How to build an AI agent that learns from corrections, captures mistakes as institutional knowledge, runs automated memory sweeps, and gets better over time instead of repeating the same errors.
 
-**Tested on:** OpenClaw with Opus 4.6 (main), GPT 5.4 (memory sweep cron)
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw 2026.4.x with GPT 5.4 (main + memory sweep), tokenjuice + tool-narration-guard plugins
+**Last updated:** 2026-04-19
 
 ---
 
@@ -14,9 +14,12 @@ AI agents wake up fresh every session. They have no memory of what they did wron
 - "Stop pushing directly to main"
 - "Don't use em dashes"
 - "Check what's already loaded before searching"
-- "Delegate to Codex instead of building it yourself"
+- "Stop narrating what you're about to do — just call the tool"
+- "Check the PR state before pushing follow-ups"
 
 Each correction costs you time and tokens. A self-improving agent captures corrections once and applies them forever.
+
+Two complementary mechanisms: **content memory** (what you correct) and **plugin hooks** (what the agent catches itself doing wrong in real time). Both matter. This guide covers both.
 
 ## Architecture: Three Feedback Loops
 
@@ -109,6 +112,45 @@ Before completing any task, ask yourself:
 - Am I about to do something the user has explicitly said not to do?
 ```
 
+## Plugin Hooks: Catch Behaviors In-Flight
+
+Two plugins we run in production turn specific correction patterns into automatic guardrails.
+
+### tool-narration-guard
+
+**What it fixes:** GPT 5.4 (and other models) sometimes narrate what they're *about* to do instead of actually calling the tool. "I'm running the build now" with no subsequent tool call. You notice 30 minutes later that nothing happened.
+
+**How it works:** The plugin tracks runs at the session level. When it detects narration without a follow-up tool call in the same turn, it injects a `prependContext` rule on the next turn that forces the model to either call the tool or say "I can't." No more silent stalls.
+
+**Enable:**
+
+```json
+{
+  "plugins": {
+    "allow": ["tool-narration-guard", "..."],
+    "entries": {
+      "tool-narration-guard": { "enabled": true }
+    }
+  }
+}
+```
+
+The plugin lives at `~/.openclaw/workspace/.openclaw/extensions/tool-narration-guard/`. Load it via `plugins.load.paths`.
+
+### tokenjuice (PostToolUse optimization)
+
+**What it does:** A PostToolUse hook plugin that re-shapes tool output to reduce subsequent turn token burn. Measured in production:
+
+| Surface | Mode | n | Effect | Notes |
+|---------|------|---|--------|-------|
+| Claude Code | PostToolUse | 11 | +1.1% | Below noise floor, ignored |
+| Codex | PostToolUse | 11 | −4.4% | Bimodal (27% retry on compound `cd && cmd`) |
+| Pi | PostToolUse | 10 | −17.7% | Clean runs −25.3%, 30% compound-gap retry |
+
+Pi is the flagship surface. OpenClaw loads the same extension format, so tokenjuice lands there too.
+
+**Caveat:** Claude Code 2.1.113+ doesn't substitute `tool_result` from PostToolUse hooks — only `additionalContext` lands. If you're chasing the full Pi savings profile on Claude Code, don't expect it.
+
 ## Error Detection & Learning Capture
 
 Beyond corrections from the user, automate detection of errors in tool output.
@@ -187,12 +229,12 @@ Set up an automated cron job that reviews recent sessions across all channels an
     "message": "Review recent sessions across all channels. For each session:\n1. Identify significant decisions, corrections, or lessons\n2. Create or update knowledge cards for anything worth persisting\n3. Update daily log with session summaries\n4. Check for correction patterns that should be promoted to rules\n5. Skip trivial conversations (greetings, simple lookups)",
     "model": "openai-codex/gpt-5.4"
   },
-  "delivery": {
-    "mode": "none"
-  },
+  "delivery": { "mode": "none" },
   "sessionTarget": "isolated"
 }
 ```
+
+This runs on the main `gpt-5.4` (medium thinking), not `gpt-5.4:cron`. Memory sweep needs judgment about what's worth keeping — thinking low produces shallower cards.
 
 ### What the Sweep Does
 
@@ -205,7 +247,7 @@ Set up an automated cron job that reviews recent sessions across all channels an
 
 ### Model Selection
 
-Use a code-specialized model (GPT 5.4, Codex) for the sweep, not your frontier model. The task is structured extraction and writing, not creative judgment. Saves your expensive model's quota for interactive work.
+Use your main orchestration model (GPT 5.4 medium) for the sweep. The task is structured extraction with some judgment — memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through ACP Opus: the escalation lane is for final polish on human-facing work, not back-office housekeeping.
 
 ## Real Corrections We've Captured
 
@@ -300,3 +342,7 @@ echo "=== Error Detection ==="
 5. **Corrections compound.** The first month of running a self-improving agent is noisy because there are lots of corrections. By month three, correction frequency drops significantly because the agent has internalized the patterns. The system works, but it takes time.
 
 6. **Don't skip the pre-task search.** The whole system falls apart if the agent doesn't check for relevant corrections before starting work. Make the self-audit a non-negotiable part of AGENTS.md.
+
+7. **Prompt-level guards don't scale; hook-level guards do.** If a correction keeps surfacing, don't keep adding sentences to AGENTS.md — build (or enable) a plugin that makes the wrong behavior structurally impossible. `tool-narration-guard` is the canonical example.
+
+8. **Validate memory before acting on it.** A memory card naming a specific file, function, or flag is a claim about a snapshot in time. Files get renamed, endpoints get removed. Before recommending something pulled from a memory card, grep for it or read the file. "The card says X exists" is not the same as "X exists now."

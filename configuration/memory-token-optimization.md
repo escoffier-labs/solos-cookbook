@@ -2,8 +2,8 @@
 
 How to build an AI agent memory system that doesn't eat your context window alive. From raw conversation history to semantic search with local embeddings.
 
-**Tested on:** OpenClaw with Ollama (nomic-embed-text), 64GB RAM host
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw 2026.4.x with Ollama (qwen3-embedding:8b), 64GB RAM host
+**Last updated:** 2026-04-19
 
 ---
 
@@ -94,22 +94,30 @@ Install Ollama and pull an embedding model:
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
-ollama pull nomic-embed-text
+ollama pull qwen3-embedding:8b
 ```
 
-Configure OpenClaw to use it:
+Configure OpenClaw to use it (nested under `agents.defaults.memorySearch`):
 
 ```json
 {
-  "memorySearch": {
-    "provider": "openai",
-    "remote": {
-      "baseUrl": "http://127.0.0.1:11434/v1/"
-    },
-    "model": "nomic-embed-text"
+  "agents": {
+    "defaults": {
+      "memorySearch": {
+        "provider": "openai",
+        "remote": {
+          "baseUrl": "http://localhost:11434/v1/",
+          "apiKey": "ollama"
+        },
+        "fallback": "none",
+        "model": "qwen3-embedding:8b"
+      }
+    }
   }
 }
 ```
+
+**Why qwen3-embedding:8b over nomic-embed-text (the 2026-03 recommendation):** Qwen3 embeddings gave us noticeably better ranking on memory cards with mixed domains (security, infra, career, code). Nomic is still fine if 8GB VRAM is tight — it's ~1.6GB on disk vs. ~5GB for qwen3-embedding.
 
 ### How It Works
 
@@ -178,12 +186,11 @@ Everything from 1-11 forms the cacheable prefix. If ANY byte changes, the cache 
 
 ### Cost Impact
 
-At Opus rates ($5/M input, $0.50/M cached):
-- System prompt prefix: ~8-12K tokens/turn
-- With caching: ~$0.005/turn for prefix
-- Without caching: ~$0.05/turn for prefix
-- One mid-session bootstrap edit resets savings to zero for remaining turns
-- Over a 50-turn session: ~$2.25 saved on prefix alone
+Two failure modes depending on your provider:
+
+**Pay-per-token (direct Anthropic API):** Prefix cost drops ~90% with caching. A 10K-token prefix with caching runs ~$0.005/turn; without caching, ~$0.05/turn. One mid-session bootstrap edit at turn 25 costs ~$3.51 in extra spend over the remaining session.
+
+**Subscription (Codex Pro, Claude Max via ACP):** You don't see dollars — you see rate-limit headroom. A session that used to last 4 hours hits the cap at 2.5 hours if you keep invalidating the prefix. Same pain, different dashboard. See [prompt caching](prompt-caching.md) for provider-specific detail.
 
 ## Memory Maintenance
 
@@ -201,12 +208,8 @@ Think of it like a human reviewing their journal and updating their mental model
 
 ```bash
 # Check Ollama is running with embedding model
-curl -s http://127.0.0.1:11434/api/tags | python3 -c "
-import sys, json
-for m in json.load(sys.stdin).get('models', []):
-    if 'embed' in m['name'].lower():
-        print(f\"✓ {m['name']} loaded\")
-"
+curl -s http://127.0.0.1:11434/api/tags | jq -r '.models[].name' | grep -i embed
+# Expected: qwen3-embedding:8b (or whatever you configured)
 
 # Check memory file structure
 echo "=== Master Index ==="
@@ -234,7 +237,7 @@ fi
 
 ## Gotchas
 
-1. **nomic-embed-text is tiny but good enough.** At 274M parameters, it runs on any GPU. You don't need OpenAI's embedding API for agent memory search.
+1. **Local embeddings are more than good enough.** qwen3-embedding:8b (5GB) or nomic-embed-text (274M / 1.6GB) both beat round-tripping to OpenAI's embedding API for memory search. You need *good enough* relevance ranking, not SOTA — and the round-trip latency alone makes cloud embeddings a worse experience.
 
 2. **Don't load the backup.** If you migrated from a monolithic MEMORY.md, the backup file might be 50-60KB. Never load it in a session. It exists for reference only.
 

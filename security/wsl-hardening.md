@@ -2,8 +2,8 @@
 
 Practical hardening runbook for a Windows machine running OpenClaw inside WSL2. Covers Windows Firewall, RDP/SSH/SMB lockdown, port proxy hygiene, WSL-specific gotchas, and defense-in-depth for a dual-OS setup.
 
-**Tested on:** Windows 11 Pro, WSL2 Ubuntu 24.04, Intel Core Ultra 9 285, 64GB DDR5
-**Last updated:** 2026-03-17
+**Tested on:** Windows 11 Pro, WSL2 Ubuntu 24.04, Ryzen 9 3900X / 64GB DDR5 (our Windows desktop) and Intel Core Ultra 9 285 / 64GB DDR5
+**Last updated:** 2026-04-19
 
 ---
 
@@ -376,3 +376,5 @@ See the [Linux hardening guide](linux-hardening.md) for additional patterns that
 4. **Firewall profile matters.** Make sure your network is set to "Private" in Windows Settings. Public profile rules are more restrictive and can block WSL traffic unexpectedly.
 
 5. **Test from another device.** After applying firewall changes, test access from your phone or another machine on the network. Verify that allowed services work and everything else is blocked.
+
+6. **Windows machines running their own Claude Code need the same cross-machine rules.** If you run a separate Claude Code instance on a Windows desktop (we do on our Windows desktop, our personal daily driver), mirror the cross-machine guardrails into `C:\Users\<you>\.claude\CLAUDE.md`. Otherwise the two instances drift on safety rules and the Windows one won't know about the "never push to main" and "always check PR state first" conventions you enforce on your Linux host.

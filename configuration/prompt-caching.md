@@ -1,23 +1,31 @@
 # Prompt Caching: Maximize Cache Hits, Minimize Token Costs
 
-How OpenClaw's prompt caching works, how to keep your cache hit rate high, and the anti-patterns that silently cost you money every turn.
+How OpenClaw's prompt caching works across providers, how to keep your cache hit rate high, and the anti-patterns that silently cost you money every turn.
 
-**Tested on:** OpenClaw with Anthropic (Opus 4.6), cache_control TTL 1h
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw with OpenAI Codex (GPT 5.4) as main, ACP Opus 4.6 as escalation, cache-ttl context pruning
+**Last updated:** 2026-04-19
 
 ---
 
-## How Prompt Caching Works
+## Caching By Provider
 
-Anthropic caches your system prompt prefix server-side. When the same prefix appears in consecutive requests, the cached version is reused at a fraction of the cost:
+The advice in this guide applies across providers, but the mechanics differ. OpenClaw handles the translation automatically — you only need to know the shape so you can debug cache misses.
 
-| Token Type | Opus Cost (per 1M tokens) |
-|-----------|--------------------------|
-| Input (uncached) | $15.00 |
-| Cache write (first time) | $18.75 |
-| Cache read (subsequent) | $1.50 |
+### Anthropic (Direct API and ACP Opus)
 
-After the first request writes the cache, every subsequent request in that session reads from cache at 90% savings on the prefix portion. The cache invalidates when ANY byte in the prefix changes.
+Anthropic caches the system prompt prefix server-side with explicit `cache_control` markers. OpenClaw maps `cacheControlTtl: "1h"` to `cacheRetention: "long"` on direct calls and injects `cache_control: { type: "ephemeral" }` via OpenRouter. Cache reads run ~90% cheaper than uncached input.
+
+Since the April 2026 [claude-cli → ACP migration](claude-cli-to-acp-migration.md), Opus is no longer the main agent in most OpenClaw setups. Caching still matters on the ACP escalation path — each Opus call pays the cache penalty if the prefix shifts — but the cost surface is smaller.
+
+### OpenAI Codex (Main Agent Path)
+
+OpenAI caches automatically on repeated prefixes when requests come from the same API key within a short window. There's no explicit `cache_control` block; you just keep the prefix stable.
+
+For GPT 5.4 on a Codex Pro subscription, the cost is already flat-rate, so caching savings show up as *rate-limit headroom* rather than a dollar reduction. Breaking the cache still costs you — it eats more of your weekly quota faster.
+
+### Google Gemini CLI
+
+Gemini CLI handles its own context management. OpenClaw's cache hygiene rules still reduce churn, but the per-turn savings are less visible.
 
 ## OpenClaw Cache Configuration
 
@@ -35,22 +43,24 @@ OpenClaw handles caching automatically. The relevant config:
         }
       },
       "contextPruning": {
-        "mode": "cache-ttl"
+        "mode": "cache-ttl",
+        "ttl": "5m",
+        "keepLastAssistants": 3,
+        "softTrim": { "maxChars": 3000 },
+        "hardClear": { "enabled": true }
       },
       "compaction": {
         "mode": "safeguard",
-        "memoryFlush": {
-          "enabled": true
-        }
+        "memoryFlush": { "enabled": true }
       }
     }
   }
 }
 ```
 
-**Do not change these without a specific reason.** They represent optimal caching through config.
+**Do not change these without a specific reason.** They represent optimal caching through config — the only user-facing knobs that actually matter for cache hit rate.
 
-For direct Anthropic API calls, OpenClaw maps `cacheControlTtl: "1h"` to `cacheRetention: "long"`. For OpenRouter, it injects `cache_control: { type: "ephemeral" }` on the system message automatically.
+**Hardcoded internals you can't tune.** Bootstrap file load order, system-prompt section ordering, skill loading strategy, and cache metrics are all compiled into OpenClaw's runtime JS. Don't waste time trying to reorder context via hooks — it won't stick.
 
 ## Bootstrap File Load Order
 
@@ -132,17 +142,23 @@ The skills prompt (item 10) includes available skills. Adding or removing skills
 | Shuffle tool definitions | Invalidation (order matters) | Maintain alphabetical/stable order |
 | Frequent MEMORY.md updates | Invalidation per edit | Write to cards, keep index slim |
 
-## Cost Impact Calculation
+## Cost and Quota Impact
 
-For a typical session with ~10K token prefix:
+### Pay-Per-Token Path (Direct Anthropic API)
+
+For a typical Opus session with a ~10K token prefix:
 
 | Scenario | Cost per Turn (prefix) | 50-Turn Session |
 |----------|----------------------|-----------------|
 | Perfect cache hits | $0.015 | $0.75 |
-| Cache broken at turn 25 | $0.015 x 24 + $0.15 x 26 | $4.26 |
+| Cache broken at turn 25 | $0.015 × 24 + $0.15 × 26 | $4.26 |
 | No caching at all | $0.15 | $7.50 |
 
 One mid-session bootstrap edit at turn 25 costs an extra $3.51 over the remaining session. Over a month of daily sessions, that's $100+ in unnecessary spend.
+
+### Subscription Path (Codex Pro, Claude Max via ACP)
+
+On a flat-rate subscription, a cache miss doesn't show up on your bill — it shows up as earlier rate-limit throttling. A session that used to last 4 hours might hit the hourly cap at 2.5 hours if you're invalidating the prefix every turn. Same effect on your workflow, different failure mode.
 
 ## Verification
 
@@ -182,3 +198,7 @@ grep -rn "$(date +%Y)" ~/.openclaw/workspace/IDENTITY.md ~/.openclaw/workspace/S
 3. **Compaction resets the cache.** When OpenClaw compacts your conversation history (to fit within context limits), the conversation portion changes significantly. The prefix cache survives, but any context-dependent caching at the provider level may reset.
 
 4. **You can't force a cache build.** The cache is built automatically on the first request with a given prefix. There's no "warm the cache" command. The first turn of each session always pays full price for the prefix.
+
+5. **Context pruning can split tool_use/tool_result pairs.** When the conversation grows past the pruning threshold, the pruner may remove a `tool_result` while keeping its `tool_use` — resulting in a hard Anthropic API error (`tool_use ids were found without tool_result blocks`). No cache advice will help here; the only fix is starting a fresh conversation. Upstream fix is queued.
+
+6. **Cache advice applies even without Anthropic.** If your main is GPT 5.4 on Codex Pro, the rules above still protect your quota. Stable prefix = more effective throughput before you hit the weekly cap.
