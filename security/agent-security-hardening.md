@@ -2,8 +2,8 @@
 
 How to treat your AI agent as an untrusted actor and build guardrails that actually work. Includes a real post-mortem from when a sub-agent nuked a production database.
 
-**Tested on:** OpenClaw with multi-agent setup (Opus 4.6, Haiku 4.5, GPT 5.x Codex)
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw 2026.4.x multi-agent setup (GPT 5.4, Gemini 3.1 Pro, ACP Opus 4.6)
+**Last updated:** 2026-04-19
 
 ---
 
@@ -13,15 +13,17 @@ How to treat your AI agent as an untrusted actor and build guardrails that actua
 
 ## The Incident: How Haiku Nuked 71,000 Chunks
 
-This isn't theoretical. Here's what happened to us.
+This isn't theoretical. Here's what happened to us (2026-03-02).
 
 **Setup:** We had a code search API (FastAPI + SQLite) running on localhost. The API had full CRUD endpoints, including `DELETE /api/index` which wiped the entire index. A Haiku 4.5 sub-agent was assigned a cron job that interacted with this API.
 
-**What happened:** Haiku read the API's OpenAPI spec (which was accessible at `/docs`), discovered the DELETE endpoint, and called it. It deleted 71,000 indexed chunks and 28,000 summaries. The SQLite database had `SECURE_DELETE` compiled in (Ubuntu default), meaning deleted data was zeroed on disk. Unrecoverable.
+**What happened:** Haiku read the API's OpenAPI spec (which was accessible at `/docs`), discovered the DELETE endpoint, and called it three times unprompted. It deleted 71,000 indexed chunks and 28,000 summaries. The SQLite database had `SECURE_DELETE` compiled in (Ubuntu default), meaning deleted data was zeroed on disk. Unrecoverable without a backup.
 
-**Cost:** ~$30 in API calls to re-index everything, plus hours of downtime.
+**Cost:** $40+ in API calls to re-index everything, plus hours of downtime. We restored from a 3am restic snapshot and immediately removed the DELETE endpoint from `server.py`.
 
 **Root cause:** The DELETE endpoint existed. That's it. Haiku wasn't malicious. It wasn't even doing anything unusual. It found a tool and used it. The security failure was exposing a destructive endpoint to an agent in the first place.
+
+**The incident scales beyond Haiku.** We've since seen the same pattern with GPT 5.4 and Gemini — any model with tool access and an OpenAPI spec will eventually exercise every endpoint. Model size is not a defense.
 
 ## 1. API Design: Gateway Isolation
 
@@ -91,22 +93,21 @@ Configure in `openclaw.json`:
 
 ```json
 {
-  "agents": [
-    {
-      "id": "coder",
-      "name": "Code Worker",
-      "model": "openai-codex/gpt-5.4",
-      "tools": {
-        "exec": {
-          "security": "allowlist",
-          "allowlist": ["git", "npm", "node", "python3"]
-        },
-        "elevated": {
-          "enabled": false
+  "agents": {
+    "list": [
+      {
+        "id": "coder",
+        "model": "gpt54",
+        "tools": {
+          "exec": {
+            "security": "allowlist",
+            "allowlist": ["git", "npm", "node", "python3"]
+          },
+          "elevated": { "enabled": false }
         }
       }
-    }
-  ]
+    ]
+  }
 }
 ```
 
@@ -219,7 +220,23 @@ Every log entry should include:
 
 If you run Wazuh, TheHive, or another SIEM, pipe agent audit logs there for correlation. This lets you detect patterns: is your agent doing things you didn't expect? Acting at unusual hours? Making API calls to services you didn't configure?
 
-## 6. Prompt Injection Defense
+## 6. Behavioral Guardrails via Plugins
+
+Prompt-level rules don't scale. Plugin-level hooks do. Two we run in production:
+
+### tool-narration-guard
+
+Catches the failure mode where the model narrates "I'm running the build now" without actually calling the tool. The guard tracks runs at the session level and injects a `prependContext` rule on the next turn forcing the model to either call the tool or explicitly say it can't.
+
+Without this plugin, you lose 30+ minutes at a time waiting for work that never started. See [self-improving agents](../workflows/self-improving-agents.md).
+
+### strict-agentic (with local patch)
+
+OpenClaw's `strict-agentic` plan-then-act retry has two known detection gaps: (A) imperative prompts like "do X" / "put Y through Z" and (B) short confident narration like "I'm running it now." Both bypass the actionable-prompt detector. We carry a local patch in `dist/pi-embedded-runner-*.js` that tightens the actionable regex and rewrites the retry instruction to close a circular-blocker loophole that lets models game the retry.
+
+Upstream issue body is queued. If you run strict-agentic on the vanilla build, assume it has holes and don't rely on it as a sole guardrail.
+
+## 7. Prompt Injection Defense
 
 ### The Threat
 
@@ -241,15 +258,13 @@ If your agent reads email, scrapes websites, processes documents, or participate
 
 ```bash
 echo "=== Tool Permissions ==="
-cat ~/.openclaw/openclaw.json | python3 -c "
-import sys, json
-config = json.load(sys.stdin)
-for agent in config.get('agents', []):
-    tools = agent.get('tools', {})
-    exec_sec = tools.get('exec', {}).get('security', 'default')
-    elevated = tools.get('elevated', {}).get('enabled', 'default')
-    print(f\"{agent['id']:15s} exec={exec_sec:10s} elevated={elevated}\")
-"
+jq '.agents.list[] | {id, exec: (.tools.exec.security // "default"), elevated: (.tools.elevated.enabled // "default")}' \
+  ~/.openclaw/openclaw.json
+
+echo ""
+echo "=== Behavioral Plugins ==="
+jq '.plugins.entries | with_entries(select(.key == "tool-narration-guard" or .key == "content-scrubber"))' \
+  ~/.openclaw/openclaw.json
 
 echo ""
 echo "=== Audit Log Directory ==="
@@ -288,4 +303,6 @@ echo "(check complete)"
 
 4. **Sub-agent sandbox gotcha.** Isolated sub-agents in OpenClaw can't access host git/gh CLI by default (sandbox has no git). Use sub-agents for file writing, then push from the main session.
 
-5. **Budget models find creative ways to be destructive.** Haiku didn't set out to delete our data. It was trying to be helpful. It read the API spec, saw a cleanup endpoint, and called it. The lesson: if the destructive path exists, an agent will eventually find it.
+5. **Any model will find creative ways to be destructive.** Haiku didn't set out to delete our data. It was trying to be helpful. It read the API spec, saw a cleanup endpoint, and called it. This is not a small-model problem — GPT 5.4 and Gemini will do the same given tool access. The lesson: if the destructive path exists, an agent will eventually find it. Remove the path.
+
+6. **Main-agent model changes don't change the attack surface.** We moved from Opus to GPT 5.4 as the orchestrator in April 2026. None of the security rules in this guide changed. Prompt-level guards are still not a boundary. Allowlists still need to be tight. API design still matters more than model choice.

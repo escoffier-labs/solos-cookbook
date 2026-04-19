@@ -2,8 +2,8 @@
 
 How to write custom OpenClaw skills, structure them for discoverability, and extend your agent's capabilities with reusable task-specific instructions.
 
-**Tested on:** OpenClaw with 20+ custom skills across security, content, and development
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw 2026.4.x with 20+ custom skills across security, content, and development
+**Last updated:** 2026-04-19
 
 ---
 
@@ -315,3 +315,7 @@ For each skill, check:
 5. **Large SKILL.md files hurt.** Keep SKILL.md concise (instructions and flow). Move data, checklists, and reference material to `references/` subdirectory. The agent can load those on demand.
 
 6. **Test with edge cases.** A skill that works for the happy path ("run a security audit on this repo") might fail on edge cases ("audit just this one file" or "what security issues should I worry about"). Test both the triggers and the instructions.
+
+7. **`apiKeyRef` is NOT a valid key in `skills.entries`.** Only `auth-profiles.json` entries accept `keyRef`. If a model (or a coder subagent) hallucinates `apiKeyRef` into your skills config, the gateway fails validation on startup with a generic schema error and crash-loops. If skills suddenly broke, diff recent edits to `skills.entries` against the schema before looking elsewhere.
+
+8. **Skill discovery key is the YAML `description` field.** It's what the model sees when deciding whether to load. Vague descriptions = vague triggering. Include explicit trigger phrases, and when a skill is NOT the right choice, say so inline ("NOT for: simple one-liner fixes"). The inline exclusions measurably reduce false-positive loads.

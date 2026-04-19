@@ -2,8 +2,8 @@
 
 How OpenClaw handles multiple messaging platforms simultaneously, session isolation between channels, and practical patterns for Discord, Telegram, and Signal.
 
-**Tested on:** OpenClaw with Discord + Telegram + Signal running concurrently
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw 2026.4.x with Discord + Telegram + Signal running concurrently
+**Last updated:** 2026-04-19
 
 ---
 
@@ -151,10 +151,18 @@ Signal provides secure messaging with basic formatting support.
 
 ### Running Multiple Channels
 
-Configure channels in `openclaw.json`:
+Channels are plugins. Register them in `plugins.allow` and `plugins.entries`, then configure per-channel in `channels.*`:
 
 ```json
 {
+  "plugins": {
+    "allow": ["telegram", "discord", "signal", "..."],
+    "entries": {
+      "telegram": { "enabled": true },
+      "discord":  { "enabled": true },
+      "signal":   { "enabled": true }
+    }
+  },
   "channels": {
     "discord": {
       "enabled": true,
@@ -172,6 +180,30 @@ Configure channels in `openclaw.json`:
   }
 }
 ```
+
+**Schema break heads-up (2026-04-14):** The `2026.4.14` release removed `ackReaction`, `typingIndicator`, and scalar-streaming options from the telegram channel schema. `openclaw doctor --fix` is a stub for this — migrate with `jq` before restarting the gateway, or the gateway crash-loops on validation.
+
+## ACP Escalation via Discord Thread
+
+Since the [April 2026 claude-cli removal](../configuration/claude-cli-to-acp-migration.md), Claude Opus reaches you via ACP, not the main agent slot. The cleanest UX is a dedicated Discord thread routed straight to the ACP session:
+
+```json
+{
+  "channels": {
+    "discord": {
+      "routing": {
+        "threads": {
+          "acp-opus": { "agentId": "acp-claude" }
+        }
+      }
+    }
+  }
+}
+```
+
+Create a Discord thread named `acp-opus`. Any message posted there spins up a fresh ACP session with Claude Code; subsequent messages continue it. The session is fully isolated from your main GPT 5.4 sessions.
+
+**Why a thread and not a channel:** Threads auto-archive after inactivity, which matches ACP's short-lived-session model. Channels stick around and invite people to expect persistence that ACP doesn't offer.
 
 ## Cross-Channel Memory Patterns
 
@@ -198,16 +230,13 @@ Set up a periodic cron job that reviews recent sessions across all channels and 
 ```json
 {
   "name": "memory-sweep",
-  "schedule": {
-    "kind": "cron",
-    "expr": "0 */6 * * *",
-    "tz": "America/New_York"
-  },
+  "schedule": { "kind": "cron", "expr": "0 */6 * * *", "tz": "America/New_York" },
   "payload": {
     "kind": "agentTurn",
     "message": "Review recent sessions across all channels. Extract any important decisions, facts, or context worth persisting. Create or update knowledge cards as needed.",
     "model": "openai-codex/gpt-5.4"
   },
+  "delivery": { "mode": "none" },
   "sessionTarget": "isolated"
 }
 ```
@@ -241,45 +270,38 @@ In group chats, your agent sees messages from people you may not fully trust. Ke
 3. **Don't share private context** in group responses (the agent has access to your files, calendar, etc., but shouldn't leak them)
 4. **Be conservative with tool use** in group settings
 
-## The Same Model Everywhere
+## The Same Model Everywhere (Mostly)
 
-The main agent model is set at the gateway level, not per channel. Whether messages come from Telegram, Discord, or Signal, the same model handles them. The only variations:
+The main agent model is set at the gateway level, not per channel. Whether messages come from Telegram, Discord, or Signal, the same model handles them. Variations:
 
 - **Sub-agents** get their own model assignment
 - **Per-session overrides** via `/model` command
 - **Cron jobs** can specify a different model
+- **ACP thread routing** sends messages to a different agent entirely (see above)
 
-This means you don't accidentally get a cheaper model on one channel and a better one on another.
+**Stickiness warning.** One OpenAI 503 on `gpt-5.4` once pinned a cron channel to `gpt-5.3-codex` via the internal `auto` override system for four days. `/reset` does not reliably clear `auto` overrides. Use `/model` to re-pin with `user` source when this happens. The incident is memorable because the cheaper fallback silently handled four days of work at lower quality before anyone noticed.
 
 ## Verification
 
 ```bash
 # Check configured channels
 echo "=== Channel Configuration ==="
-cat ~/.openclaw/openclaw.json | python3 -c "
-import sys, json
-config = json.load(sys.stdin)
-channels = config.get('channels', {})
-for name, cfg in channels.items():
-    enabled = cfg.get('enabled', False)
-    print(f\"{name:15s} enabled={enabled}\")
-"
+jq '.channels | to_entries | map({name: .key, enabled: .value.enabled})' ~/.openclaw/openclaw.json
 
-# Check active sessions across channels
+# Check channel plugins are allowed + enabled
 echo ""
-echo "=== Active Sessions ==="
-# Use sessions_list to see active sessions across all channels
+echo "=== Channel Plugins ==="
+jq '.plugins.entries | to_entries | map(select(.key as $k | ["telegram","discord","signal"] | index($k))) | map({plugin: .key, enabled: .value.enabled})' ~/.openclaw/openclaw.json
 
 # Check session reset config
 echo ""
 echo "=== Reset Configuration ==="
-cat ~/.openclaw/openclaw.json | python3 -c "
-import sys, json
-config = json.load(sys.stdin)
-reset = config.get('agents', {}).get('defaults', {}).get('reset', {})
-print(f\"Mode: {reset.get('mode', 'not set')}\")
-print(f\"Hour: {reset.get('atHour', 'not set')}\")
-"
+jq '.agents.defaults.reset // {}' ~/.openclaw/openclaw.json
+
+# Check ACP thread routing (if configured)
+echo ""
+echo "=== Discord Thread Routing ==="
+jq '.channels.discord.routing.threads // {}' ~/.openclaw/openclaw.json
 ```
 
 ## Gotchas
@@ -295,3 +317,7 @@ print(f\"Hour: {reset.get('atHour', 'not set')}\")
 5. **Platform formatting differs.** What looks great on Discord (embeds, reactions, threads) doesn't translate to Telegram or Signal. Write your AGENTS.md formatting rules per platform.
 
 6. **Concurrent messages from different channels.** If someone messages you on Telegram and Discord at the same time, both are handled as separate sessions. No conflict, no queue blocking. The gateway routes them independently.
+
+7. **`plugins.allow` is exclusive.** Even bundled channel plugins (`telegram`, `discord`, `signal`) get blocked if they're not in the whitelist. One symptom of the channel being "silently broken" after an upgrade is that `plugins.allow` was regenerated without your channel in it. Check with `jq '.plugins.allow' ~/.openclaw/openclaw.json` before debugging deeper.
+
+8. **`message_sending` hooks scrub ALL outgoing messages.** Including DMs to the owner. No clean way to distinguish DM vs group in the event context. For content scrubbing (PII redaction, etc.), a CLI script at the publish boundary is a cleaner seam than a message hook.

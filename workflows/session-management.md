@@ -2,8 +2,8 @@
 
 How to manage OpenClaw sessions effectively using Discord (or similar channel-based platforms) instead of single-thread messaging apps. The difference between productive multi-project orchestration and fighting your own agent for context.
 
-**Tested on:** OpenClaw running Discord + Telegram + Signal concurrently for 2+ months
-**Last updated:** 2026-03-21
+**Tested on:** OpenClaw 2026.4.x running Discord + Telegram + Signal concurrently for 4+ months
+**Last updated:** 2026-04-19
 
 ---
 
@@ -143,7 +143,13 @@ The sub-agent gets its own thread, its own session, and its own context. You can
 
 📁 BEST PRACTICES
   #openclaw-best-practices → Meta: improving the setup itself
+
+📁 ESCALATION
+  Thread: acp-opus     → Dedicated ACP thread for Claude Opus escalation
+                         (resume, intel, design, review, humanize work)
 ```
+
+See [multi-channel setup](multi-channel-setup.md) for the ACP thread routing config.
 
 ### Channel Naming Conventions
 
@@ -250,3 +256,5 @@ From our experience running both simultaneously:
 5. **Mobile Discord isn't as fast as Telegram.** Discord's mobile app is heavier. For quick mobile interactions, keeping Telegram as a secondary channel makes sense.
 
 6. **Permission management.** If you share the Discord server with other people (family, team), use Discord's permission system to restrict which channels they can see. Your agent has access to your files and memory; not everyone should see those responses.
+
+7. **"the OpenClaw host/my-agent froze" triage.** Before assuming the main agent is stuck, check the session JSONL mtime in `~/.openclaw/agents/<name>/sessions/`. GPT 5.4 on the main agent routinely goes silent for 10–30+ minutes inside deep SSH → `pct exec` → docker loops, then resumes. The session file getting touched every few seconds means it's working, not frozen. Actual freezes are rarer than the silence pattern suggests.

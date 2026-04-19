@@ -2,8 +2,8 @@
 
 How to configure OpenClaw's compaction, memory flush, context pruning, and session search so your agent doesn't lose its mind (or personality) during long sessions.
 
-**Tested on:** OpenClaw with Opus 4.6, 200K context window
-**Last updated:** 2026-03-23
+**Tested on:** OpenClaw 2026.4.x with GPT 5.4 (main) and ACP Opus 4.6 (escalation); applies to any main model
+**Last updated:** 2026-04-19
 
 ---
 
@@ -141,9 +141,20 @@ Without re-injection, a 4-hour session will gradually lose your agent's personal
 ```json
 {
   "mode": "cache-ttl",
-  "ttl": "2h",
-  "keepLastAssistants": 10,
-  "minPrunableToolChars": 2000
+  "ttl": "5m",
+  "keepLastAssistants": 3,
+  "softTrimRatio": 0.3,
+  "hardClearRatio": 0.5,
+  "minPrunableToolChars": 20000,
+  "softTrim": {
+    "maxChars": 3000,
+    "headChars": 1000,
+    "tailChars": 1000
+  },
+  "hardClear": {
+    "enabled": true,
+    "placeholder": "[tool output pruned]"
+  }
 }
 ```
 
@@ -152,17 +163,21 @@ Without re-injection, a 4-hour session will gradually lose your agent's personal
 | Field | Value | Why |
 |-------|-------|-----|
 | `mode` | `"cache-ttl"` | Time-based pruning of stale content |
-| `ttl` | `"2h"` | Tool outputs older than 2 hours get pruned |
-| `keepLastAssistants` | `10` | Always keeps the last 10 assistant messages intact |
-| `minPrunableToolChars` | `2000` | Only prunes tool outputs larger than 2000 chars |
+| `ttl` | `"5m"` | Aggressive: tool outputs older than 5 min get pruned |
+| `keepLastAssistants` | `3` | Always keeps the last 3 assistant messages intact |
+| `minPrunableToolChars` | `20000` | Only prunes tool outputs larger than 20K chars |
+| `softTrim.maxChars` | `3000` | When soft-trimming, keep ~3K chars (1K head + 1K tail) |
+| `hardClear.enabled` | `true` | After TTL expires, replace content with placeholder |
 
 **Why cache-ttl:**
 A single `web_fetch` can dump 50K characters into your context. Multiply that by a few research queries and you've burned half your window on content you referenced once. Cache-TTL prunes these after the configured time while keeping recent tool outputs available for follow-up questions.
 
 **Tuning notes:**
-- Shorten `ttl` to `"1h"` or `"30m"` if you do lots of web research or file scanning in a single session.
-- Increase `minPrunableToolChars` to `5000` if you want to keep smaller tool outputs around longer (they cost less anyway).
-- `keepLastAssistants: 10` ensures the agent always has its recent conversation thread intact regardless of tool output pruning.
+- The `ttl: "5m"` above is aggressive — it's what we run because we do lots of web research and file scanning. Use `"1h"` or `"2h"` if your workflow is quieter.
+- `minPrunableToolChars: 20000` skips prunning anything under 20K chars. Smaller outputs cost less to keep around; big ones are the actual problem.
+- `keepLastAssistants: 3` keeps the recent thread intact regardless of what the pruner does to tool outputs.
+
+**Known bug (2026-04, upstream ticket queued):** Context pruning can split `tool_use`/`tool_result` pairs. When the conversation grows past the pruning threshold, the pruner may remove a `tool_result` while keeping its `tool_use`, causing a hard Anthropic API error (`tool_use ids were found without tool_result blocks`). The only workaround today is starting a fresh conversation. Upstream fix should enforce atomic pair handling.
 
 ---
 
@@ -229,3 +244,5 @@ The result: your agent maintains personality across multi-hour sessions, preserv
 - **Forgetting to customize `postCompactionSections`** for your AGENTS.md structure. The default example `["Every Session", "Memory", "Safety"]` only works if those exact section names exist in your file.
 - **Setting `softThresholdTokens` too low.** If flush triggers on every other message, you'll get dozens of near-empty memory files. Set it high enough that flush only fires when there's real content to preserve.
 - **Not verifying after patching.** `config.patch` merges silently. If you typo a field name, it creates a new (ignored) field instead of failing. Always verify with `config.get`.
+- **Changing bootstrap files to shift compaction behavior.** Any edit to SOUL.md, AGENTS.md, TOOLS.md, IDENTITY.md, or MEMORY.md invalidates the whole prefix cache. Don't treat bootstrap edits as free. See [prompt caching](prompt-caching.md).
+- **Not setting `keepLastAssistants` low enough.** Older guides recommended `10`. We run `3` in production — compaction has more room to work without sacrificing recent conversational coherence.

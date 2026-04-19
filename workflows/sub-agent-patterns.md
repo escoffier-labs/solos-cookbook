@@ -2,26 +2,27 @@
 
 How to use OpenClaw sub-agents effectively. Spawn patterns, model assignment, error handling, and the lessons we learned from breaking things.
 
-**Tested on:** OpenClaw with Opus 4.6 (main), GPT 5.4 (coder), Gemini 3 Pro (researcher)
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw with GPT 5.4 (main + coder), Gemini 3.1 Pro (researcher), Claude Opus 4.6 via ACP (escalation)
+**Last updated:** 2026-04-19
 
 ---
 
 ## Why Sub-Agents
 
-Your main agent is expensive (frontier model) and carries heavy context (memory, personality, conversation history). Sub-agents are cheap, isolated, and disposable. They start clean, do one job, and report back.
+Your main agent carries heavy context (memory, personality, conversation history) and is on the path of every incoming message. Sub-agents are isolated and disposable. They start clean, do one job, and report back.
 
 **Use sub-agents when:**
 - The task is mechanical (scan files, generate boilerplate, run searches)
 - The task doesn't need your main session's context
 - You want parallel execution
-- You want to use a cheaper/specialized model for the task
+- You want to escalate to a higher-quality model (e.g., ACP Opus) for a specific task
 
 **Keep on the main agent when:**
-- The task requires judgment or creativity
-- It needs conversation context or memory
+- The task requires conversation context or memory
 - It involves security decisions or untrusted input
 - It's a quick one-liner that doesn't justify the spawn overhead
+
+**Post-April-2026 note:** The main agent no longer has to be your "strongest" model. GPT 5.4 on Codex Pro is a fine orchestrator, and Opus-quality work happens via [ACP escalation](../configuration/claude-cli-to-acp-migration.md) when needed.
 
 ## Spawn Patterns
 
@@ -98,55 +99,52 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
 
 ```json
 {
-  "agents": [
-    {
-      "id": "main",
-      "name": "Main",
-      "model": "anthropic/claude-opus-4-6"
-    },
-    {
-      "id": "coder",
-      "name": "Code Worker",
-      "model": "openai-codex/gpt-5.4"
-    },
-    {
-      "id": "researcher",
-      "name": "Researcher",
-      "model": "google-gemini-cli/gemini-3-pro-preview"
-    }
-  ]
+  "agents": {
+    "list": [
+      { "id": "main",       "model": "openai-codex/gpt-5.4" },
+      { "id": "coder",      "model": "gpt54" },
+      { "id": "researcher", "model": "google-gemini-cli/gemini-3.1-pro-preview" },
+      {
+        "id": "acp-claude",
+        "model": "acpx/claude-opus-4-6",
+        "description": "Escalation target — resume, intel, design, review, humanize, academic work"
+      }
+    ]
+  }
 }
 ```
+
+`gpt54` is an alias defined in `agents.defaults.models` that resolves to `openai-codex/gpt-5.4`. See [multi-model orchestration](../configuration/multi-model-orchestration.md) for the full alias setup.
 
 ### Assignment Rules
 
 | Task Type | Agent | Why |
 |-----------|-------|-----|
 | File scanning, grep, counts | coder | Mechanical, doesn't need judgment |
-| Code generation from specs | coder | Code-specialized model |
+| Code generation from specs | coder | Same model as main, but with isolated context |
 | Code reviews | coder | Structured analysis |
-| Research, web analysis | researcher | Large context, free tier |
-| Architecture decisions | main | Requires judgment |
-| Security evaluation | main | Requires prompt injection resistance |
-| Creative writing | main | Requires taste and voice |
+| Research, web analysis | researcher | 1M+ context on Gemini CLI |
+| Resume/CV work | acp-claude | Opus quality, escalation lane |
+| Design critique, humanize passes | acp-claude | Opus voice |
+| PR review requiring taste | acp-claude | Beyond mechanical correctness |
+| Long-form academic work | acp-claude | Reasoning depth |
+| Security evaluation | main | Orchestrator handles untrusted input |
+| Quick one-liners | main | Not worth spawn overhead |
 
 ### Pre-Flight Check
 
 Always verify your agent configuration matches what you expect before spawning:
 
 ```bash
-cat ~/.openclaw/openclaw.json | python3 -c "
-import sys, json
-config = json.load(sys.stdin)
-for agent in config.get('agents', []):
-    print(f\"{agent['id']:15s} → {agent.get('model', 'default')}\")
-"
+jq '.agents.list | map({id, model})' ~/.openclaw/openclaw.json
 ```
 
-We got burned multiple times by agent misconfigurations:
-- Spawned 4 Opus agents for code gen (should have been Codex)
-- Coder agent was on Haiku 4.5 when we thought it was GPT 5.3
-- Always check before assuming.
+We've been burned multiple times by agent misconfigurations:
+- Spawned Opus on ACP for a job Codex could have handled, wasting quota
+- Coder agent was on a stale alias after an OpenClaw upgrade reset plugin config
+- A one-time OpenAI 503 on `gpt-5.4` pinned a cron channel to `gpt-5.3-codex` for four days via the `auto` override system. `/reset` didn't clear it — we had to `/model` pin it back as a `user` source override.
+
+Always check before assuming. After any OpenClaw upgrade, re-verify `agents.list` and `plugins.entries` — both have been observed to reset.
 
 ## Sub-Agent Isolation
 
@@ -218,30 +216,55 @@ Multiple sub-agents working simultaneously:
 5. Main: Integrate and review
 ```
 
-### Triage Escalation
+### Triage Escalation (Three Tiers)
 
-Local model screens, expensive model handles what matters:
+Local model screens, main handles most work, ACP Opus gets the quality-critical tasks:
 
 ```
-1. Ollama (7B): Screen incoming email - SKIP or ESCALATE
-2. If ESCALATE: Main (Opus) reads and processes
-3. If action needed: Main spawns coder to implement
+1. Ollama (7B): Screen incoming email — SKIP or ESCALATE
+2. If ESCALATE: Main (GPT 5.4) reads and processes
+3. If action needed:
+   - Mechanical/code work → main spawns coder
+   - Resume/design/review/humanize → main spawns acp-claude
+   - Research with large context → main spawns researcher
 ```
+
+### ACP Escalation Pattern
+
+Claude Opus now lives behind the ACP boundary. To reach it:
+
+```
+sessions_spawn(
+  agentId: "acp-claude",
+  task: "Review this resume for voice, density, and line-by-line density. \
+         Flag any section that reads machine-generated. Return structured notes.",
+  mode: "run"
+)
+```
+
+Or open a dedicated Discord thread routed to `acp-claude` (see [multi-channel setup](multi-channel-setup.md)) and work with Opus directly. The ACP session has no access to your main agent's conversation history — pass all necessary context in the task itself.
+
+**When to escalate:** Resume, intel, design, PR review that needs taste, humanize passes, academic work.
+**When NOT to escalate:** Code generation, file scanning, bulk ops, anything mechanical. The coder agent (GPT 5.4) handles those faster and without burning Max-subscription quota.
 
 ## Verification
 
 ```bash
 # Check configured agents
 echo "=== Agent Configuration ==="
-cat ~/.openclaw/openclaw.json | python3 -c "
-import sys, json
-config = json.load(sys.stdin)
-for agent in config.get('agents', []):
-    model = agent.get('model', 'default')
-    tools = agent.get('tools', {})
-    exec_mode = tools.get('exec', {}).get('security', 'default')
-    print(f\"{agent['id']:15s} model={model:40s} exec={exec_mode}\")
-"
+jq '.agents.list[] | {id, model, exec: (.tools.exec.security // "default"), elevated: (.tools.elevated.enabled // false)}' \
+  ~/.openclaw/openclaw.json
+
+# Check fallback chain
+echo ""
+echo "=== Fallback Chain ==="
+jq '.agents.defaults.model' ~/.openclaw/openclaw.json
+
+# Check ACP plugin is loaded
+echo ""
+echo "=== ACPX ==="
+jq '.plugins.allow | contains(["acpx"])' ~/.openclaw/openclaw.json
+test -x ~/.openclaw/vendor/acpx/node_modules/.bin/acpx && echo "✓ acpx binary present"
 
 # Check for wrapper script
 echo ""
@@ -251,11 +274,6 @@ if [ -f ~/.openclaw/workspace/scripts/agent-wrapper.sh ]; then
 else
   echo "⚠ agent-wrapper.sh not found - background agents will fail silently"
 fi
-
-# Check running sub-agents (if openclaw is running)
-echo ""
-echo "=== Active Sessions ==="
-# Use openclaw CLI or API to list sessions
 ```
 
 ## Gotchas
@@ -269,3 +287,9 @@ echo "=== Active Sessions ==="
 4. **Context isolation is a feature, not a bug.** Sub-agents starting clean means they don't carry your 50K token conversation history. This is good for token efficiency and bad for tasks that need context. Choose the right pattern for the job.
 
 5. **Auto-announce goes directly to the user.** Fire-and-forget sub-agent output is announced to the user (via Telegram, Discord, etc.), not returned to the main agent. If you need the result in the main agent's workflow, use send-and-wait instead.
+
+6. **Auto-announce doesn't trigger a parent turn.** When a coder finishes and auto-announces, the result appears in the main agent's transcript but does NOT trigger a new inference turn. The main agent has to be woken by a user message. If the main says "I'll do X when coder gets back," it structurally can't follow through without another user message. Build your orchestration around this: either chain via send-and-wait, or have the user nudge.
+
+7. **Tool narration instead of tool calls.** GPT 5.4 occasionally narrates what it's about to do ("I'm running the build now") instead of actually calling the tool. We mitigate this with the `tool-narration-guard` plugin (run-level tracking with `prependContext` injection). Without it, you'll lose 30+ minutes waiting for work that never started. See [self-improving agents](self-improving-agents.md).
+
+8. **`strict-agentic` has detection gaps.** The planning-only retry no-ops on (A) imperative prompts like "do X" / "put Y through Z" and (B) short confident narration like "I'm running it now." We carry a local patch in `dist/pi-embedded-runner-*.js` that tightens the actionable regex and rewrites the retry instruction to close the circular-blocker loophole. Ready-to-file issue body is queued upstream.

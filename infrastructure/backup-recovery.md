@@ -2,8 +2,8 @@
 
 How to protect your OpenClaw workspace, configuration, and memory from data loss. Encrypted backups, restore testing, and disaster recovery planning.
 
-**Tested on:** OpenClaw on Ubuntu 24.04, backup to NAS and cloud
-**Last updated:** 2026-03-17
+**Tested on:** OpenClaw 2026.4.x on Ubuntu 24.04, restic to Google Drive (rclone) + an SMB NAS NAS, twice-daily schedule
+**Last updated:** 2026-04-19
 
 ---
 
@@ -43,69 +43,68 @@ Your OpenClaw instance has three categories of data, each with different backup 
 
 ## Backup Strategy
 
-### Daily Automated Backup
+### Why Restic
 
-Create a backup script that runs via cron:
+The `tar + gpg` pattern in the previous version of this guide works but has two weaknesses: every backup is a full archive (no deduplication), and restoration requires the entire archive to be intact. We've since migrated to [restic](https://restic.net/), which deduplicates across snapshots, encrypts at rest by default, and lets you mount old snapshots as filesystems for partial restores.
+
+### Twice-Daily Backup to Two Destinations
+
+We run restic twice daily (3am and 3pm) with two destinations: Google Drive (via rclone) and a local NAS (`/mnt/nas/backups/openclaw-restic`). Losing one doesn't lose the other.
 
 ```bash
 #!/bin/bash
-# backup-openclaw.sh
+# backup-restic.sh
 set -euo pipefail
 
-BACKUP_DIR="/path/to/backups/openclaw"
-DATE=$(date +%Y-%m-%d)
-BACKUP_FILE="$BACKUP_DIR/openclaw-$DATE.tar.gz.gpg"
-PASSPHRASE_FILE="/root/.backup-passphrase"
+export RESTIC_PASSWORD_FILE=/root/.restic-passphrase
 
-# Create backup directory if needed
-mkdir -p "$BACKUP_DIR"
+PATHS=(
+  "$HOME/.openclaw/openclaw.json"
+  "$HOME/.openclaw/workspace"
+  "$HOME/.openclaw/hooks"
+  "$HOME/.openclaw/vendor"          # ACPX binary and related
+  "$HOME/.ssh"
+  "$HOME/.bashrc"
+  "$HOME/.openclaw/workspace/.env"
+  "$HOME/.codex/auth.json"          # OpenAI Codex OAuth state
+  "$HOME/.claude"                   # Claude Code auth (ACP path)
+)
 
-# Archive critical files
-tar czf - \
-  ~/.openclaw/openclaw.json \
-  ~/.openclaw/workspace/ \
-  ~/.openclaw/hooks/ \
-  ~/.ssh/ \
-  ~/.bashrc \
-  ~/.env \
-  2>/dev/null | \
-  gpg --symmetric --cipher-algo AES256 \
-    --batch --passphrase-file "$PASSPHRASE_FILE" \
-    > "$BACKUP_FILE"
+# Destination 1: rclone-backed Google Drive
+restic -r rclone:gdrive:openclaw-restic backup "${PATHS[@]}" --tag auto
+restic -r rclone:gdrive:openclaw-restic forget --tag auto --keep-daily 14 --keep-weekly 8 --keep-monthly 6 --prune
 
-# Verify the backup was created
-if [ -f "$BACKUP_FILE" ]; then
-  SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
-  echo "Backup created: $BACKUP_FILE ($SIZE)"
+# Destination 2: local NAS
+if mountpoint -q /mnt/nas; then
+  restic -r /mnt/nas/backups/openclaw-restic backup "${PATHS[@]}" --tag auto
+  restic -r /mnt/nas/backups/openclaw-restic forget --tag auto --keep-daily 14 --keep-weekly 8 --keep-monthly 6 --prune
 else
-  echo "ERROR: Backup failed" >&2
-  exit 1
+  echo "WARN: NAS not mounted, skipping local backup" >&2
 fi
-
-# Rotate: keep 30 days
-find "$BACKUP_DIR" -name "openclaw-*.tar.gz.gpg" -mtime +30 -delete
-
-echo "Backup complete. Rotation done."
 ```
 
 ### Set Up the Passphrase
 
 ```bash
-# Generate a strong passphrase
-openssl rand -base64 32 > /root/.backup-passphrase
-chmod 600 /root/.backup-passphrase
+openssl rand -base64 32 > /root/.restic-passphrase
+chmod 600 /root/.restic-passphrase
 ```
 
-Store this passphrase somewhere outside your machine (password manager, printed copy in a safe, etc.). If you lose it, your encrypted backups are useless.
+Store this passphrase somewhere outside your machine (password manager, printed copy in a safe). If you lose it, both restic repositories become unreadable.
+
+### Initialize the Repositories (One Time)
+
+```bash
+restic -r rclone:gdrive:openclaw-restic init
+restic -r /mnt/nas/backups/openclaw-restic init
+```
 
 ### Schedule the Backup
 
 ```bash
-# Add to crontab
-sudo crontab -e
-
-# Run at 3am daily
-0 3 * * * /home/your-user/scripts/backup-openclaw.sh >> /var/log/openclaw-backup.log 2>&1
+crontab -e
+# Twice daily: 3am and 3pm
+0 3,15 * * * /home/your-user/scripts/backup-restic.sh >> /var/log/openclaw-backup.log 2>&1
 ```
 
 Or use an OpenClaw cron job to verify the backup ran:
@@ -128,25 +127,23 @@ Or use an OpenClaw cron job to verify the backup ran:
 
 ## Backup Destinations
 
-### Local NAS
+### Local NAS (Primary)
 
-Good for fast restores and large backups:
+Fast restores and large backups. We use a our SMB NAS mounted at `/mnt/nas` via fstab automount with SMB guest access. The NAS also stores 287GB of irreplaceable photos and phone backups — the backup pool is a tiny fraction of its total use.
 
 ```bash
-# Mount NAS (if using SMB)
-sudo mount -t cifs //192.168.x.x/backups /mnt/nas -o guest
-
-# Copy backups to NAS
-rsync -av /path/to/backups/openclaw/ /mnt/nas/openclaw-backups/
+# fstab entry (automount on demand)
+//192.168.x.x/backups /mnt/nas cifs guest,vers=3.0,_netdev,noauto,x-systemd.automount 0 0
 ```
 
-### Cloud Storage
+Rule we enforce locally: **NAS is read-only by default.** The only process allowed to write is `backup-restic.sh`. This prevents an agent from accidentally modifying or deleting the irreplaceable photo archive while exploring the mount.
 
-Good for off-site protection. Use encrypted backups (already GPG-encrypted above):
+### Cloud Storage (Off-Site)
+
+Google Drive via rclone. Restic handles encryption; the rclone transport is just the storage tier.
 
 ```bash
-# Sync to cloud storage via rclone
-rclone sync /path/to/backups/openclaw/ remote:openclaw-backups/
+rclone config  # one-time: authenticate against Google Drive
 ```
 
 ### The 3-2-1 Rule
@@ -166,30 +163,42 @@ A backup you've never restored from is a backup that doesn't exist. Test quarter
 ### Full Restore Steps
 
 ```bash
-# 1. Decrypt the backup
-gpg --decrypt --batch --passphrase-file /root/.backup-passphrase \
-  openclaw-2026-03-17.tar.gz.gpg | tar xzf - -C /tmp/restore-test/
+export RESTIC_PASSWORD_FILE=/root/.restic-passphrase
 
-# 2. Verify contents
-ls -la /tmp/restore-test/.openclaw/
-ls -la /tmp/restore-test/.openclaw/workspace/
-cat /tmp/restore-test/.openclaw/openclaw.json | python3 -m json.tool > /dev/null && echo "Config valid"
+# 1. List available snapshots (from either destination)
+restic -r /mnt/nas/backups/openclaw-restic snapshots
+# Pick a snapshot ID to restore from
 
-# 3. Check critical files exist
-for f in openclaw.json; do
-  [ -f "/tmp/restore-test/.openclaw/$f" ] && echo "✓ $f" || echo "✗ $f MISSING"
-done
+# 2. Restore to a temp location for inspection
+restic -r /mnt/nas/backups/openclaw-restic restore <SNAPSHOT_ID> --target /tmp/restore-test
 
+# 3. Verify contents
+ls -la /tmp/restore-test/home/*/.openclaw/
+jq . /tmp/restore-test/home/*/.openclaw/openclaw.json > /dev/null && echo "✓ Config parses"
+
+# 4. Check critical files exist
 for f in SOUL.md AGENTS.md MEMORY.md USER.md TOOLS.md; do
-  [ -f "/tmp/restore-test/.openclaw/workspace/$f" ] && echo "✓ $f" || echo "✗ $f MISSING"
+  [ -f /tmp/restore-test/home/*/.openclaw/workspace/$f ] && echo "✓ $f" || echo "✗ $f MISSING"
 done
 
-# 4. Count knowledge cards
-CARDS=$(ls /tmp/restore-test/.openclaw/workspace/memory/cards/*.md 2>/dev/null | wc -l)
+# 5. Count knowledge cards
+CARDS=$(ls /tmp/restore-test/home/*/.openclaw/workspace/memory/cards/*.md 2>/dev/null | wc -l)
 echo "Knowledge cards: $CARDS"
 
-# 5. Clean up test
-rm -rf /tmp/restore-test/
+# 6. Clean up test
+rm -rf /tmp/restore-test
+```
+
+### Mount a Snapshot Without Restoring
+
+One restic advantage: browse old snapshots like a filesystem without pulling anything.
+
+```bash
+mkdir -p /tmp/snap-mount
+restic -r /mnt/nas/backups/openclaw-restic mount /tmp/snap-mount &
+ls /tmp/snap-mount/snapshots/
+# Navigate and read any historical file, then:
+fusermount -u /tmp/snap-mount
 ```
 
 ### Restore to a New Machine
@@ -198,22 +207,26 @@ rm -rf /tmp/restore-test/
 # 1. Install OpenClaw on the new machine
 sudo npm install -g openclaw
 
-# 2. Decrypt and extract backup to home directory
-gpg --decrypt --batch --passphrase-file /path/to/passphrase \
-  openclaw-latest.tar.gz.gpg | tar xzf - -C ~/
+# 2. Install restic, copy the passphrase, point at either repo
+sudo apt install restic -y
+export RESTIC_PASSWORD_FILE=/root/.restic-passphrase
 
-# 3. Verify config
+# 3. Restore the latest snapshot to $HOME
+restic -r /path/to/repo restore latest --target /
+
+# 4. Verify
 openclaw --version
-cat ~/.openclaw/openclaw.json | python3 -m json.tool
+jq . ~/.openclaw/openclaw.json > /dev/null && echo "✓ Config parses"
 
-# 4. Install Ollama and pull models (if using local models)
+# 5. Install Ollama and pull models
 curl -fsSL https://ollama.com/install.sh | sh
-ollama pull nomic-embed-text
+ollama pull qwen3-embedding:8b
 
-# 5. Start the gateway
-openclaw gateway start
+# 6. Re-install ACPX and Claude Code for the escalation lane
+# (see configuration/claude-cli-to-acp-migration.md)
 
-# 6. Verify channels are connected
+# 7. Restart the gateway and verify channels
+systemctl --user restart openclaw-gateway
 # Send a test message on each configured channel
 ```
 
@@ -246,31 +259,26 @@ sqlite3 /path/to/database.db ".backup /path/to/backups/database-$(date +%Y-%m-%d
 ## Verification
 
 ```bash
-echo "=== Latest Backup ==="
-ls -lht /path/to/backups/openclaw/ | head -5
+export RESTIC_PASSWORD_FILE=/root/.restic-passphrase
+
+echo "=== Latest Snapshot (NAS) ==="
+restic -r /mnt/nas/backups/openclaw-restic snapshots --latest 1 2>/dev/null || echo "✗ NAS repo unavailable"
 
 echo ""
-echo "=== Backup Age ==="
-LATEST=$(ls -t /path/to/backups/openclaw/openclaw-*.gpg 2>/dev/null | head -1)
-if [ ! -z "$LATEST" ]; then
-  AGE=$(( ($(date +%s) - $(stat -c %Y "$LATEST")) / 3600 ))
-  echo "Latest backup: $LATEST (${AGE}h old)"
-  if [ "$AGE" -gt 48 ]; then
-    echo "⚠ Backup is over 48 hours old!"
-  else
-    echo "✓ Backup is current"
-  fi
-else
-  echo "✗ No backups found!"
-fi
+echo "=== Latest Snapshot (rclone:gdrive) ==="
+restic -r rclone:gdrive:openclaw-restic snapshots --latest 1 2>/dev/null || echo "✗ rclone repo unavailable"
 
 echo ""
 echo "=== Passphrase File ==="
-[ -f /root/.backup-passphrase ] && echo "✓ Passphrase file exists" || echo "✗ Passphrase file missing!"
+[ -f /root/.restic-passphrase ] && echo "✓ Passphrase file exists" || echo "✗ Passphrase file missing!"
 
 echo ""
 echo "=== Cron Entry ==="
-sudo crontab -l 2>/dev/null | grep backup || echo "✗ No backup cron found"
+crontab -l 2>/dev/null | grep backup-restic || echo "✗ No backup cron found"
+
+echo ""
+echo "=== Repo Integrity (fast check) ==="
+restic -r /mnt/nas/backups/openclaw-restic check --read-data-subset=1% 2>/dev/null | tail -5
 ```
 
 ## Gotchas
@@ -284,3 +292,9 @@ sudo crontab -l 2>/dev/null | grep backup || echo "✗ No backup cron found"
 4. **Ollama models aren't in the backup.** They're large (GBs) and re-downloadable. Don't bloat your backups with them. Just re-pull after restore.
 
 5. **Cron jobs live in OpenClaw's state, not in files.** If you recreate your OpenClaw install from config alone, you'll need to re-create your cron jobs. Consider exporting them periodically (`openclaw cron list > cron-export.json`).
+
+6. **Restic `forget --prune` is destructive by design.** The retention flags (`--keep-daily`, `--keep-weekly`, `--keep-monthly`) delete snapshots that don't match. If you typo the keep counts, you lose snapshots. Dry-run the first few prune cycles with `--dry-run` before trusting the schedule.
+
+7. **Back up OAuth state files, not just OpenClaw config.** `~/.codex/auth.json` and `~/.claude/` (ACP session state) aren't in `~/.openclaw/`, but losing them means re-authenticating every subscription after a restore. Include them in your backup paths.
+
+8. **The agent can write to the NAS if you let it.** We enforce read-only-by-default on `/mnt/nas` via mount options, and the only writer is `backup-restic.sh`. If an agent ever gets a writable NAS mount, assume it will eventually touch files it shouldn't. The photos on that NAS are irreplaceable — the mount policy is deliberate, not paranoid.
