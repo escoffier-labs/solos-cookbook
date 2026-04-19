@@ -15,7 +15,6 @@ The guides assume a specific provider mix. You can substitute, but if you want a
 
 - **Codex Pro ($200/mo) OAuth — main agent + coder.** This is the happy path. One flat subscription covers orchestration, code generation, and most cron work. Codex OAuth slots cleanly into OpenClaw's primary-model path and has been the most stable surface across the 2026.4.x releases. Start here.
 - **Claude Opus 4.6 via ACP — escalation only.** Resume, intel, design, review, humanize, academic work. Run it through the ACPX plugin, not as a direct OpenClaw provider.
-- **Google AI Pro ($20/mo) — research + imagegen.** Gemini CLI OAuth for large-context research and `gemini-2.5-flash-image` for banner generation.
 - **Ollama (free) — embeddings, commit messages, triage.** Local, fast, no round-trip.
 
 ### ⚠️ Do not route Claude Max OAuth directly through OpenClaw
