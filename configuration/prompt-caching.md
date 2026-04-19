@@ -23,9 +23,9 @@ OpenAI caches automatically on repeated prefixes when requests come from the sam
 
 For GPT 5.4 on a Codex Pro subscription, the cost is already flat-rate, so caching savings show up as *rate-limit headroom* rather than a dollar reduction. Breaking the cache still costs you — it eats more of your weekly quota faster.
 
-### Google Gemini CLI
+### Other Backends
 
-Gemini CLI handles its own context management. OpenClaw's cache hygiene rules still reduce churn, but the per-turn savings are less visible.
+OpenClaw supports other provider backends (Gemini CLI, direct Anthropic API, OpenRouter). The cache hygiene rules in this guide still apply — stable prefix, no mid-session bootstrap edits — but the per-turn savings are less visible on providers that handle context management internally. If you add a backend, measure whether your bootstrap stability is actually helping before assuming.
 
 ## OpenClaw Cache Configuration
 

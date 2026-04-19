@@ -2,7 +2,7 @@
 
 How to use OpenClaw sub-agents effectively. Spawn patterns, model assignment, error handling, and the lessons we learned from breaking things.
 
-**Tested on:** OpenClaw with GPT 5.4 (main + coder), Gemini 3.1 Pro (researcher), Claude Opus 4.6 via ACP (escalation)
+**Tested on:** OpenClaw with GPT 5.4 (main + coder), Claude Opus 4.6 via ACP (escalation), browser-LLM stack for research/imagegen
 **Last updated:** 2026-04-19
 
 ---
@@ -101,9 +101,8 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
 {
   "agents": {
     "list": [
-      { "id": "main",       "model": "openai-codex/gpt-5.4" },
-      { "id": "coder",      "model": "gpt54" },
-      { "id": "researcher", "model": "google-gemini-cli/gemini-3.1-pro-preview" },
+      { "id": "main",  "model": "openai-codex/gpt-5.4" },
+      { "id": "coder", "model": "gpt54" },
       {
         "id": "acp-claude",
         "model": "acpx/claude-opus-4-6",
@@ -116,14 +115,17 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
 
 `gpt54` is an alias defined in `agents.defaults.models` that resolves to `openai-codex/gpt-5.4`. See [multi-model orchestration](../configuration/multi-model-orchestration.md) for the full alias setup.
 
+Research and imagegen are not separate agents in this setup — they're skills the main/coder invoke against the [browser-LLM stack](../configuration/multi-model-orchestration.md#tier-3-browser-llm-stack--playwright--novnc).
+
 ### Assignment Rules
 
-| Task Type | Agent | Why |
-|-----------|-------|-----|
+| Task Type | Target | Why |
+|-----------|--------|-----|
 | File scanning, grep, counts | coder | Mechanical, doesn't need judgment |
 | Code generation from specs | coder | Same model as main, but with isolated context |
 | Code reviews | coder | Structured analysis |
-| Research, web analysis | researcher | 1M+ context on Gemini CLI |
+| Research, web analysis | browser skill (not an agent) | Perplexity Pro / Gemini web UI via Playwright |
+| Imagegen | browser skill | Web UI against existing subscriptions |
 | Resume/CV work | acp-claude | Opus quality, escalation lane |
 | Design critique, humanize passes | acp-claude | Opus voice |
 | PR review requiring taste | acp-claude | Beyond mechanical correctness |
@@ -226,7 +228,7 @@ Local model screens, main handles most work, ACP Opus gets the quality-critical 
 3. If action needed:
    - Mechanical/code work → main spawns coder
    - Resume/design/review/humanize → main spawns acp-claude
-   - Research with large context → main spawns researcher
+   - Research or imagegen → main calls the browser skill (not a sub-agent)
 ```
 
 ### ACP Escalation Pattern

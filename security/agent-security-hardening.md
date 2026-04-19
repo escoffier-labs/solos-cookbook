@@ -2,7 +2,7 @@
 
 How to treat your AI agent as an untrusted actor and build guardrails that actually work. Includes a real post-mortem from when a sub-agent nuked a production database.
 
-**Tested on:** OpenClaw 2026.4.x multi-agent setup (GPT 5.4, Gemini 3.1 Pro, ACP Opus 4.6)
+**Tested on:** OpenClaw 2026.4.x multi-agent setup (GPT 5.4 main + coder, ACP Opus 4.6 escalation, browser-LLM skills)
 **Last updated:** 2026-04-19
 
 ---
@@ -23,7 +23,7 @@ This isn't theoretical. Here's what happened to us (2026-03-02).
 
 **Root cause:** The DELETE endpoint existed. That's it. Haiku wasn't malicious. It wasn't even doing anything unusual. It found a tool and used it. The security failure was exposing a destructive endpoint to an agent in the first place.
 
-**The incident scales beyond Haiku.** We've since seen the same pattern with GPT 5.4 and Gemini — any model with tool access and an OpenAPI spec will eventually exercise every endpoint. Model size is not a defense.
+**The incident scales beyond Haiku.** We've since seen the same pattern with GPT 5.4 and other frontier models — any model with tool access and an OpenAPI spec will eventually exercise every endpoint. Model size and vendor are not a defense.
 
 ## 1. API Design: Gateway Isolation
 
@@ -303,6 +303,6 @@ echo "(check complete)"
 
 4. **Sub-agent sandbox gotcha.** Isolated sub-agents in OpenClaw can't access host git/gh CLI by default (sandbox has no git). Use sub-agents for file writing, then push from the main session.
 
-5. **Any model will find creative ways to be destructive.** Haiku didn't set out to delete our data. It was trying to be helpful. It read the API spec, saw a cleanup endpoint, and called it. This is not a small-model problem — GPT 5.4 and Gemini will do the same given tool access. The lesson: if the destructive path exists, an agent will eventually find it. Remove the path.
+5. **Any model will find creative ways to be destructive.** Haiku didn't set out to delete our data. It was trying to be helpful. It read the API spec, saw a cleanup endpoint, and called it. This is not a small-model problem — GPT 5.4 and other frontier models will do the same given tool access. The lesson: if the destructive path exists, an agent will eventually find it. Remove the path.
 
 6. **Main-agent model changes don't change the attack surface.** We moved from Opus to GPT 5.4 as the orchestrator in April 2026. None of the security rules in this guide changed. Prompt-level guards are still not a boundary. Allowlists still need to be tight. API design still matters more than model choice.

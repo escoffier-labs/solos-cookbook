@@ -187,9 +187,7 @@ Notes on the config block:
       "model": {
         "primary": "openai-codex/gpt-5.4",
         "fallbacks": [
-          "openai-codex/gpt-5.3-codex",
-          "google-gemini-cli/gemini-3.1-pro-preview",
-          "google-gemini-cli/gemini-2.5-flash"
+          "openai-codex/gpt-5.3-codex"
         ]
       }
     }
@@ -197,7 +195,7 @@ Notes on the config block:
 }
 ```
 
-Replace the primary with whatever you're standardizing on.
+Replace the primary with whatever you're standardizing on. Keep the fallback list short and confined to providers you actively use — fallback hops you haven't tested will silently degrade quality when the primary hiccups.
 
 ### 3c. Delete claude-cli Auth Profiles
 
