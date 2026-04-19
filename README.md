@@ -9,6 +9,26 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 
 > 🦞 No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
 
+## Recommended Provider Stack
+
+The guides assume a specific provider mix. You can substitute, but if you want a known-good baseline:
+
+- **Codex Pro ($200/mo) OAuth — main agent + coder.** This is the happy path. One flat subscription covers orchestration, code generation, and most cron work. Codex OAuth slots cleanly into OpenClaw's primary-model path and has been the most stable surface across the 2026.4.x releases. Start here.
+- **Claude Opus 4.6 via ACP — escalation only.** Resume, intel, design, review, humanize, academic work. Run it through the ACPX plugin, not as a direct OpenClaw provider.
+- **Google AI Pro ($20/mo) — research + imagegen.** Gemini CLI OAuth for large-context research and `gemini-2.5-flash-image` for banner generation.
+- **Ollama (free) — embeddings, commit messages, triage.** Local, fast, no round-trip.
+
+### ⚠️ Do not route Claude Max OAuth directly through OpenClaw
+
+As of April 2026, pointing an OpenClaw agent at your Claude Max subscription OAuth has two problems that make it a non-starter:
+
+1. **Extra usage charges.** Anthropic started metering traffic that arrives through third-party harnesses against your subscription in ways that show up as additional usage on top of normal Max caps. You can burn through quota far faster than the same work would cost through the first-party Claude client.
+2. **System-prompt-level blocking.** Claude detects that it's running inside a non-Anthropic harness and injects guidance that degrades behavior (refusals, hedging, dropping tool calls). Prompt-level workarounds don't stick.
+
+**The only sensible path to Opus from OpenClaw is ACP.** The ACPX plugin launches the official Claude Code CLI as a subprocess — Anthropic's own client handles the OAuth handshake, so the usage accounting and system-prompt behavior stay normal. OpenClaw connects to it over the Agent Client Protocol and treats the session as an escalation sub-agent.
+
+Full migration runbook in [claude-cli → ACP Migration](configuration/claude-cli-to-acp-migration.md).
+
 ## Guides
 
 ### Security
