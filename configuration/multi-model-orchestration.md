@@ -2,7 +2,7 @@
 
 How to run multiple AI models in one OpenClaw setup, assign each to the right task tier, and stop burning expensive tokens on work that doesn't need them.
 
-**Tested on:** OpenAI Pro ($200/mo Codex subscription), Anthropic Max via ACP, Google AI Pro ($20/mo Gemini CLI), Ollama local GPU
+**Tested on:** OpenAI Pro ($200/mo Codex subscription), Anthropic Max via ACP, browser-LLM stack via Playwright + noVNC, Ollama local GPU
 **Last updated:** 2026-04-19
 
 ---
@@ -11,7 +11,7 @@ How to run multiple AI models in one OpenClaw setup, assign each to the right ta
 
 Running one model for everything is like hiring a senior architect to answer phones. Your orchestrator needs to be strong enough to handle ambiguity and adversarial input. Everything else can run cheaper or free.
 
-This isn't about saving money. It's about using the right tool for each job. A 7B local model handles embeddings better than a frontier model wasting API calls on it. Gemini CLI handles large-context web research on the free-ish tier. Your orchestrator handles judgment and security decisions in the main loop.
+This isn't about saving money. It's about using the right tool for each job. A 7B local model handles embeddings better than a frontier model wasting API calls on it. Browser-driven LLMs (Perplexity, Gemini web UI, Claude web UI) handle research and imagegen without burning API quota. Your orchestrator handles judgment and security decisions in the main loop.
 
 ## What Changed in April 2026
 
@@ -93,9 +93,7 @@ Your main agent. This is what receives every message, makes every decision, and 
       "model": {
         "primary": "openai-codex/gpt-5.4",
         "fallbacks": [
-          "openai-codex/gpt-5.3-codex",
-          "google-gemini-cli/gemini-3.1-pro-preview",
-          "google-gemini-cli/gemini-2.5-flash"
+          "openai-codex/gpt-5.3-codex"
         ]
       },
       "models": {
@@ -119,21 +117,31 @@ Your main agent. This is what receives every message, makes every decision, and 
 
 The `:cron` and `:high` variants are the same model with different thinking budgets. Use `:cron` for scheduled background tasks where latency matters more than depth. Use `:high` for design work and architectural decisions.
 
-**Fallback chain ordering matters.** If Codex is down, fallback resolves in order. Putting `gpt-5.3-codex` ahead of Gemini means coder tasks stay on OpenAI infrastructure when possible and only hop providers if both Codex models are down.
+**Fallback chain ordering matters.** Keep the fallback chain on providers you actually use. We keep `gpt-5.3-codex` as the sole fallback — both models share the Codex Pro subscription, so a fallback hop doesn't change your billing surface. Adding providers you don't actively run to the chain is asking for silent quality drops when the primary hiccups.
 
-### Tier 3: Research — Gemini 3.1 Pro via Gemini CLI ($20/mo)
+### Tier 3: Browser-LLM Stack — Playwright + noVNC
 
-Google AI Pro subscription via the `google-gemini-cli` backend.
+Instead of burning API quota (or fighting OAuth policy changes) for research and imagegen, we drive the web UIs of the frontier LLMs through Playwright. A persistent Chromium runs under Xvfb with noVNC attached so you can see what the headless browser is doing.
 
 **Handles:**
-- Research-heavy tasks with large context windows
-- Web analysis when the orchestrator needs a second read
-- Imagegen via `gemini-2.5-flash-image` (aliased `image`)
+- Deep research via Perplexity Pro
+- Long-context analysis via the Gemini web UI (search grounding, file uploads)
+- Imagegen via whichever web model is currently strongest
+- "Second-opinion" passes against Claude.ai web or Gemini web from the orchestrator
 
-**Why it's separate:**
-- 1M+ context window cheaper than expanding Opus on ACP
-- Different strengths (multimodal, research, fast)
-- OAuth on Google Pro means no API key management
+**Why browser-driven instead of a CLI/API tier:**
+- Uses the subscriptions you already pay for without API-billing complications
+- Survives provider policy changes that break direct-API or OAuth paths (Anthropic's April 2026 move is exactly this class of problem)
+- Gets features that aren't on the API (Perplexity's research mode, search-grounded responses, UI-only rendering paths)
+- Concurrent sessions work via separate Chromium profiles and `flock`-based locking
+
+**Setup sketch:**
+- Xvfb + Chromium running headed-but-hidden
+- x11vnc → noVNC so you (or an agent) can pop the session open in a browser
+- Playwright-based skill in your workspace that launches against the persistent profile, performs the task, returns text/screenshots
+- One profile per provider; `flock` on a per-provider lockfile so concurrent skill invocations serialize cleanly
+
+This swaps a CLI backend for a tool surface. Your orchestrator calls the browser skill like any other tool, and the response comes back as text the agent can reason over.
 
 ### Tier 4: Escalation — Claude Opus 4.6 via ACP
 
@@ -170,22 +178,26 @@ The ACPX plugin ships as a user-local binary at `~/.openclaw/vendor/acpx/node_mo
    → Spawns coder sub-agent (also GPT 5.4) to build it
    → Orchestrator reviews the output, does a polish pass
 
-4. "Review this PR for architectural soundness"
+4. "Deep research this topic before I write about it"
+   → GPT 5.4 calls the browser research skill (Perplexity Pro via Playwright)
+   → Skill returns structured findings, orchestrator synthesizes
+
+5. "Review this PR for architectural soundness"
    → GPT 5.4 recognizes escalation criteria, spawns ACP Opus thread
    → Opus reviews, returns structured findings
 
-5. "Generate a banner image for this blog post"
-   → GPT 5.4 hands off to Gemini 2.5 Flash Image (aliased `image`)
+6. "Generate a banner image for this blog post"
+   → GPT 5.4 calls the browser imagegen skill (Playwright against a persistent web-UI profile)
    → Returns the image, orchestrator delivers
 
-6. Git commit
+7. Git commit
    → Ollama generates commit message locally. Zero API cost.
 
-7. Memory search
+8. Memory search
    → Ollama embeds query with qwen3-embedding:8b, searches local vector store. Free.
 ```
 
-The expensive escalation model only touches step 4. Everything else stays on the subscription tiers or runs free.
+The expensive escalation model only touches step 5. Everything else stays on the subscription tiers, runs in the browser against existing web subscriptions, or runs free.
 
 ## OpenClaw Agent Configuration
 
@@ -195,15 +207,16 @@ Define agents in the `agents.list` section of your `openclaw.json`:
 {
   "agents": {
     "list": [
-      { "id": "main",       "model": "openai-codex/gpt-5.4" },
-      { "id": "coder",      "model": "gpt54" },
-      { "id": "researcher", "model": "google-gemini-cli/gemini-3.1-pro-preview" }
+      { "id": "main",  "model": "openai-codex/gpt-5.4" },
+      { "id": "coder", "model": "gpt54" }
     ]
   }
 }
 ```
 
 Aliases resolve against `agents.defaults.models`. So `gpt54` above resolves to `openai-codex/gpt-5.4`.
+
+Research is not a separate agent in this setup — it's a skill the main/coder invoke via the browser stack (see Tier 3).
 
 Spawn sub-agents by ID:
 
@@ -234,11 +247,11 @@ The `gpt-5.4:cron` alias with `thinking: low` saves real tokens on scheduled wor
 | Tier | Monthly Cost | What It Does | % of Work |
 |------|-------------|--------------|-----------|
 | Ollama (local) | $0 | Embeddings, commits, triage | ~40% |
-| Gemini Pro | $20 | Research, imagegen | ~10% |
+| Browser-LLM stack | reuse existing web subs | Research, imagegen, second opinions | ~10% |
 | Codex Pro | $200 | Orchestration + all code work | ~45% |
 | ACP Opus (on Max) | bundled | Escalation only | ~5% |
 
-The heavy lifter is Codex Pro. Opus via ACP is a quality escalation, not a workhorse, so it stays within the Max subscription's usage envelope.
+The heavy lifter is Codex Pro. Opus via ACP is a quality escalation, not a workhorse, so it stays within the Max subscription's usage envelope. The browser-LLM stack costs whatever your existing Perplexity / Gemini / ChatGPT / Claude.ai subscriptions already cost — there's no additional per-request billing layered on top.
 
 ## Verification
 
@@ -266,10 +279,14 @@ jq '.plugins.allow | contains(["acpx"])' ~/.openclaw/openclaw.json
 
 3. **Ollama binds to 127.0.0.1 by default.** This is correct. Don't change it to 0.0.0.0 unless you have firewall rules restricting access. See the [Linux hardening guide](../security/linux-hardening.md).
 
-4. **Subscription rate limits are real.** Codex Pro has weekly and hourly limits. The model chain helps: if 40% of your work runs on Ollama and 10% on Gemini, you stay well within Codex's envelope.
+4. **Subscription rate limits are real.** Codex Pro has weekly and hourly limits. The model chain helps: if 40% of your work runs on Ollama and 10% goes through the browser stack against your existing web subscriptions, you stay well within Codex's envelope.
 
 5. **OpenAI OAuth rotating refresh tokens.** The Codex CLI desktop app and OpenClaw share the same refresh token. When one refreshes, the other's stored copy is invalidated. Symptom: `401 refresh_token_reused`. Fix: copy fresh token from `~/.codex/auth.json` to all OpenClaw auth-profiles.json files with `jq`, then restart the gateway.
 
 6. **`openclaw models auth login` doesn't see openai-codex.** It only surfaces plugin providers. Codex OAuth is baked into the onboard wizard. Use `openclaw onboard --auth-choice openai-codex` or the manual token-copy path.
 
 7. **ACPX binary is user-local.** It lives at `~/.openclaw/vendor/acpx/node_modules/.bin/acpx`, not in a global location. After OpenClaw upgrades, verify the `plugins.entries.acpx` block is still present — upgrades have been observed to reset plugin config.
+
+8. **Xvfb starts black.** The headless X display Playwright runs against is black until Chromium actually loads a page. If you VNC in and see a black screen, that's normal — trigger a skill run and the browser will appear. Don't restart Xvfb in a panic.
+
+9. **Browser skills need per-provider flock locks.** Two concurrent skill invocations on the same Chromium profile will clobber each other. A `flock` on `/tmp/browser-<provider>.lock` around the skill entry point keeps concurrent calls serialized per provider while different providers run in parallel. This is in the skill itself, not OpenClaw config — get it right once, forget about it.

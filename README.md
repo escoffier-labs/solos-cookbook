@@ -48,10 +48,10 @@ Full migration runbook in [claude-cli → ACP Migration](configuration/claude-cl
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Multi-Model Orchestration](configuration/multi-model-orchestration.md) | Run GPT 5.4, Gemini, ACP Opus, and Ollama in one setup with the right model per task | Any |
+| [Multi-Model Orchestration](configuration/multi-model-orchestration.md) | Run GPT 5.4, ACP Opus, browser-LLM skills, and Ollama in one setup with the right model per task | Any |
 | [claude-cli → ACP Migration](configuration/claude-cli-to-acp-migration.md) | Move Opus off the main-agent slot after Anthropic's April 2026 subscription-OAuth block | Anthropic |
 | [Memory & Token Optimization](configuration/memory-token-optimization.md) | Three-tier memory architecture with local semantic search and 50-100x token reduction | Any |
-| [Prompt Caching](configuration/prompt-caching.md) | Cache hygiene across Anthropic, OpenAI, and Gemini — avoid silent cost/quota leaks | Any |
+| [Prompt Caching](configuration/prompt-caching.md) | Cache hygiene across Anthropic and OpenAI — avoid silent cost/quota leaks | Any |
 | [Compaction & Context Tuning](configuration/compaction-and-context-tuning.md) | Compaction, memory flush, context pruning, and session search for long-running agents | Any |
 | [Skills Development](configuration/skills-development.md) | Write custom skills, structure for discoverability, real-world examples, and skill management | Any |
 

@@ -2,7 +2,7 @@
 
 How to schedule automated tasks in OpenClaw, assign the right model to each job, batch checks into heartbeats, and avoid the pitfalls that waste tokens and break silently.
 
-**Tested on:** OpenClaw 2026.4.x with 36+ active cron jobs, GPT 5.4 (with `:cron` thinking-low alias) + Gemini + ACP Opus
+**Tested on:** OpenClaw 2026.4.x with 36+ active cron jobs, GPT 5.4 (with `:cron` thinking-low alias), browser-LLM stack for research-heavy pipelines, ACP Opus for final polish
 **Last updated:** 2026-04-19
 
 ---
@@ -121,7 +121,7 @@ Not every cron job needs the same thinking budget. Match the model and alias to 
 | Job search scanning | `gpt-5.4:cron` | Filtering, classification |
 | Code reviews | `gpt-5.4` (thinking medium) | Structured analysis |
 | Memory sweep | `gpt-5.4` | Read + distill, needs some judgment |
-| Research-heavy pipelines | `google-gemini-cli/gemini-3.1-pro-preview` | Large context |
+| Research-heavy pipelines | `gpt-5.4:cron` + browser research skill | Skill pulls findings from Perplexity Pro / Gemini web via Playwright |
 | Weekly content polish | `acpx/claude-opus-4-6` via sub-agent spawn | Voice and taste |
 | Creative drafts (public-facing) | Spawn `acp-claude`, don't cron directly | Opus via ACP is a spawn target, not a primary |
 
