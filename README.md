@@ -4,8 +4,8 @@ Practical guides for running [OpenClaw](https://github.com/openclaw/openclaw) in
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue)
-![Guides](https://img.shields.io/badge/guides-15-red)
-![Last Updated](https://img.shields.io/badge/updated-2026--04--19-white)
+![Guides](https://img.shields.io/badge/guides-19-red)
+![Last Updated](https://img.shields.io/badge/updated-2026--04--23-white)
 
 > 🦞 No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
 
@@ -43,6 +43,7 @@ Full migration runbook in [claude-cli → ACP Migration](configuration/claude-cl
 | Guide | Description | Platform |
 |-------|-------------|----------|
 | [Backup & Recovery](infrastructure/backup-recovery.md) | Restic to NAS + Google Drive, twice-daily schedule, snapshot mounts, and disaster recovery | Any |
+| [Upgrade Hygiene](infrastructure/upgrade-hygiene.md) | Surviving `openclaw update`: systemd regeneration, dist patches, OAuth sync, schema drift | Any |
 
 ### Configuration
 
@@ -54,6 +55,8 @@ Full migration runbook in [claude-cli → ACP Migration](configuration/claude-cl
 | [Prompt Caching](configuration/prompt-caching.md) | Cache hygiene across Anthropic and OpenAI — avoid silent cost/quota leaks | Any |
 | [Compaction & Context Tuning](configuration/compaction-and-context-tuning.md) | Compaction, memory flush, context pruning, and session search for long-running agents | Any |
 | [Skills Development](configuration/skills-development.md) | Write custom skills, structure for discoverability, real-world examples, and skill management | Any |
+| [Claude Code via ACP](configuration/acp-claude-code.md) | Running Claude Code as an ACP-driven escalation agent after Anthropic's April 2026 harness block | Any |
+| [Claude Code Memory Handoffs](configuration/claude-code-memory-handoffs.md) | Cross-machine sync format and auto-promoting ingester that keeps OpenClaw the canonical memory owner | Any |
 
 ### Workflows
 
@@ -64,6 +67,7 @@ Full migration runbook in [claude-cli → ACP Migration](configuration/claude-cl
 | [Multi-Channel Setup](workflows/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, ACP threads, and access control | Any |
 | [Self-Improving Agents](workflows/self-improving-agents.md) | Correction capture, behavioral-guard plugins (tool-narration-guard, tokenjuice), daily memory sweeps, promotion rules | Any |
 | [Session Management](workflows/session-management.md) | Why single-chat apps bottleneck your agent, Discord channel layouts, cron isolation, and the hybrid approach | Any |
+| [GPT 5.4 Orchestration](workflows/gpt-54-orchestration.md) | Tool-call narration guard, strict-agentic detection gaps, silent-tool-loop triage, action-verb tuning | Any |
 
 ## Who This Is For
 
