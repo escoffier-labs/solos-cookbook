@@ -5,3 +5,8 @@
 .env
 .env.local
 node_modules/
+
+# Claude Code session files (never commit)
+.claude/
+.codex/
+.learnings/
