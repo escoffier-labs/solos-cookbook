@@ -39,7 +39,7 @@ Two canonical memory systems is one too many. The rule on this setup: **Claude C
                                       high-confidence)
 ```
 
-the OpenClaw host (the OpenClaw host) owns final routing. our Windows desktop, laptops, VPS hosts all produce handoffs; only the OpenClaw host ingests.
+The canonical OpenClaw host owns final routing. Workstations, laptops, VPS hosts all produce handoffs; only the canonical host ingests.
 
 ## The Handoff Format
 
@@ -114,9 +114,9 @@ Once ingested, the handoff is moved to `.claude/memory-handoffs/processed/` so r
 Claude Code needs one durable instruction in its project or user-level CLAUDE.md to make this work without manual prompting:
 
 ```markdown
-## the OpenClaw host Memory Handoff Rule
+## OpenClaw Memory Handoff Rule
 
-OpenClaw on the OpenClaw host is the canonical long-term memory for shared durable
+OpenClaw is the canonical long-term memory for shared durable
 knowledge. This Claude Code environment may keep local session context, but
 anything durable should flow back through a Memory Handoff.
 
@@ -246,7 +246,7 @@ fi
 
 ## Cross-Machine Sync
 
-If Claude Code runs on more than one machine, only one should be the ingest point. On every other machine, the `.claude/memory-handoffs/` directory gets synced to the canonical host (the OpenClaw host in this setup) before the ingester fires.
+If Claude Code runs on more than one machine, only one should be the ingest point. On every other machine, the `.claude/memory-handoffs/` directory gets synced to the canonical host before the ingester fires.
 
 Options that work:
 
@@ -254,9 +254,9 @@ Options that work:
 
 2. **Per-repo push on close.** Claude Code writes the handoff, then your shell hook or a small git-aware wrapper pushes the file to a shared branch. Ingester pulls that branch before running.
 
-3. **SSH + rsync pull.** the OpenClaw host's ingester connects to each remote machine at ingest time, rsyncs handoffs in, then runs. Less moving parts, more latency.
+3. **SSH + rsync pull.** The canonical host's ingester connects to each remote machine at ingest time, rsyncs handoffs in, then runs. Less moving parts, more latency.
 
-What matters is that our Windows desktop/laptop/VPS handoffs are **not ingested locally.** Only the OpenClaw host writes canonical memory. The remote machines produce; the canonical host routes.
+What matters is that workstation/laptop/VPS handoffs are **not ingested locally.** Only the canonical host writes canonical memory. The remote machines produce; the canonical host routes.
 
 ## Bootstrapping a Machine for Handoffs
 

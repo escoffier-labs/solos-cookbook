@@ -84,7 +84,7 @@ It does **not** match `i'm running`, `i'm doing`, `on it`, `handling that now`. 
 
 You have three options, in increasing order of effort:
 
-1. **Local patch on `dist/pi-embedded-runner-*.js`.** Extend both regexes to cover the missing verbs and the present-continuous narration pattern. Persist the patch through upgrades via [Upgrade Hygiene](../infrastructure/upgrade-hygiene.md). This is what runs in production on the OpenClaw host.
+1. **Local patch on `dist/pi-embedded-runner-*.js`.** Extend both regexes to cover the missing verbs and the present-continuous narration pattern. Persist the patch through upgrades via [Upgrade Hygiene](../infrastructure/upgrade-hygiene.md). This is what runs in production for me.
 2. **Deny-list instead of allow-list** on the actionable-prompt gate. Skip retry only for obvious chit-chat (`thanks`, `ok cool`, `lol`, `nice`, `got it`). More durable — allowlists keep growing forever.
 3. **Rely on the narration guard plugin.** It catches what `strict-agentic` misses, but it warns rather than retrying. The user sees a visible warning on the message; the turn doesn't re-fire automatically.
 
