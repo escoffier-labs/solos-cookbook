@@ -257,4 +257,4 @@ From our experience running both simultaneously:
 
 6. **Permission management.** If you share the Discord server with other people (family, team), use Discord's permission system to restrict which channels they can see. Your agent has access to your files and memory; not everyone should see those responses.
 
-7. **"the OpenClaw host/my-agent froze" triage.** Before assuming the main agent is stuck, check the session JSONL mtime in `~/.openclaw/agents/<name>/sessions/`. GPT 5.4 on the main agent routinely goes silent for 10–30+ minutes inside deep SSH → `pct exec` → docker loops, then resumes. The session file getting touched every few seconds means it's working, not frozen. Actual freezes are rarer than the silence pattern suggests.
+7. **"My agent froze" triage.** Before assuming the main agent is stuck, check the session JSONL mtime in `~/.openclaw/agents/<name>/sessions/`. GPT 5.4 on the main agent routinely goes silent for 10–30+ minutes inside deep SSH → `pct exec` → docker loops, then resumes. The session file getting touched every few seconds means it's working, not frozen. Actual freezes are rarer than the silence pattern suggests.
