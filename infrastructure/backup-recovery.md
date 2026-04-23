@@ -2,7 +2,7 @@
 
 How to protect your OpenClaw workspace, configuration, and memory from data loss. Encrypted backups, restore testing, and disaster recovery planning.
 
-**Tested on:** OpenClaw 2026.4.x on Ubuntu 24.04, restic to Google Drive (rclone) + an SMB NAS NAS, twice-daily schedule
+**Tested on:** OpenClaw 2026.4.x on Ubuntu 24.04, restic to Google Drive (rclone) + an SMB-mounted NAS, twice-daily schedule
 **Last updated:** 2026-04-19
 
 ---
@@ -129,7 +129,7 @@ Or use an OpenClaw cron job to verify the backup ran:
 
 ### Local NAS (Primary)
 
-Fast restores and large backups. We use a our SMB NAS mounted at `/mnt/nas` via fstab automount with SMB guest access. The NAS also stores 287GB of irreplaceable photos and phone backups — the backup pool is a tiny fraction of its total use.
+Fast restores and large backups. We use an SMB NAS mounted at `/mnt/nas` via fstab automount with guest access. The NAS is the household storage tier; the OpenClaw backup pool sits alongside unrelated data, so treat it as shared infrastructure.
 
 ```bash
 # fstab entry (automount on demand)
