@@ -37,30 +37,30 @@ sudo ufw enable
 
 ### Rule Set
 
-Replace `192.0.2.0/24` with your LAN subnet. Replace `192.0.2.10` with your host's LAN IP.
+Replace `<LAN_SUBNET_CIDR>` with your LAN subnet. Replace `<HOST_LAN_IP>` with your host's LAN IP.
 
 ```bash
 # SSH - LAN only
-sudo ufw allow from 192.0.2.0/24 to any port 22 proto tcp
+sudo ufw allow from <LAN_SUBNET_CIDR> to any port 22 proto tcp
 
 # Web traffic (if running any web services publicly)
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
 # Dev server ports - LAN only
-sudo ufw allow from 192.0.2.0/24 to any port 5173:5214 proto tcp
+sudo ufw allow from <LAN_SUBNET_CIDR> to any port 5173:5214 proto tcp
 
 # Ops Deck API - LAN only
-sudo ufw allow from 192.0.2.0/24 to any port 8005 proto tcp
+sudo ufw allow from <LAN_SUBNET_CIDR> to any port 8005 proto tcp
 
 # OpenClaw Gateway - LAN only
-sudo ufw allow from 192.0.2.0/24 to any port 18789 proto tcp
+sudo ufw allow from <LAN_SUBNET_CIDR> to any port 18789 proto tcp
 
 # Ollama - deny from everywhere (defense-in-depth, already localhost-bound)
 sudo ufw deny 11434
 
 # mDNS - LAN only
-sudo ufw allow from 192.0.2.0/24 to any port 5353 proto udp
+sudo ufw allow from <LAN_SUBNET_CIDR> to any port 5353 proto udp
 ```
 
 ### Verify
@@ -107,7 +107,7 @@ sudo tee /etc/systemd/system/ssh.socket.d/override.conf << 'EOF'
 # Clear default ListenStream (0.0.0.0:22 and [::]:22)
 ListenStream=
 # Bind to LAN IP only
-ListenStream=192.0.2.10:22
+ListenStream=<HOST_LAN_IP>:22
 EOF
 
 sudo systemctl daemon-reload
@@ -123,7 +123,7 @@ sudo systemctl restart ssh.socket
 ss -tlnp | grep :22
 
 # Should show only your LAN IP, not 0.0.0.0 or [::]
-# Expected: 192.0.2.10:22
+# Expected: <HOST_LAN_IP>:22
 
 # Check config values
 sudo sshd -T | grep -E "passwordauthentication|permitrootlogin|maxauthtries"
@@ -189,7 +189,7 @@ Edit `/etc/xrdp/xrdp.ini`, find the `port=` line (typically line 23):
 port=3389
 
 # After
-port=tcp://192.0.2.10:3389
+port=tcp://<HOST_LAN_IP>:3389
 ```
 
 > **Note:** xrdp uses `port=tcp://host:port` syntax, not `address=` as some documentation suggests. This is a common gotcha.
@@ -203,7 +203,7 @@ sudo systemctl restart xrdp
 ```bash
 ss -tlnp | grep :3389
 
-# Should show 192.0.2.10:3389, not 0.0.0.0:3389
+# Should show <HOST_LAN_IP>:3389, not 0.0.0.0:3389
 ```
 
 ---
@@ -214,7 +214,7 @@ The OpenClaw gateway (default port 18789) binds to `0.0.0.0` by default. Rather 
 
 ```bash
 # Already covered by the UFW rules above
-sudo ufw allow from 192.0.2.0/24 to any port 18789 proto tcp
+sudo ufw allow from <LAN_SUBNET_CIDR> to any port 18789 proto tcp
 ```
 
 This keeps the gateway accessible from your LAN but blocks external access.
@@ -262,8 +262,8 @@ sudo fail2ban-client status sshd 2>/dev/null || echo "fail2ban not running"
 Expected output:
 
 ```
-SSH: 192.0.2.10:22 only
-xrdp: 192.0.2.10:3389 only
+SSH: <HOST_LAN_IP>:22 only
+xrdp: <HOST_LAN_IP>:3389 only
 sshd: PasswordAuthentication no, PermitRootLogin no, MaxAuthTries 3
 UFW: active, default deny incoming
 fail2ban: sshd jail active, 0 banned

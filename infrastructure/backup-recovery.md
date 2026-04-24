@@ -133,7 +133,7 @@ Fast restores and large backups. We use an SMB NAS mounted at `/mnt/nas` via fst
 
 ```bash
 # fstab entry (automount on demand)
-//192.168.x.x/backups /mnt/nas cifs guest,vers=3.0,_netdev,noauto,x-systemd.automount 0 0
+//<NAS_HOST>/backups /mnt/nas cifs guest,vers=3.0,_netdev,noauto,x-systemd.automount 0 0
 ```
 
 Rule we enforce locally: **NAS is read-only by default.** The only process allowed to write is `backup-restic.sh`. This prevents an agent from accidentally modifying or deleting the irreplaceable photo archive while exploring the mount.
