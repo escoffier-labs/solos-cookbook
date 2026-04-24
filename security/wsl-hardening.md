@@ -46,10 +46,10 @@ New-NetFirewallRule -DisplayName "RDP - LAN Only" `
   -LocalPort 3389 `
   -Protocol TCP `
   -Action Allow `
-  -RemoteAddress 192.0.2.0/24
+  -RemoteAddress <LAN_SUBNET_CIDR>
 ```
 
-Replace `192.0.2.0/24` with your LAN subnet.
+Replace `<LAN_SUBNET_CIDR>` with your LAN subnet.
 
 ### Restrict SSH to LAN Only
 
@@ -63,7 +63,7 @@ New-NetFirewallRule -DisplayName "SSH - LAN Only" `
   -LocalPort 22 `
   -Protocol TCP `
   -Action Allow `
-  -RemoteAddress 192.0.2.0/24
+  -RemoteAddress <LAN_SUBNET_CIDR>
 ```
 
 ### Disable SMB (If Not Needed)
@@ -141,7 +141,7 @@ New-NetFirewallRule -DisplayName "OpenClaw Gateway - LAN Only" `
   -LocalPort 18789 `
   -Protocol TCP `
   -Action Allow `
-  -RemoteAddress 192.0.2.0/24
+  -RemoteAddress <LAN_SUBNET_CIDR>
 
 # Example: Dev servers on 5173-5214
 New-NetFirewallRule -DisplayName "Dev Servers - LAN Only" `
@@ -149,7 +149,7 @@ New-NetFirewallRule -DisplayName "Dev Servers - LAN Only" `
   -LocalPort 5173-5214 `
   -Protocol TCP `
   -Action Allow `
-  -RemoteAddress 192.0.2.0/24
+  -RemoteAddress <LAN_SUBNET_CIDR>
 ```
 
 > **Gotcha:** Every new service you add needs BOTH a port proxy AND a firewall rule. Miss either one and it either won't work (no proxy) or will be accessible but blocked (no firewall rule). This is the most common mistake in WSL networking.
