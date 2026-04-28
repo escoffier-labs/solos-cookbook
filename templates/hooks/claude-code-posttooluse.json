@@ -1,0 +1,37 @@
+{
+  "_comment": "Claude Code PostToolUse hook skeleton. Merge into ~/.claude/settings.json (or $CLAUDE_CONFIG_DIR/settings.json). Replace every <ANGLE_BRACKETS> placeholder.",
+
+  "_quirk_comment": "PostToolUse decision:'block' does NOT replace tool_result content (verified through 2.1.116). Only hookSpecificOutput.additionalContext lands in the next turn's context. If you need to REPLACE tool output, rewrite the call in PreToolUse instead. If you need to APPEND, additionalContext is the supported path.",
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "<TOOL_NAME_OR_REGEX>",
+        "_matcher_comment": "e.g., 'Bash' for shell calls, '.*' for everything. Match the exact tool name your hook handles.",
+
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<ABSOLUTE_PATH_TO_HOOK_BINARY>",
+            "_command_comment": "Path to your hook binary or script. Claude Code spawns it with the hook event JSON on stdin and reads JSON from stdout.",
+
+            "timeout": 5000,
+            "_timeout_comment": "Milliseconds. Keep it tight — every tool call waits on this. 5000ms is generous for a regex pass."
+          }
+        ]
+      }
+    ],
+
+    "_other_events": "Other supported events at this layer: PreToolUse (substitution actually works here), Stop, UserPromptSubmit, SessionStart. See https://docs.claude.com/claude-code/hooks for the full schema."
+  },
+
+  "_expected_stdout_shape": {
+    "decision": "block",
+    "_decision_comment": "Honored on PreToolUse. On PostToolUse the field is 'kept' for back-compat but doesn't substitute the tool_result. Use additionalContext below instead.",
+    "reason": "<short explanation that goes nowhere on PostToolUse>",
+    "hookSpecificOutput": {
+      "hookEventName": "PostToolUse",
+      "additionalContext": "<the text you actually want the model to see>"
+    }
+  }
+}

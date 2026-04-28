@@ -6,7 +6,7 @@
 ![Code](https://img.shields.io/badge/code-MIT-green)
 ![Content](https://img.shields.io/badge/content-CC%20BY--NC--ND%204.0-lightgrey)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue)
-![Guides](https://img.shields.io/badge/guides-20-red)
+![Guides](https://img.shields.io/badge/guides-21-red)
 ![Last Updated](https://img.shields.io/badge/updated-2026--04--28-white)
 
 > 🦞 No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
@@ -93,6 +93,7 @@ There is nothing to install. solostack is a collection of standalone guides — 
 | [Cron Patterns](automation/cron-patterns.md) | The three-layer cron stack: systemd timers vs agent cron vs n8n schedule triggers — where each scheduled task belongs | Any |
 | [OpenClaw Cron Deep-Dive](automation/openclaw-cron-deep-dive.md) | Heartbeat batching, thinking-budget aliases, explicit delivery routing, quiet hours, and real-incident gotchas | OpenClaw |
 | [Multi-Channel Setup](automation/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, ACP threads, and access control | Any |
+| [Hooks](automation/hooks.md) | Three-layer hook model: boundary (git pre-push, publish CLIs), tool-call (PreToolUse/PostToolUse, OpenClaw `before_tool_call`/`tool_result_persist`), lifecycle (SessionStart, `before_prompt_build`, `message_sending`) | Any |
 
 ### Infrastructure
 
@@ -139,6 +140,7 @@ Drop-in artifacts you can lift without adopting the whole thing. See [`templates
 | Template | Used by |
 |----------|---------|
 | [`templates/cron/`](templates/cron/) | systemd timer, agent cron, n8n schedule trigger skeletons — paired with [`automation/cron-patterns.md`](automation/cron-patterns.md) |
+| [`templates/hooks/`](templates/hooks/) | git pre-push, Claude Code PostToolUse, OpenClaw sync plugin skeletons — paired with [`automation/hooks.md`](automation/hooks.md) |
 
 ## Who This Is For
 

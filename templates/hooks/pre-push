@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# pre-push: block push if a content scanner finds blocking violations.
+# Drop this file in <repo>/hooks/pre-push, then activate once with:
+#   git config core.hooksPath hooks
+#
+# Bypass only if you understand exactly what you are allowing through:
+#   git push --no-verify
+#
+# Replace <SCANNER_DIR>, <SCANNER_INVOCATION>, and <POLICY_PATH> with the
+# scanner you actually use. The shape below assumes content-guard
+# (https://github.com/solomonneas/content-guard) but any CLI that returns
+# non-zero on policy violations works.
+set -euo pipefail
+
+# --- where the scanner lives ------------------------------------------------
+SCANNER_DIR="${CONTENT_GUARD_DIR:-$HOME/repos/<SCANNER_DIR>}"
+POLICY="${CONTENT_GUARD_POLICY:-$SCANNER_DIR/policies/public-repo.json}"
+
+if [[ ! -d "$SCANNER_DIR" ]]; then
+  echo "pre-push: scanner not found at $SCANNER_DIR" >&2
+  echo "pre-push: clone it, or set CONTENT_GUARD_DIR to its real path" >&2
+  exit 1
+fi
+
+if [[ ! -f "$POLICY" ]]; then
+  echo "pre-push: policy file not found: $POLICY" >&2
+  exit 1
+fi
+
+# --- run the scanner against the working tree -------------------------------
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+echo "pre-push: scanning $REPO_ROOT against $(basename "$POLICY")"
+
+if ! PYTHONPATH="$SCANNER_DIR/src" python3 -m content_guard scan "$REPO_ROOT" --policy "$POLICY"; then
+  echo >&2
+  echo "pre-push: BLOCKED. scanner found violations." >&2
+  echo "pre-push: fix the leak, or add an inline allow-tag on the offending line:" >&2
+  echo "pre-push:   <!-- content-guard: allow <rule-id> -->" >&2
+  exit 1
+fi
