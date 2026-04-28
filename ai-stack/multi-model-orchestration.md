@@ -2,8 +2,8 @@
 
 How to run multiple AI models in one OpenClaw setup, assign each to the right task tier, and stop burning expensive tokens on work that doesn't need them.
 
-**Tested on:** OpenAI Pro ($200/mo Codex subscription), Anthropic Max via ACP, browser-LLM stack via Playwright + noVNC, Ollama local GPU
-**Last updated:** 2026-04-19
+**Tested on:** OpenAI Pro ($200/mo Codex subscription), Anthropic Max via ACP, browser-LLM stack via Playwright + noVNC, Ollama local GPU, Ollama Pro cloud models
+**Last updated:** 2026-04-28
 
 ---
 
@@ -65,6 +65,48 @@ ollama pull qwen3:7b              # triage/screening
 ```
 
 **Hardware:** Any NVIDIA GPU with 8GB+ VRAM handles these models. Even a laptop GPU works for the embedding model.
+
+### Tier 1b: Ollama Cloud Pro ($20/mo)
+
+Ollama Cloud is the middle lane between local models and frontier subscriptions. It is useful for bulk summarization, strict-format offload chores, commit/release-note drafting, and model bakeoffs where you want cheap cloud inference without moving the main orchestrator.
+
+**Current routing from our April 2026 bakeoffs:**
+- `qwen3-coder-next:cloud`: best default for code-search summaries and strict structured offload.
+- `kimi-k2.6:cloud`: best tested fallback for code-search summaries, strongest identifier retention, but slower and more verbose.
+- `deepseek-v4-flash:cloud`: promising, but needs thinking behavior controlled and had worse tail latency.
+- `deepseek-v4-pro:cloud`: available through Ollama as a separate benchmark target, not yet part of the current recommendation.
+- `minimax-m2.7:cloud`: useful for deeper supervised agent work, not for terse code-search summaries.
+
+**Code-search backfill gauntlet, April 25:**
+
+| Model | Success | Median | P95 | Key retention | Decision |
+|---|---:|---:|---:|---:|---|
+| `qwen3-coder-next:cloud` | 100/100 | 1.64s | 3.01s | 0.293 | Primary |
+| `kimi-k2.6:cloud` | 100/100 | 2.59s | 4.76s | 0.296 | Fallback |
+| `deepseek-v4-flash:cloud` | 100/100 | 1.88s | 14.41s | 0.288 | Candidate |
+| `deepseek-v3.2:cloud` | 100/100 | 5.61s | 8.78s | 0.212 | Too slow |
+| `minimax-m2.7:cloud` | 27/100 | 5.93s | 9.69s | 0.189 | Reject |
+
+**Setup:**
+
+```bash
+ollama signin
+ollama pull qwen3-coder-next:cloud
+ollama pull kimi-k2.6:cloud
+ollama pull deepseek-v4-flash:cloud
+ollama pull deepseek-v4-pro:cloud
+```
+
+Local tools can call cloud models through the localhost Ollama daemon after `ollama signin`. Direct hosted API calls to `https://ollama.com/api` use an API key:
+
+```bash
+export OLLAMA_API_KEY="..."
+curl https://ollama.com/api/chat \
+  -H "Authorization: Bearer $OLLAMA_API_KEY" \
+  -d '{"model":"qwen3-coder-next:cloud","messages":[{"role":"user","content":"Summarize this function"}]}'
+```
+
+Ollama Pro is currently $20/month, includes 50x more cloud usage than Free, and allows 3 concurrent cloud models. Ollama documents usage as infrastructure utilization rather than a fixed token cap, with session limits resetting every 5 hours and weekly limits resetting every 7 days.
 
 ### Tier 2: Orchestrator — GPT 5.4 via Codex Pro ($200/mo)
 
@@ -247,6 +289,7 @@ The `gpt-5.4:cron` alias with `thinking: low` saves real tokens on scheduled wor
 | Tier | Monthly Cost | What It Does | % of Work |
 |------|-------------|--------------|-----------|
 | Ollama (local) | $0 | Embeddings, commits, triage | ~40% |
+| Ollama Pro cloud | $20 | Bulk summaries, strict offload, cheap model bakeoffs | bursty |
 | Browser-LLM stack | reuse existing web subs | Research, imagegen, second opinions | ~10% |
 | Codex Pro | $200 | Orchestration + all code work | ~45% |
 | ACP Opus (on Max) | bundled | Escalation only | ~5% |
@@ -279,7 +322,7 @@ jq '.plugins.allow | contains(["acpx"])' ~/.openclaw/openclaw.json
 
 3. **Ollama binds to 127.0.0.1 by default.** This is correct. Don't change it to 0.0.0.0 unless you have firewall rules restricting access. See the [Linux hardening guide](../security/linux-hardening.md).
 
-4. **Subscription rate limits are real.** Codex Pro has weekly and hourly limits. The model chain helps: if 40% of your work runs on Ollama and 10% goes through the browser stack against your existing web subscriptions, you stay well within Codex's envelope.
+4. **Subscription rate limits are real.** Codex Pro has weekly and hourly limits. Ollama Pro has session and weekly cloud limits, plus concurrency limits. The model chain helps: if 40% of your work runs on local Ollama, cloud bulk work goes through Ollama Pro, and 10% goes through the browser stack against your existing web subscriptions, you stay well within Codex's envelope.
 
 5. **OpenAI OAuth rotating refresh tokens.** The Codex CLI desktop app and OpenClaw share the same refresh token. When one refreshes, the other's stored copy is invalidated. Symptom: `401 refresh_token_reused`. Fix: copy fresh token from `~/.codex/auth.json` to all OpenClaw auth-profiles.json files with `jq`, then restart the gateway.
 
