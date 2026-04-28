@@ -6,7 +6,7 @@
 ![Code](https://img.shields.io/badge/code-MIT-green)
 ![Content](https://img.shields.io/badge/content-CC%20BY--NC--ND%204.0-lightgrey)
 ![Platform](https://img.shields.io/badge/platform-Linux-blue)
-![Guides](https://img.shields.io/badge/guides-22-red)
+![Guides](https://img.shields.io/badge/guides-23-red)
 ![Last Updated](https://img.shields.io/badge/updated-2026--04--28-white)
 
 > 🦞 No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
@@ -109,6 +109,7 @@ There is nothing to install. solostack is a collection of standalone guides — 
 |-------|-------------|----------|
 | [Memory & Token Optimization](knowledge/memory-token-optimization.md) | Three-tier memory architecture with local semantic search and 50-100x token reduction | Any |
 | [Claude Code Memory Handoffs](knowledge/claude-code-memory-handoffs.md) | Cross-machine sync format and auto-promoting ingester that keeps OpenClaw the canonical memory owner | Any |
+| [Memory Architecture](knowledge/memory-architecture.md) | Operating model: memory as point-in-time claims (not live state), trust hierarchy, write/verify/decay loops, cross-store reconciliation | Any |
 
 ### Security
 
