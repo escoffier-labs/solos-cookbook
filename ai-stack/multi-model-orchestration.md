@@ -73,6 +73,7 @@ Ollama Cloud is the middle lane between local models and frontier subscriptions.
 **Current routing from our April 2026 bakeoffs:**
 - `qwen3-coder-next:cloud`: best default for code-search summaries and strict structured offload.
 - `kimi-k2.6:cloud`: best tested fallback for code-search summaries, strongest identifier retention, but slower and more verbose.
+- `gemma4:31b-cloud`: clean generalist, but reject for bulk code-search summaries because of lower retention and severe tail latency.
 - `deepseek-v4-flash:cloud`: promising, but needs thinking behavior controlled and had worse tail latency.
 - `deepseek-v4-pro:cloud`: available through Ollama as a separate benchmark target, not yet part of the current recommendation.
 - `minimax-m2.7:cloud`: useful for deeper supervised agent work, not for terse code-search summaries.
@@ -83,6 +84,7 @@ Ollama Cloud is the middle lane between local models and frontier subscriptions.
 |---|---:|---:|---:|---:|---|
 | `qwen3-coder-next:cloud` | 100/100 | 1.64s | 3.01s | 0.293 | Primary |
 | `kimi-k2.6:cloud` | 100/100 | 2.59s | 4.76s | 0.296 | Fallback |
+| `gemma4:31b-cloud` | 100/100 | 2.16s | 31.11s | 0.247 | Reject for bulk summaries |
 | `deepseek-v4-flash:cloud` | 100/100 | 1.88s | 14.41s | 0.288 | Candidate |
 | `deepseek-v3.2:cloud` | 100/100 | 5.61s | 8.78s | 0.212 | Too slow |
 | `minimax-m2.7:cloud` | 27/100 | 5.93s | 9.69s | 0.189 | Reject |
