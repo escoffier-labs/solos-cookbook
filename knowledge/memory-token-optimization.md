@@ -190,7 +190,7 @@ Two failure modes depending on your provider:
 
 **Pay-per-token (direct Anthropic API):** Prefix cost drops ~90% with caching. A 10K-token prefix with caching runs ~$0.005/turn; without caching, ~$0.05/turn. One mid-session bootstrap edit at turn 25 costs ~$3.51 in extra spend over the remaining session.
 
-**Subscription (Codex Pro, Claude Max via ACP):** You don't see dollars — you see rate-limit headroom. A session that used to last 4 hours hits the cap at 2.5 hours if you keep invalidating the prefix. Same pain, different dashboard. See [prompt caching](prompt-caching.md) for provider-specific detail.
+**Subscription (Codex Pro, Claude Max via ACP):** You don't see dollars — you see rate-limit headroom. A session that used to last 4 hours hits the cap at 2.5 hours if you keep invalidating the prefix. Same pain, different dashboard. See [prompt caching](../ai-stack/prompt-caching.md) for provider-specific detail.
 
 ## Memory Maintenance
 

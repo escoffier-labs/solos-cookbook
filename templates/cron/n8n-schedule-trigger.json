@@ -1,0 +1,51 @@
+{
+  "_comment": "Minimal n8n workflow with a Schedule Trigger and an Error Workflow reference. Import via UI or API. Replace placeholders.",
+  "name": "<workflow name>",
+  "active": false,
+  "_active_comment": "Set to true after testing. Activating in JSON without testing is a footgun.",
+
+  "settings": {
+    "errorWorkflow": "<error-classifier-workflow-id>",
+    "_errorWorkflow_comment": "Points at a shared failure-classifier workflow. CLI runs do NOT trigger this — only auto-runs do.",
+    "executionOrder": "v1"
+  },
+
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "_comment": "Replace this with your real first step (HTTP Request, Code, etc.)",
+        "jsCode": "return [{ json: { hello: 'world' } }];"
+      },
+      "name": "Do The Work",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    }
+  ],
+
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          { "node": "Do The Work", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  }
+}

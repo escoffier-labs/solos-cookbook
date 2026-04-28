@@ -185,7 +185,7 @@ Channels are plugins. Register them in `plugins.allow` and `plugins.entries`, th
 
 ## ACP Escalation via Discord Thread
 
-Since the [April 2026 claude-cli removal](../configuration/claude-cli-to-acp-migration.md), Claude Opus reaches you via ACP, not the main agent slot. The cleanest UX is a dedicated Discord thread routed straight to the ACP session:
+Since the [April 2026 claude-cli removal](../ai-stack/claude-cli-to-acp-migration.md), Claude Opus reaches you via ACP, not the main agent slot. The cleanest UX is a dedicated Discord thread routed straight to the ACP session:
 
 ```json
 {

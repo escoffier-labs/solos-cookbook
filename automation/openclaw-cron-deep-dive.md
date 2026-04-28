@@ -146,7 +146,7 @@ Use this alias for 80% of your cron jobs. The medium thinking budget is wasteful
 
 2. **Small local models fail silently on reasoning.** We tested qwen3:8b for cron triage and its thinking mode burned all 512 output tokens on internal reasoning, producing empty responses. Test local models with your actual cron prompts before scheduling.
 
-3. **GPT 5.3 Codex has a rate limit bug.** It can show 0% weekly usage while returning rate-limit errors. Resets overnight (~3:45 AM). If Codex is broken, coder tasks fail with `FailoverError`. Keep your fallback chain populated (see [multi-model orchestration](../configuration/multi-model-orchestration.md)).
+3. **GPT 5.3 Codex has a rate limit bug.** It can show 0% weekly usage while returning rate-limit errors. Resets overnight (~3:45 AM). If Codex is broken, coder tasks fail with `FailoverError`. Keep your fallback chain populated (see [multi-model orchestration](../ai-stack/multi-model-orchestration.md)).
 
 ## Heartbeat Configuration
 
@@ -348,6 +348,6 @@ cat ~/.openclaw/workspace/HEARTBEAT.md
 
 6. **Bare `announce` without `to` is a routing coin-flip.** With both Telegram and Discord enabled, the gateway guesses — and we've confirmed the guess is wrong often enough to treat it as a bug. Always set `"to": "<channel>:<target_id>"`.
 
-7. **Haiku is no longer in the cron roster.** Older versions of this guide recommended Anthropic Haiku for cheap cron work. That path went away with the [claude-cli removal](../configuration/claude-cli-to-acp-migration.md). `gpt-5.4:cron` (thinking low) is the current equivalent and stays on the same subscription envelope as your main agent.
+7. **Haiku is no longer in the cron roster.** Older versions of this guide recommended Anthropic Haiku for cheap cron work. That path went away with the [claude-cli removal](../ai-stack/claude-cli-to-acp-migration.md). `gpt-5.4:cron` (thinking low) is the current equivalent and stays on the same subscription envelope as your main agent.
 
 8. **Sub-agents spawned from cron can find destructive API endpoints.** Incident (2026-03-02): Haiku cron found and called `DELETE /api/index` on a local API three times unprompted, wiping 71K indexed chunks. It read the OpenAPI spec, saw a destructive route, and used it. Lock down your local APIs before giving any cron subagent `exec` or HTTP access. See [agent security hardening](../security/agent-security-hardening.md).

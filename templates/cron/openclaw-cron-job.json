@@ -1,0 +1,30 @@
+{
+  "_comment": "Append this object to the array in ~/.openclaw/cron/jobs.json. Replace every <ANGLE_BRACKETS> placeholder.",
+  "name": "<short-id>",
+  "description": "<one-line description shown in admin UI>",
+  "schedule": "0 7 * * *",
+  "_schedule_comment": "Standard cron syntax. Daily 7am in this example.",
+  "enabled": true,
+
+  "agent": "<agent-name>",
+  "model": "<provider>/<model>:cron",
+  "_model_comment": "Use a model alias with thinking: 'low'. Reserve high-thinking for interactive.",
+
+  "prompt": "Run /path/to/your/script.sh and post the result.",
+  "_prompt_comment": "Reference a script file. Do NOT compose shell here — heredoc detection will trip the security gate.",
+
+  "delivery": {
+    "mode": "announce",
+    "to": "<channel-type>:<channel-id>",
+    "_to_comment": "ALWAYS set explicit target. Bare announce with multiple channels picks the wrong one."
+  },
+
+  "tools": {
+    "elevated": {
+      "enabled": false,
+      "_comment": "Most cron jobs do not need elevated. Turn on per-job only when needed."
+    }
+  },
+
+  "timeout": 600
+}

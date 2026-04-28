@@ -1,0 +1,25 @@
+# Skeleton systemd timer unit. Pairs with systemd-timer.service.
+# OnCalendar uses systemd's calendar event syntax — see `man systemd.time`.
+
+[Unit]
+Description=Run <name>.service on schedule
+
+[Timer]
+# Examples:
+#   OnCalendar=*-*-* 03:00:00          # daily at 3am
+#   OnCalendar=*-*-* 03,15:00:00       # twice daily, 3am and 3pm
+#   OnCalendar=Mon *-*-* 04:00:00      # every Monday at 4am
+#   OnCalendar=*-*-* *:00/15:00        # every 15 minutes
+OnCalendar=*-*-* 03:00:00
+
+# Persistent=true triggers a missed run after the host comes back online.
+# Use this for backups and anything you don't want to silently skip.
+Persistent=true
+
+# Optional: random delay so multiple timers don't pile up at the same instant.
+RandomizedDelaySec=2min
+
+Unit=<name>.service
+
+[Install]
+WantedBy=timers.target
