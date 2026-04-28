@@ -142,14 +142,14 @@ The sub-agent gets its own thread, its own session, and its own context. You can
   #alerts           → Urgent-only notifications
 
 📁 BEST PRACTICES
-  #openclaw-best-practices → Meta: improving the setup itself
+  #solostack       → Meta: improving the setup itself
 
 📁 ESCALATION
   Thread: acp-opus     → Dedicated ACP thread for Claude Opus escalation
                          (resume, intel, design, review, humanize work)
 ```
 
-See [multi-channel setup](multi-channel-setup.md) for the ACP thread routing config.
+See [multi-channel setup](../automation/multi-channel-setup.md) for the ACP thread routing config.
 
 ### Channel Naming Conventions
 

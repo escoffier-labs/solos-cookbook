@@ -22,7 +22,7 @@ Your main agent carries heavy context (memory, personality, conversation history
 - It involves security decisions or untrusted input
 - It's a quick one-liner that doesn't justify the spawn overhead
 
-**Post-April-2026 note:** The main agent no longer has to be your "strongest" model. GPT 5.4 on Codex Pro is a fine orchestrator, and Opus-quality work happens via [ACP escalation](../configuration/claude-cli-to-acp-migration.md) when needed.
+**Post-April-2026 note:** The main agent no longer has to be your "strongest" model. GPT 5.4 on Codex Pro is a fine orchestrator, and Opus-quality work happens via [ACP escalation](claude-cli-to-acp-migration.md) when needed.
 
 ## Spawn Patterns
 
@@ -113,9 +113,9 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
 }
 ```
 
-`gpt54` is an alias defined in `agents.defaults.models` that resolves to `openai-codex/gpt-5.4`. See [multi-model orchestration](../configuration/multi-model-orchestration.md) for the full alias setup.
+`gpt54` is an alias defined in `agents.defaults.models` that resolves to `openai-codex/gpt-5.4`. See [multi-model orchestration](multi-model-orchestration.md) for the full alias setup.
 
-Research and imagegen are not separate agents in this setup — they're skills the main/coder invoke against the [browser-LLM stack](../configuration/multi-model-orchestration.md#tier-3-browser-llm-stack--playwright--novnc).
+Research and imagegen are not separate agents in this setup — they're skills the main/coder invoke against the [browser-LLM stack](multi-model-orchestration.md#tier-3-browser-llm-stack--playwright--novnc).
 
 ### Assignment Rules
 
@@ -244,7 +244,7 @@ sessions_spawn(
 )
 ```
 
-Or open a dedicated Discord thread routed to `acp-claude` (see [multi-channel setup](multi-channel-setup.md)) and work with Opus directly. The ACP session has no access to your main agent's conversation history — pass all necessary context in the task itself.
+Or open a dedicated Discord thread routed to `acp-claude` (see [multi-channel setup](../automation/multi-channel-setup.md)) and work with Opus directly. The ACP session has no access to your main agent's conversation history — pass all necessary context in the task itself.
 
 **When to escalate:** Resume, intel, design, PR review that needs taste, humanize passes, academic work.
 **When NOT to escalate:** Code generation, file scanning, bulk ops, anything mechanical. The coder agent (GPT 5.4) handles those faster and without burning Max-subscription quota.

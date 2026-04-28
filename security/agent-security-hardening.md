@@ -228,7 +228,7 @@ Prompt-level rules don't scale. Plugin-level hooks do. Two we run in production:
 
 Catches the failure mode where the model narrates "I'm running the build now" without actually calling the tool. The guard tracks runs at the session level and injects a `prependContext` rule on the next turn forcing the model to either call the tool or explicitly say it can't.
 
-Without this plugin, you lose 30+ minutes at a time waiting for work that never started. See [self-improving agents](../workflows/self-improving-agents.md).
+Without this plugin, you lose 30+ minutes at a time waiting for work that never started. See [self-improving agents](../ai-stack/self-improving-agents.md).
 
 ### strict-agentic (with local patch)
 

@@ -82,7 +82,7 @@ Schedule it via cron and pipe the output to a log you actually read:
 
 ## Auth Profile Sync
 
-OpenClaw stores OAuth tokens in multiple `auth-profiles.json` files, one per agent. If you rotate a token manually (common with OpenAI Codex OAuth — see [Multi-Model Orchestration](../configuration/multi-model-orchestration.md)), all copies must update together or the fallback chain picks a stale one.
+OpenClaw stores OAuth tokens in multiple `auth-profiles.json` files, one per agent. If you rotate a token manually (common with OpenAI Codex OAuth — see [Multi-Model Orchestration](../ai-stack/multi-model-orchestration.md)), all copies must update together or the fallback chain picks a stale one.
 
 The full set on a standard install:
 
@@ -141,7 +141,7 @@ Known offenders worth scanning for by hand:
 | Old key | New key / Status |
 |---------|------------------|
 | `ackReaction`, `typingIndicator` (Telegram) | removed 2026.4.14, migrate via `jq del(...)` |
-| `anthropic:claude-cli` | deprecated, use `setup-token` (or remove entirely, see [ACP for Claude Code](../configuration/acp-claude-code.md)) |
+| `anthropic:claude-cli` | deprecated, use `setup-token` (or remove entirely, see [ACP for Claude Code](../ai-stack/acp-claude-code.md)) |
 | `fileFormat`/`fileQuality` in diffs plugin | never valid, plugin docs were wrong |
 | Scalar streaming config | removed 2026.4.14 |
 

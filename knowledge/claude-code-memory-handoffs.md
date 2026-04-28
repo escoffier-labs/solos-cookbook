@@ -296,7 +296,7 @@ An inbox that grows unboundedly means the auto-promotion rules are too strict fo
 
 2. **Bisync conflicts on the handoff directory are usually safe to resolve either way.** Handoff files are write-once and named with timestamps; duplicate-looking files are actually distinct handoffs. Don't auto-resolve by deleting "duplicates" — they're not.
 
-3. **Auto-promotion writes to the filesystem on the canonical host immediately.** If that host also runs OpenClaw, a card landing mid-session invalidates the prefix cache for the remaining turns (see [Prompt Caching](prompt-caching.md)). Ingest during quiet hours if you care about cache continuity.
+3. **Auto-promotion writes to the filesystem on the canonical host immediately.** If that host also runs OpenClaw, a card landing mid-session invalidates the prefix cache for the remaining turns (see [Prompt Caching](../ai-stack/prompt-caching.md)). Ingest during quiet hours if you care about cache continuity.
 
 4. **The `processed/` folder grows forever if you don't prune.** A cron that deletes processed handoffs older than 30 days is fine — by then the durable content is either in a card or you decided it didn't belong there.
 
