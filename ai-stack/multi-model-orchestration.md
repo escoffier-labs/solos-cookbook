@@ -2,7 +2,7 @@
 
 How to run multiple AI models in one OpenClaw setup, assign each to the right task tier, and stop burning expensive tokens on work that doesn't need them.
 
-**Tested on:** OpenAI Pro ($200/mo Codex subscription), Anthropic Max via ACP, browser-LLM stack via Playwright + noVNC, Ollama local GPU, Ollama Pro cloud models
+**Tested on:** OpenAI Pro ($200/mo Codex subscription), OpenClaw built-in image generation with gpt-image-2, Codex CLI harness subagents, Claude Code via ACP, browser-LLM stack via Playwright + noVNC, Ollama local GPU, Ollama Pro cloud models
 **Last updated:** 2026-04-28
 
 ---
@@ -11,11 +11,11 @@ How to run multiple AI models in one OpenClaw setup, assign each to the right ta
 
 Running one model for everything is like hiring a senior architect to answer phones. Your orchestrator needs to be strong enough to handle ambiguity and adversarial input. Everything else can run cheaper or free.
 
-This isn't about saving money. It's about using the right tool for each job. A 7B local model handles embeddings better than a frontier model wasting API calls on it. Browser-driven LLMs (Perplexity, Gemini web UI, Claude web UI) handle research and imagegen without burning API quota. Your orchestrator handles judgment and security decisions in the main loop.
+This isn't about saving money. It's about using the right tool for each job. A local embedding model handles memory and code retrieval better than a frontier chat model wasting quota on vector work. Browser-driven LLMs handle research and UI-only workflows, while OpenClaw's built-in image generation call handles `gpt-image-2` image jobs without browser automation. Your orchestrator handles judgment and security decisions in the main loop.
 
 ## What Changed in April 2026
 
-If you're coming from an older multi-model guide: **Anthropic blocked subscription OAuth (Claude Max) from third-party harnesses** in April 2026. The `claude-cli` backend no longer works as a main-agent backend. Opus 4.6 is still available via the ACPX plugin, but only as an escalation target, not the primary orchestrator.
+If you're coming from an older multi-model guide: **Anthropic blocked subscription OAuth (Claude Max) from third-party harnesses** in April 2026. The `claude-cli` backend no longer works as a main-agent backend. Opus 4.7 is still available through Claude Code over ACP, but only as an escalation target, not the primary orchestrator.
 
 See [claude-cli → ACP migration](claude-cli-to-acp-migration.md) for the full migration runbook.
 
@@ -34,6 +34,19 @@ Zero API costs. Zero latency. Zero data leaving your machine.
 - Code search embeddings
 - Git commit message generation
 - Cron job triage (ESCALATE/SKIP decisions)
+
+**Embedding system:**
+
+The current retrieval system standardizes on `qwen3-embedding:8b` through Ollama's local OpenAI-compatible endpoint.
+
+OpenClaw memory search embeds the incoming query, then compares it against stored memory vectors. Code search uses the same embedding model, but it stores two kinds of vectors: direct code-chunk vectors and natural-language summary vectors. The summary vectors carry more of the search weight because humans usually search by intent, not by exact symbol names.
+
+| Model | Role | Why it is used |
+|---|---|---|
+| `qwen3-embedding:8b` | Embeddings for memory search, code search, and semantic similarity | Local, zero API cost, 4096-dimensional vectors, strong enough retrieval quality, and one consistent vector space across memory and code |
+| `qwen3-coder-next:cloud` | Summary helper before embedding code chunks | Cheap structured summaries with good identifier retention. It improves semantic search, but it is not the embedding model |
+
+Do not swap embedding models casually. If the embedding model changes, re-index the stored vectors instead of only changing config.
 
 **Setup:**
 
@@ -68,7 +81,7 @@ ollama pull qwen3:7b              # triage/screening
 
 ### Tier 1b: Ollama Cloud Pro ($20/mo)
 
-Ollama Cloud is the middle lane between local models and frontier subscriptions. It is useful for bulk summarization, strict-format offload chores, commit/release-note drafting, and model bakeoffs where you want cheap cloud inference without moving the main orchestrator.
+Ollama Cloud is the middle lane between local models and frontier subscriptions. It is useful for bulk summarization, strict-format offload chores, commit and release-note prep, and model bakeoffs where you want cheap cloud inference without moving the main orchestrator.
 
 **Current routing from our April 2026 bakeoffs:**
 - `qwen3-coder-next:cloud`: best default for code-search summaries and strict structured offload.
@@ -100,25 +113,18 @@ ollama pull deepseek-v4-flash:cloud
 ollama pull deepseek-v4-pro:cloud
 ```
 
-Local tools can call cloud models through the localhost Ollama daemon after `ollama signin`. Direct hosted API calls to `https://ollama.com/api` use an API key:
-
-```bash
-export OLLAMA_API_KEY="..."
-curl https://ollama.com/api/chat \
-  -H "Authorization: Bearer $OLLAMA_API_KEY" \
-  -d '{"model":"qwen3-coder-next:cloud","messages":[{"role":"user","content":"Summarize this function"}]}'
-```
+Local tools can call cloud models through the localhost Ollama daemon after `ollama signin`. For direct hosted calls to `https://ollama.com/api`, use the provider auth flow documented by Ollama. For most OpenClaw automation, the simpler path is to sign in once with `ollama signin` and let local tools call the cloud models through the localhost Ollama daemon.
 
 Ollama Pro is currently $20/month, includes 50x more cloud usage than Free, and allows 3 concurrent cloud models. Ollama documents usage as infrastructure utilization rather than a fixed token cap, with session limits resetting every 5 hours and weekly limits resetting every 7 days.
 
-### Tier 2: Orchestrator — GPT 5.4 via Codex Pro ($200/mo)
+### Tier 2: Orchestrator: GPT 5.5 via Codex Pro ($200/mo)
 
 Your main agent. This is what receives every message, makes every decision, and spawns sub-agents for the heavy lifting.
 
-**Why GPT 5.4 on Codex Pro:**
+**Why GPT 5.5 on Codex Pro:**
 - Subscription cost is predictable ($200/mo flat)
 - Codex OAuth works with OpenClaw's primary-model slot
-- 5.4 medium thinking is strong enough for orchestration and delegation
+- GPT 5.5 is strong enough for orchestration, tool use, and delegation
 - `:cron` and `:high` aliases let you tune thinking depth per task
 
 **Handles:**
@@ -136,21 +142,21 @@ Your main agent. This is what receives every message, makes every decision, and 
   "agents": {
     "defaults": {
       "model": {
-        "primary": "openai-codex/gpt-5.4",
+        "primary": "openai-codex/gpt-5.5",
         "fallbacks": [
           "openai-codex/gpt-5.3-codex"
         ]
       },
       "models": {
-        "openai-codex/gpt-5.4": {
+        "openai-codex/gpt-5.5": {
           "alias": "gpt54",
           "params": { "thinking": "medium" }
         },
-        "openai-codex/gpt-5.4:cron": {
+        "openai-codex/gpt-5.5:cron": {
           "alias": "gpt54cron",
           "params": { "thinking": "low" }
         },
-        "openai-codex/gpt-5.4:high": {
+        "openai-codex/gpt-5.5:high": {
           "alias": "gpt54hi",
           "params": { "thinking": "high" }
         }
@@ -162,16 +168,32 @@ Your main agent. This is what receives every message, makes every decision, and 
 
 The `:cron` and `:high` variants are the same model with different thinking budgets. Use `:cron` for scheduled background tasks where latency matters more than depth. Use `:high` for design work and architectural decisions.
 
-**Fallback chain ordering matters.** Keep the fallback chain on providers you actually use. We keep `gpt-5.3-codex` as the sole fallback — both models share the Codex Pro subscription, so a fallback hop doesn't change your billing surface. Adding providers you don't actively run to the chain is asking for silent quality drops when the primary hiccups.
+**Fallback chain ordering matters.** Keep the fallback chain on providers you actually use. We keep `gpt-5.3-codex` as the sole fallback. Both models share the Codex Pro subscription, so a fallback hop doesn't change your billing surface. Adding providers you don't actively run to the chain is asking for silent quality drops when the primary hiccups.
 
-### Tier 3: Browser-LLM Stack — Playwright + noVNC
+### Focused harness sub-agents
 
-Instead of burning API quota (or fighting OAuth policy changes) for research and imagegen, we drive the web UIs of the frontier LLMs through Playwright. A persistent Chromium runs under Xvfb with noVNC attached so you can see what the headless browser is doing.
+For serious work, do not treat every sub-agent as the same OpenClaw session with a different model label. The harness matters.
+
+Use a focused `codex-coder` lane for builds and refactors. That lane should run GPT 5.5 through the Codex CLI harness rather than the default OpenClaw Pi runtime. Codex CLI gives you the right repo workflow: file edits, terminal feedback, test loops, and persistent coding context.
+
+Use a focused `opus-review` lane for specialized review. That lane should run Opus 4.7 through Claude Code over ACP. Claude Code keeps the review lane inside Anthropic's first-party harness while OpenClaw treats it as an escalation target.
+
+| Focused agent | Harness | Use it for |
+|---|---|---|
+| `main` | OpenClaw default runtime | Conversation handling, routing, tool orchestration, safety decisions |
+| `codex-coder` | Codex CLI with GPT 5.5 | Multi-file builds, refactors, test-driven fixes, repository work |
+| `opus-review` | Claude Code over ACP with Opus 4.7 | Architecture review, security review, design critique, high-context analysis |
+
+The model is only part of the system. The harness decides how file edits, approvals, terminal commands, session persistence, and repository context behave.
+
+### Tier 3: Browser-LLM Stack: Playwright + noVNC
+
+Instead of fighting OAuth policy changes for research and UI-only workflows, we drive the web UIs of frontier models through Playwright. A persistent Chromium runs under Xvfb with noVNC attached so you can see what the headless browser is doing.
 
 **Handles:**
 - Deep research via Perplexity Pro
 - Long-context analysis via the Gemini web UI (search grounding, file uploads)
-- Imagegen via whichever web model is currently strongest
+- Web-only visual workflows that the built-in image call does not cover
 - "Second-opinion" passes against Claude.ai web or Gemini web from the orchestrator
 
 **Why browser-driven instead of a CLI/API tier:**
@@ -188,26 +210,46 @@ Instead of burning API quota (or fighting OAuth policy changes) for research and
 
 This swaps a CLI backend for a tool surface. Your orchestrator calls the browser skill like any other tool, and the response comes back as text the agent can reason over.
 
-### Tier 4: Escalation — Claude Opus 4.6 via ACP
+### Tier 3a: Built-in OpenClaw Image Generation: gpt-image-2
 
-Opus is no longer the main agent. It's now an escalation target for a specific set of tasks where its voice and reasoning quality still win.
+Current OpenClaw has a first-class image generation call. Use it before browser automation for normal image jobs.
+
+The OpenAI image provider defaults to `gpt-image-2` when configured. It supports generation, edits with up to five reference images, PNG/JPEG/WebP output, and common square, portrait, landscape, and 4K sizes.
+
+Example call shape:
+
+```ts
+image_generate({
+  model: "openai/gpt-image-2",
+  prompt: "Clean technical diagram of a multi-model agent stack",
+  size: "2048x1152",
+  outputFormat: "png"
+})
+```
+
+Use the browser path when the job needs a web-only product feature, a logged-in UI workflow, or manual visual review. Otherwise, `image_generate` is cleaner, repeatable, and easier to wire into automation.
+
+### Tier 4: Escalation: Opus 4.7 via Claude Code over ACP
+
+Opus is no longer the main agent. It is now an escalation target for specific review and reasoning tasks where the quality difference matters.
 
 **Handles:**
-- Resume, intel, and design work
-- Long-form reasoning and academic work (USF coursework, humanizer passes)
-- PR review and architecture polish
-- "Humanize" passes on machine-generated content
+- Architecture review
+- Security review
+- Design critique
+- Long-form reasoning and research-heavy analysis
+- PR review when a second opinion is worth the quota
 
 **How to invoke:**
 
 Two paths:
 
-1. **Dedicated Discord thread:** Open an ACP thread in Discord. Opus runs there, fully isolated from the main GPT 5.4 session.
-2. **Orchestrator escalation:** Main agent calls `sessions_spawn(agentId: "acp-claude", task: "...")` when the task matches the escalation criteria.
+1. **Dedicated ACP session:** Open a Claude Code ACP session. Opus 4.7 runs there, isolated from the main GPT 5.5 session.
+2. **Orchestrator escalation:** Main agent calls `sessions_spawn(runtime: "acp", agentId: "claude", task: "...")` when the task matches the escalation criteria.
 
-The ACPX plugin ships as a user-local binary at `~/.openclaw/vendor/acpx/node_modules/.bin/acpx`. See the [ACP migration guide](claude-cli-to-acp-migration.md) for setup.
+The ACPX plugin ships as a user-local binary. See the [ACP migration guide](claude-cli-to-acp-migration.md) for setup.
 
-**When NOT to escalate:** Code generation (Codex is cleaner), file scanning (waste of context), mechanical ops work. Escalation is for *judgment and voice*, not labor.
+**When NOT to escalate:** Code generation, file scanning, bulk edits, and mechanical ops work. Escalation is for judgment, not labor.
 
 ## Example: How a Request Flows Through the Chain
 
@@ -216,33 +258,29 @@ The ACPX plugin ships as a user-local binary at `~/.openclaw/vendor/acpx/node_mo
    → Ollama (7B) triages: spam? SKIP. Important? ESCALATE.
 
 2. Escalated email
-   → GPT 5.4 reads it, decides response strategy, drafts reply
+   → GPT 5.5 reads it and decides the response strategy
 
 3. "Build me a dashboard"
-   → GPT 5.4 writes the PRD and component spec
-   → Spawns coder sub-agent (also GPT 5.4) to build it
-   → Orchestrator reviews the output, does a polish pass
+   → GPT 5.5 creates the PRD and component spec
+   → Spawns `codex-coder` through the Codex CLI harness to build it
+   → Orchestrator reviews the output and runs the verification gate
 
-4. "Deep research this topic before I write about it"
-   → GPT 5.4 calls the browser research skill (Perplexity Pro via Playwright)
+4. "Deep research this topic before I make a decision"
+   → GPT 5.5 calls the browser research skill (Perplexity Pro via Playwright)
    → Skill returns structured findings, orchestrator synthesizes
 
 5. "Review this PR for architectural soundness"
-   → GPT 5.4 recognizes escalation criteria, spawns ACP Opus thread
-   → Opus reviews, returns structured findings
+   → GPT 5.5 recognizes escalation criteria, spawns `opus-review` through Claude Code over ACP
+   → Opus 4.7 reviews and returns structured findings
 
-6. "Generate a banner image for this blog post"
-   → GPT 5.4 calls the browser imagegen skill (Playwright against a persistent web-UI profile)
-   → Returns the image, orchestrator delivers
-
-7. Git commit
+6. Git commit
    → Ollama generates commit message locally. Zero API cost.
 
-8. Memory search
+7. Memory search
    → Ollama embeds query with qwen3-embedding:8b, searches local vector store. Free.
 ```
 
-The expensive escalation model only touches step 5. Everything else stays on the subscription tiers, runs in the browser against existing web subscriptions, or runs free.
+The expensive escalation model only touches step 5. Everything else stays on the subscription tiers, uses the built-in image call, runs in the browser against existing web subscriptions, or runs free.
 
 ## OpenClaw Agent Configuration
 
@@ -252,21 +290,25 @@ Define agents in the `agents.list` section of your `openclaw.json`:
 {
   "agents": {
     "list": [
-      { "id": "main",  "model": "openai-codex/gpt-5.4" },
-      { "id": "coder", "model": "gpt54" }
+      { "id": "main", "model": "openai-codex/gpt-5.5" },
+      { "id": "coder", "model": "gpt55" }
     ]
   }
 }
 ```
 
-Aliases resolve against `agents.defaults.models`. So `gpt54` above resolves to `openai-codex/gpt-5.4`.
+Aliases resolve against `agents.defaults.models`. So `gpt55` above resolves to the configured GPT 5.5 Codex model.
 
-Research is not a separate agent in this setup — it's a skill the main/coder invoke via the browser stack (see Tier 3).
+Research is not a separate agent in this setup. It is a skill the main/coder invoke via the browser stack (see Tier 3).
 
-Spawn sub-agents by ID:
+Spawn focused sub-agents by harness, not just by model:
 
 ```
-sessions_spawn(agentId: "coder", task: "Build CRUD routes for this schema: ...")
+# Serious repo work through Codex CLI
+sessions_spawn(runtime: "acp", agentId: "codex", task: "Build CRUD routes for this schema: ...")
+
+# Review lane through Claude Code over ACP
+sessions_spawn(runtime: "acp", agentId: "claude", task: "Review this architecture for failure modes: ...")
 ```
 
 ## Token Optimization Patterns
@@ -285,7 +327,7 @@ Write tight, specific prompts for sub-agents. "Build CRUD routes for this schema
 
 ### Thinking-Budget Tuning
 
-The `gpt-5.4:cron` alias with `thinking: low` saves real tokens on scheduled work. A 5-minute email triage doesn't need medium thinking. Reserve medium/high for interactive work.
+The `gpt-5.5:cron` alias with `thinking: low` saves real tokens on scheduled work. A 5-minute email triage doesn't need medium thinking. Reserve medium/high for interactive work.
 
 ## Approximate Cost Breakdown
 
@@ -293,11 +335,12 @@ The `gpt-5.4:cron` alias with `thinking: low` saves real tokens on scheduled wor
 |------|-------------|--------------|-----------|
 | Ollama (local) | $0 | Embeddings, commits, triage | ~40% |
 | Ollama Pro cloud | $20 | Bulk summaries, strict offload, cheap model bakeoffs | bursty |
-| Browser-LLM stack | reuse existing web subs | Research, imagegen, second opinions | ~10% |
-| Codex Pro | $200 | Orchestration + all code work | ~45% |
-| ACP Opus (on Max) | bundled | Escalation only | ~5% |
+| Built-in image generation | provider-backed | gpt-image-2 generation and edits | usage-based |
+| Browser-LLM stack | reuse existing web subs | Research, web-only workflows, second opinions | ~10% |
+| Codex Pro | $200 | Orchestration + Codex CLI build lane | ~45% |
+| Opus 4.7 via Claude Code ACP | bundled | Escalation only | ~5% |
 
-The heavy lifter is Codex Pro. Opus via ACP is a quality escalation, not a workhorse, so it stays within the Max subscription's usage envelope. The browser-LLM stack costs whatever your existing Perplexity / Gemini / ChatGPT / Claude.ai subscriptions already cost — there's no additional per-request billing layered on top.
+The heavy lifter is Codex Pro. Opus 4.7 through Claude Code over ACP is a quality escalation, not a workhorse, so it stays within the Max subscription's usage envelope. Built-in image generation follows the configured provider billing. The browser-LLM stack costs whatever your existing Perplexity, Gemini, ChatGPT, or Claude.ai subscriptions already cost. There is no additional per-request billing layered on top.
 
 ## Verification
 
@@ -321,18 +364,18 @@ jq '.plugins.allow | contains(["acpx"])' ~/.openclaw/openclaw.json
 
 1. **Pre-flight check your agents.** Before spawning, verify the agent ID maps to the model you expect. We got burned spawning Opus for code gen because the coder agent was temporarily misconfigured. `jq '.agents.list' ~/.openclaw/openclaw.json` is cheap insurance.
 
-2. **Don't put budget models on untrusted input.** Your main orchestrator will encounter prompt injections in email, web scrapes, and group chats. That needs GPT 5.4 at minimum, not a local 7B.
+2. **Don't put budget models on untrusted input.** Your main orchestrator will encounter prompt injections in email, web scrapes, and group chats. That needs GPT 5.5 at minimum, not a local 7B.
 
 3. **Ollama binds to 127.0.0.1 by default.** This is correct. Don't change it to 0.0.0.0 unless you have firewall rules restricting access. See the [Linux hardening guide](../security/linux-hardening.md).
 
 4. **Subscription rate limits are real.** Codex Pro has weekly and hourly limits. Ollama Pro has session and weekly cloud limits, plus concurrency limits. The model chain helps: if 40% of your work runs on local Ollama, cloud bulk work goes through Ollama Pro, and 10% goes through the browser stack against your existing web subscriptions, you stay well within Codex's envelope.
 
-5. **OpenAI OAuth rotating refresh tokens.** The Codex CLI desktop app and OpenClaw share the same refresh token. When one refreshes, the other's stored copy is invalidated. Symptom: `401 refresh_token_reused`. Fix: copy fresh token from `~/.codex/auth.json` to all OpenClaw auth-profiles.json files with `jq`, then restart the gateway.
+5. **OpenAI OAuth rotating refresh tokens.** The Codex CLI desktop app and OpenClaw share the same refresh token. When one refreshes, the other's stored copy is invalidated. Symptom: `401 refresh_token_reused`. Fix: refresh the Codex/OpenClaw auth flow, then restart the gateway.
 
-6. **`openclaw models auth login` doesn't see openai-codex.** It only surfaces plugin providers. Codex OAuth is baked into the onboard wizard. Use `openclaw onboard --auth-choice openai-codex` or the manual token-copy path.
+6. **`openclaw models auth login` doesn't see openai-codex.** It only surfaces plugin providers. Codex OAuth is baked into the onboard wizard. Use `openclaw onboard --auth-choice openai-codex` or the documented auth refresh path.
 
-7. **ACPX binary is user-local.** It lives at `~/.openclaw/vendor/acpx/node_modules/.bin/acpx`, not in a global location. After OpenClaw upgrades, verify the `plugins.entries.acpx` block is still present — upgrades have been observed to reset plugin config.
+7. **ACPX binary is user-local.** It is installed under OpenClaw user-local vendor storage, not in a global location. After OpenClaw upgrades, verify the `plugins.entries.acpx` block is still present. Upgrades have been observed to reset plugin config.
 
-8. **Xvfb starts black.** The headless X display Playwright runs against is black until Chromium actually loads a page. If you VNC in and see a black screen, that's normal — trigger a skill run and the browser will appear. Don't restart Xvfb in a panic.
+8. **Xvfb starts black.** The headless X display Playwright runs against is black until Chromium actually loads a page. If you VNC in and see a black screen, that's normal. Trigger a skill run and the browser will appear. Don't restart Xvfb in a panic.
 
-9. **Browser skills need per-provider flock locks.** Two concurrent skill invocations on the same Chromium profile will clobber each other. A `flock` on `/tmp/browser-<provider>.lock` around the skill entry point keeps concurrent calls serialized per provider while different providers run in parallel. This is in the skill itself, not OpenClaw config — get it right once, forget about it.
+9. **Browser skills need per-provider flock locks.** Two concurrent skill invocations on the same Chromium profile will clobber each other. A `flock` on `/tmp/browser-<provider>.lock` around the skill entry point keeps concurrent calls serialized per provider while different providers run in parallel. This is in the skill itself, not OpenClaw config. Get it right once, forget about it.
