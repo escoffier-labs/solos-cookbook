@@ -1,6 +1,6 @@
-# Contributing to solostack
+# Contributing
 
-solostack is one engineer's opinionated stack. Contributions are welcome but the bar is specific: I have to be able to tell you ran the thing, broke the thing, and fixed the thing.
+Solomon's Guide to Cookin' with Gas is one engineer's opinionated stack. Contributions are welcome but the bar is specific: I have to be able to tell you ran the thing, broke the thing, and fixed the thing.
 
 ## What I will merge
 
@@ -50,7 +50,7 @@ What broke. What surprised you. What docs got wrong.
 Links into `/templates/<area>/` for drop-in artifacts.
 
 ## Related
-Cross-links to other solostack guides + external repos.
+Cross-links to other guides in this cookbook + external repos.
 ```
 
 A reference implementation lives at [`automation/cron-patterns.md`](automation/cron-patterns.md). Match that depth.

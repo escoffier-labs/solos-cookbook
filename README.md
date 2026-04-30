@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="docs/assets/solostack-banner.jpg" alt="solostack banner">
+  <img src="docs/assets/solos-cookbook-banner.jpg" alt="Solomon's Guide to Cookin' with Gas banner">
 </p>
 
-<h1 align="center">🦞 solostack</h1>
+<h1 align="center">🦞 Solomon's Guide to Cookin' with Gas</h1>
 
 <p align="center">
   <strong>How one engineer runs a 24/7 multi-agent AI stack on bare metal.</strong>
 </p>
 
 <p align="center">
-  <em>Opinionated. Dogfooded. Broken and fixed in production.</em>
+  <em>Opinionated. Dogfooded. Broken-and-fixed in production. Tested in service.</em>
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 ## What this is
 
-solostack is a manifesto and runbook for one specific stack: a single-engineer setup that runs an always-on multi-agent AI orchestrator on bare-metal Linux, with a homelab behind it for self-hosting, security tooling, content publishing, and knowledge management.
+This is a working cookbook for one specific stack: a single-engineer setup that runs an always-on multi-agent AI orchestrator on bare-metal Linux, with a homelab behind it for self-hosting, security tooling, content publishing, and knowledge management.
 
 It is **not** a framework, not a product, not a tutorial series. It is a record of what is actually deployed, why each piece is shaped the way it is, and what broke along the way. Lift any single piece. Adopt the whole thing. Or use it as a counterexample. All three are valid.
 
@@ -76,7 +76,7 @@ Full migration runbook in [claude-cli → ACP Migration](ai-stack/claude-cli-to-
 
 ## Quick start
 
-There is nothing to install. solostack is a collection of standalone guides. Pick the one that solves a problem you have right now:
+There is nothing to install. This is a collection of standalone guides. Pick the one that solves a problem you have right now:
 
 - **[automation/cron-patterns.md](automation/cron-patterns.md)**: decide which layer (systemd, agent cron, n8n) each scheduled task in your stack actually belongs in
 - **[ai-stack/multi-model-orchestration.md](ai-stack/multi-model-orchestration.md)**: wire one orchestrator across many models with the right model per task

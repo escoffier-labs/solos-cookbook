@@ -142,7 +142,7 @@ The sub-agent gets its own thread, its own session, and its own context. You can
   #alerts           → Urgent-only notifications
 
 📁 BEST PRACTICES
-  #solostack       → Meta: improving the setup itself
+  #cookbook        → Meta: improving the setup itself
 
 📁 ESCALATION
   Thread: acp-opus     → Dedicated ACP thread for Claude Opus escalation
