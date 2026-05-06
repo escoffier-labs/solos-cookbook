@@ -13,7 +13,7 @@ Solomon's Guide to Cookin' with Gas is one engineer's opinionated stack. Contrib
 - Theoretical guides without verification commands.
 - Guides that don't include a Gotchas section.
 - Anything that adds dependencies beyond plain markdown + the templates already in `templates/`.
-- AI-generated boilerplate. If you used an LLM to draft a guide, run it yourself before submitting and document what you actually saw.
+- Boilerplate that doesn't reflect real verification. If you submit a guide, run it yourself and document what you actually saw.
 
 ## Per-guide format
 
