@@ -196,5 +196,5 @@ A healthy store has: index under target size, no card older than your decay budg
 
 - [`knowledge/memory-token-optimization.md`](memory-token-optimization.md) — three-tier physical layout (index, cards, daily logs), semantic search with local embeddings, prompt-caching hygiene
 - [`knowledge/claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) — cross-machine handoff format, ingester, auto-promotion rules, the canonical-writer pattern
-- [`knowledge/obsidian-sync.md`](README.md) (planned) — bidirectional cloud sync that doesn't lose handoffs to conflict roulette
-- [`knowledge/session-jsonl.md`](README.md) (planned) — using session transcripts as a memory source for "what was said when" questions
+- [`obsidian-sync.md`](obsidian-sync.md) — bidirectional cloud sync that does not turn your vault into a conflict graveyard
+- [`session-jsonl.md`](session-jsonl.md) — using session transcripts as a memory source for "what was said when" questions
