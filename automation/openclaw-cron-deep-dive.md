@@ -2,7 +2,7 @@
 
 How to schedule automated tasks in OpenClaw, assign the right model to each job, batch checks into heartbeats, and avoid the pitfalls that waste tokens and break silently.
 
-**Tested on:** OpenClaw 2026.4.x with 36+ active cron jobs, GPT 5.4 (with `:cron` thinking-low alias), browser-LLM stack for research-heavy pipelines, ACP Opus for deeper review
+**Tested on:** OpenClaw 2026.4.x with 36+ active cron jobs, GPT 5.5 (with `:cron` thinking-low alias), browser-LLM stack for research-heavy pipelines, ACP Opus for deeper review
 **Last updated:** 2026-04-19
 
 ---
@@ -93,7 +93,7 @@ Precise scheduled tasks that run in isolated sessions with their own model assig
   "payload": {
     "kind": "agentTurn",
     "message": "Generate a morning briefing: check email for urgent items, review calendar for today, check weather. Keep it concise.",
-    "model": "openai-codex/gpt-5.4:cron"
+    "model": "openai-codex/gpt-5.5:cron"
   },
   "delivery": {
     "mode": "announce",
@@ -106,7 +106,7 @@ Precise scheduled tasks that run in isolated sessions with their own model assig
 
 **Two critical fields here:**
 
-- `model: "openai-codex/gpt-5.4:cron"` routes through the `thinking: low` alias. Same model as main, less thinking budget — perfect for mechanical briefing work.
+- `model: "openai-codex/gpt-5.5:cron"` routes through the `thinking: low` alias. Same model as main, less thinking budget — perfect for mechanical briefing work.
 - `delivery.to: "telegram:<user_id>"` is explicit. **Always set this.** Bare `"mode": "announce"` with multiple channels enabled guesses wrong and posts to whichever channel the bot *isn't* in. (Incident: 2026-03-02. We patched all 20 cron configs with explicit targets the same day.)
 
 ## Model Assignment for Cron Jobs
@@ -115,24 +115,24 @@ Not every cron job needs the same thinking budget. Match the model and alias to 
 
 | Task | Recommended Model | Why |
 |------|------------------|-----|
-| Email triage | `gpt-5.4:cron` (thinking low) | Mechanical scanning, latency-sensitive |
-| Morning briefing | `gpt-5.4:cron` | Summarization, no deep reasoning |
-| Backup reports | `gpt-5.4:cron` | Status checking, minimal reasoning |
-| Job search scanning | `gpt-5.4:cron` | Filtering, classification |
-| Code reviews | `gpt-5.4` (thinking medium) | Structured analysis |
-| Memory sweep | `gpt-5.4` | Read + distill, needs some judgment |
-| Research-heavy pipelines | `gpt-5.4:cron` + browser research skill | Skill pulls findings from Perplexity Pro / Gemini web via Playwright |
+| Email triage | `gpt-5.5:cron` (thinking low) | Mechanical scanning, latency-sensitive |
+| Morning briefing | `gpt-5.5:cron` | Summarization, no deep reasoning |
+| Backup reports | `gpt-5.5:cron` | Status checking, minimal reasoning |
+| Job search scanning | `gpt-5.5:cron` | Filtering, classification |
+| Code reviews | `gpt-5.5` (thinking medium) | Structured analysis |
+| Memory sweep | `gpt-5.5` | Read + distill, needs some judgment |
+| Research-heavy pipelines | `gpt-5.5:cron` + browser research skill | Skill pulls findings from Perplexity Pro / Gemini web via Playwright |
 | Security deep-dive review | `acpx/claude-opus-4-6` via sub-agent spawn | Stronger failure-mode analysis |
 | Architecture critique | Spawn `acp-claude`, don't cron directly | Opus via ACP is a spawn target, not a primary |
 
 ### The `:cron` Alias
 
-`openai-codex/gpt-5.4:cron` is the same model as `gpt-5.4` with `thinking: low`. Defined in `agents.defaults.models`:
+`openai-codex/gpt-5.5:cron` is the same model as `gpt-5.5` with `thinking: low`. Defined in `agents.defaults.models`:
 
 ```json
 {
-  "openai-codex/gpt-5.4:cron": {
-    "alias": "gpt54cron",
+  "openai-codex/gpt-5.5:cron": {
+    "alias": "gpt55cron",
     "params": { "thinking": "low" }
   }
 }
@@ -142,7 +142,7 @@ Use this alias for 80% of your cron jobs. The medium thinking budget is wasteful
 
 ### Model Assignment Gotchas
 
-1. **Don't put Opus in a cron directly.** Opus runs via ACP as an escalation target, not a primary cron model. If a cron needs deeper judgment, have it run the main pass on GPT 5.4, then let the *result* spawn an `acp-claude` review pass. Keeps the Opus quota targeted.
+1. **Don't put Opus in a cron directly.** Opus runs via ACP as an escalation target, not a primary cron model. If a cron needs deeper judgment, have it run the main pass on GPT 5.5, then let the *result* spawn an `acp-claude` review pass. Keeps the Opus quota targeted.
 
 2. **Small local models fail silently on reasoning.** We tested qwen3:8b for cron triage and its thinking mode burned all 512 output tokens on internal reasoning, producing empty responses. Test local models with your actual cron prompts before scheduling.
 
@@ -307,7 +307,7 @@ Cron jobs that need to exec commands (run scripts, touch files, call local APIs)
   "payload": {
     "kind": "agentTurn",
     "message": "Run ~/.openclaw/workspace/scripts/backup-restic.sh and report status.",
-    "model": "openai-codex/gpt-5.4:cron"
+    "model": "openai-codex/gpt-5.5:cron"
   },
   "elevated": true,
   "delivery": { "mode": "announce", "to": "telegram:YOUR_USER_ID" },
@@ -348,6 +348,6 @@ cat ~/.openclaw/workspace/HEARTBEAT.md
 
 6. **Bare `announce` without `to` is a routing coin-flip.** With both Telegram and Discord enabled, the gateway guesses — and we've confirmed the guess is wrong often enough to treat it as a bug. Always set `"to": "<channel>:<target_id>"`.
 
-7. **Haiku is no longer in the cron roster.** Older versions of this guide recommended Anthropic Haiku for cheap cron work. That path went away with the [claude-cli removal](../ai-stack/claude-cli-to-acp-migration.md). `gpt-5.4:cron` (thinking low) is the current equivalent and stays on the same subscription envelope as your main agent.
+7. **Haiku is no longer in the cron roster.** Older versions of this guide recommended Anthropic Haiku for cheap cron work. That path went away with the [claude-cli removal](../ai-stack/claude-cli-to-acp-migration.md). `gpt-5.5:cron` (thinking low) is the current equivalent and stays on the same subscription envelope as your main agent.
 
 8. **Sub-agents spawned from cron can find destructive API endpoints.** Incident (2026-03-02): Haiku cron found and called `DELETE /api/index` on a local API three times unprompted, wiping 71K indexed chunks. It read the OpenAPI spec, saw a destructive route, and used it. Lock down your local APIs before giving any cron subagent `exec` or HTTP access. See [agent security hardening](../security/agent-security-hardening.md).

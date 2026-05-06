@@ -201,7 +201,7 @@ Since the [April 2026 claude-cli removal](../ai-stack/claude-cli-to-acp-migratio
 }
 ```
 
-Create a Discord thread named `acp-opus`. Any message posted there spins up a fresh ACP session with Claude Code; subsequent messages continue it. The session is fully isolated from your main GPT 5.4 sessions.
+Create a Discord thread named `acp-opus`. Any message posted there spins up a fresh ACP session with Claude Code; subsequent messages continue it. The session is fully isolated from your main GPT 5.5 sessions.
 
 **Why a thread and not a channel:** Threads auto-archive after inactivity, which matches ACP's short-lived-session model. Channels stick around and invite people to expect persistence that ACP doesn't offer.
 
@@ -234,7 +234,7 @@ Set up a periodic cron job that reviews recent sessions across all channels and 
   "payload": {
     "kind": "agentTurn",
     "message": "Review recent sessions across all channels. Extract any important decisions, facts, or context worth persisting. Create or update knowledge cards as needed.",
-    "model": "openai-codex/gpt-5.4"
+    "model": "openai-codex/gpt-5.5"
   },
   "delivery": { "mode": "none" },
   "sessionTarget": "isolated"
@@ -279,7 +279,7 @@ The main agent model is set at the gateway level, not per channel. Whether messa
 - **Cron jobs** can specify a different model
 - **ACP thread routing** sends messages to a different agent entirely (see above)
 
-**Stickiness warning.** One OpenAI 503 on `gpt-5.4` once pinned a cron channel to `gpt-5.3-codex` via the internal `auto` override system for four days. `/reset` does not reliably clear `auto` overrides. Use `/model` to re-pin with `user` source when this happens. The incident is memorable because the cheaper fallback silently handled four days of work at lower quality before anyone noticed.
+**Stickiness warning.** One OpenAI 503 on `gpt-5.5` once pinned a cron channel to `gpt-5.3-codex` via the internal `auto` override system for four days. `/reset` does not reliably clear `auto` overrides. Use `/model` to re-pin with `user` source when this happens. The incident is memorable because the cheaper fallback silently handled four days of work at lower quality before anyone noticed.
 
 ## Verification
 

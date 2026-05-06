@@ -223,7 +223,7 @@ This is the judgment pass. Review recent sessions, pull durable decisions and co
   "payload": {
     "kind": "agentTurn",
     "message": "Review recent sessions. Update daily logs. Create or update knowledge cards for durable decisions, corrections, and lessons. Skip trivial chatter.",
-    "model": "openai-codex/gpt-5.4"
+    "model": "openai-codex/gpt-5.5"
   },
   "delivery": { "mode": "none" },
   "sessionTarget": "isolated"
