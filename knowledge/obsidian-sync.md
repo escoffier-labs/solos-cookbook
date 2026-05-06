@@ -6,7 +6,7 @@
 
 Obsidian sync gets messy fast when desktop, phone, and automation all act like they own the vault. You end up with duplicate notes, attachments that exist on one device only, and indexes that drift because two writers touched the same file seconds apart.
 
-This guide is the pattern that has held up best for me: one canonical vault, one sync mechanism, inbox-first capture on mobile, and strict rules about which files automation is allowed to touch. It is cloud-backed and bidirectional, but it is not a free-for-all.
+This guide is the pattern that has held up best for me: one canonical vault, one sync mechanism, inbox-first capture on mobile, and strict rules about which files automation is allowed to touch. The vault itself follows a PARA-style Zettelkasten note system: projects, areas, resources, and archive as the folder spine, with small atomic notes instead of giant omnibus files. It is cloud-backed and bidirectional, but it is not a free-for-all.
 
 ## Why this way
 
@@ -57,6 +57,8 @@ Obsidian/
     ├── 04 - Archive/
     └── Attachments/
 ```
+
+That layout is intentionally PARA-shaped. The note style inside it is Zettelkasten-flavored: short atomic notes, strong links, and as little monolithic "master note" sprawl as possible.
 
 Do not keep a "desktop vault" and a separate "mobile vault" and try to merge them later. That is how you get duplicate note universes.
 
