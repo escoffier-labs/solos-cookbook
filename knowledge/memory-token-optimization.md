@@ -204,6 +204,58 @@ Schedule periodic maintenance (we do it during heartbeats every few days):
 
 Think of it like a human reviewing their journal and updating their mental model. Daily files are raw notes. Knowledge cards are curated reference material.
 
+## Operational Cadence: Sweep, Ingest, Decay
+
+The memory stack works best when you separate three jobs instead of stuffing them into one vague "maintenance" task.
+
+### 1. Memory sweep
+
+This is the judgment pass. Review recent sessions, pull durable decisions and corrections, update cards, and promote recurring mistakes into rules.
+
+```json
+{
+  "name": "memory-sweep",
+  "schedule": {
+    "kind": "cron",
+    "expr": "0 */6 * * *",
+    "tz": "America/New_York"
+  },
+  "payload": {
+    "kind": "agentTurn",
+    "message": "Review recent sessions. Update daily logs. Create or update knowledge cards for durable decisions, corrections, and lessons. Skip trivial chatter.",
+    "model": "openai-codex/gpt-5.4"
+  },
+  "delivery": { "mode": "none" },
+  "sessionTarget": "isolated"
+}
+```
+
+### 2. Handoff ingest
+
+If other machines or Claude Code sessions emit memory handoffs, ingest them on a short cadence so they do not rot in a folder.
+
+```cron
+*/30 * * * * bash ~/.openclaw/workspace/scripts/run-memory-handoff-ingest.sh
+```
+
+### 3. Card staleness scan
+
+This is the decay pass. It does not create new knowledge. It finds cards whose claims are aging out and queues them for refresh or manual review.
+
+```cron
+0 4 * * * python3 ~/.openclaw/workspace/scripts/card-decay-scanner.py
+```
+
+A clean division of labor helps:
+
+| Job | Purpose | Typical cadence |
+|-----|---------|-----------------|
+| Memory sweep | Distill recent work into durable memory | Every 6-12 hours |
+| Handoff ingest | Pull machine-local memory proposals into canonical storage | Every 15-30 minutes |
+| Card staleness scan | Flag aging or suspicious cards for refresh | Daily |
+
+If you blur those together, you usually get one of two bad outcomes: either the sweep becomes bloated and slow, or stale cards sit around forever because nobody owns the decay loop.
+
 ## Verification
 
 ```bash
