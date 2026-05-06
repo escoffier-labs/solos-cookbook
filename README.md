@@ -27,7 +27,7 @@
 
 ## What this is
 
-This is a working cookbook for one specific stack: a single-engineer setup that runs an always-on multi-agent AI orchestrator on bare-metal Linux, with a homelab behind it for self-hosting, security tooling, content publishing, and knowledge management.
+This is a working cookbook for one specific stack: a single-engineer setup that runs an always-on multi-agent AI orchestrator on bare-metal Linux, with a homelab behind it for self-hosting, security tooling, and knowledge management.
 
 It is **not** a framework, not a product, not a tutorial series. It is a record of what is actually deployed, why each piece is shaped the way it is, and what broke along the way. Lift any single piece. Adopt the whole thing. Or use it as a counterexample. All three are valid.
 
@@ -44,14 +44,14 @@ The agent layer runs on [OpenClaw](https://github.com/openclaw/openclaw), but th
        ┌─────────────────────────────┼─────────────────────────────┐
        │                             │                             │
    ┌───▼──────┐               ┌──────▼──────┐                ┌─────▼─────┐
-   │ Homelab  │               │ Automation  │                │ Publishing │
-   │ (LXC/VM) │               │ (cron/n8n)  │                │ pipeline   │
+   │ Homelab  │               │ Automation  │                │ Knowledge  │
+   │ (LXC/VM) │               │ (cron/n8n)  │                │ systems    │
    └──────────┘               └─────────────┘                └────────────┘
        │                             │                             │
    ┌───▼─────────┐         ┌─────────▼─────────┐         ┌─────────▼─────┐
-   │ Self-host:  │         │ Cron, hooks,      │         │ Blog, social, │
-   │ media, NAS, │         │ sandbox shims,    │         │ X articles,   │
-   │ security    │         │ scheduled jobs    │         │ portfolio     │
+   │ Self-host:  │         │ Cron, hooks,      │         │ Memory, docs, │
+   │ media, NAS, │         │ sandbox shims,    │         │ search, sync  │
+   │ security    │         │ scheduled jobs    │         │ workflows     │
    └─────────────┘         └───────────────────┘         └───────────────┘
 ```
 
@@ -60,7 +60,7 @@ The agent layer runs on [OpenClaw](https://github.com/openclaw/openclaw), but th
 The guides assume a specific provider mix. You can substitute, but if you want a known-good baseline:
 
 - **Codex Pro ($200/mo) OAuth: main agent + coder.** This is the happy path. One flat subscription covers orchestration, code generation, and most cron work. Codex OAuth slots cleanly into OpenClaw's primary-model path and has been the most stable surface across the 2026.4.x releases. Start here.
-- **Claude Opus via ACP: escalation only.** Resume, intel, design, review, humanize, academic work. Run it through the ACPX plugin, not as a direct OpenClaw provider.
+- **Claude Opus via ACP: escalation only.** Intel, design, architecture review, and academic work. Run it through the ACPX plugin, not as a direct OpenClaw provider.
 - **Ollama (free): embeddings, commit messages, triage.** Local, fast, no round-trip.
 
 ### ⚠️ Do not route Claude Max OAuth directly through OpenClaw
@@ -83,6 +83,16 @@ There is nothing to install. This is a collection of standalone guides. Pick the
 - **[security/linux-hardening.md](security/linux-hardening.md)**: UFW, SSH hardening, fail2ban, and defense in depth for the host
 - **[infrastructure/backup-recovery.md](infrastructure/backup-recovery.md)**: restic to NAS + cloud, twice daily, with snapshot mounts
 
+### If you're here for the memory system
+
+Read these in order:
+
+1. **[knowledge/memory-token-optimization.md](knowledge/memory-token-optimization.md)**: the three-tier layout, local embeddings, and why the index stays tiny
+2. **[knowledge/memory-architecture.md](knowledge/memory-architecture.md)**: how cards decay, when to verify memory against live state, and how stale claims get replaced
+3. **[ai-stack/self-improving-agents.md](ai-stack/self-improving-agents.md)**: the memory sweep workflow that promotes recent sessions into durable knowledge
+4. **[knowledge/claude-code-memory-handoffs.md](knowledge/claude-code-memory-handoffs.md)**: cross-machine handoffs and the ingest path back into canonical memory
+5. **[automation/openclaw-cron-deep-dive.md](automation/openclaw-cron-deep-dive.md)**: scheduling patterns for sweep jobs, decay scans, and quiet-hour-safe maintenance
+
 ## Guides
 
 ### AI agent stack
@@ -94,7 +104,7 @@ There is nothing to install. This is a collection of standalone guides. Pick the
 | [Claude Code via ACP](ai-stack/acp-claude-code.md) | Running Claude Code as an ACP-driven escalation agent after Anthropic's April 2026 harness block | Any |
 | [Sub-Agent Patterns](ai-stack/sub-agent-patterns.md) | Spawn patterns, model assignment, ACP escalation, error handling, and the wrapper script | Any |
 | [GPT 5.4 Orchestration](ai-stack/gpt-54-orchestration.md) | Tool-call narration guard, strict-agentic detection gaps, silent-tool-loop triage, action-verb tuning | Any |
-| [Self-Improving Agents](ai-stack/self-improving-agents.md) | Correction capture, behavioral-guard plugins (tool-narration-guard, tokenjuice), daily memory sweeps, promotion rules | Any |
+| [Self-Improving Agents](ai-stack/self-improving-agents.md) | Correction capture, behavioral-guard plugins (tool-narration-guard, tokenjuice), memory sweeps, and promotion rules | Any |
 | [Session Management](ai-stack/session-management.md) | Why single-chat apps bottleneck your agent, Discord channel layouts, cron isolation, and the hybrid approach | Any |
 | [Skills Development](ai-stack/skills-development.md) | Write custom skills, structure for discoverability, real-world examples, and skill management | Any |
 | [Prompt Caching](ai-stack/prompt-caching.md) | Cache hygiene across Anthropic and OpenAI, so you avoid silent cost/quota leaks | Any |
@@ -121,9 +131,11 @@ There is nothing to install. This is a collection of standalone guides. Pick the
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Memory & Token Optimization](knowledge/memory-token-optimization.md) | Three-tier memory architecture with local semantic search and 50-100x token reduction | Any |
-| [Claude Code Memory Handoffs](knowledge/claude-code-memory-handoffs.md) | Cross-machine sync format and auto-promoting ingester that keeps OpenClaw the canonical memory owner | Any |
-| [Memory Architecture](knowledge/memory-architecture.md) | Operating model: memory as point-in-time claims (not live state), trust hierarchy, write/verify/decay loops, cross-store reconciliation | Any |
+| [Memory & Token Optimization](knowledge/memory-token-optimization.md) | Three-tier memory architecture, local embedding search, memory sweep cadence, and 50-100x token reduction | Any |
+| [Claude Code Memory Handoffs](knowledge/claude-code-memory-handoffs.md) | Cross-machine sync format and scheduled ingest path that keeps OpenClaw the canonical memory owner | Any |
+| [Memory Architecture](knowledge/memory-architecture.md) | Operating model: memory as point-in-time claims, trust hierarchy, write/verify/decay loops, and stale-card handling | Any |
+| [Obsidian Sync Without Conflict Roulette](knowledge/obsidian-sync.md) | One canonical vault, one sync layer, and strict writer rules for bidirectional sync that stays boring | Any |
+| [Session JSONL as Memory Source, Not Noise](knowledge/session-jsonl.md) | Search transcript logs for evidence, then promote only durable facts into memory | OpenClaw |
 
 ### Security
 
@@ -136,10 +148,6 @@ There is nothing to install. This is a collection of standalone guides. Pick the
 ### Hardware *(planned)*
 
 The physical layer: choosing the box, partitioning the disk, deciding what the host OS owns vs what gets virtualized. See [`hardware/`](hardware/).
-
-### Publishing *(planned)*
-
-Blog → social fan-out, X articles, content scrubbing, the full pipeline. See [`publishing/`](publishing/).
 
 ### Tools *(planned)*
 
