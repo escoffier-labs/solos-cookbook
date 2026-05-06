@@ -247,7 +247,7 @@ This runs on the main `gpt-5.4` (medium thinking), not `gpt-5.4:cron`. Memory sw
 
 ### Model Selection
 
-Use your main orchestration model (GPT 5.4 medium) for the sweep. The task is structured extraction with some judgment — memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through ACP Opus: the escalation lane is for final polish on human-facing work, not back-office housekeeping.
+Use your main orchestration model (GPT 5.4 medium) for the sweep. The task is structured extraction with some judgment — memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through ACP Opus: the escalation lane is for high-judgment review work, not back-office housekeeping.
 
 ## Real Corrections We've Captured
 

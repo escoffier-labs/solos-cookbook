@@ -6,7 +6,7 @@
 
 Most agent stacks accumulate hooks the same way they accumulate cron entries: one at a time, wherever there happened to be a callback handy. Six months later there's a `message_sending` hook scrubbing private DMs, a `PostToolUse` hook returning `decision: "block"` that the framework silently ignores, and a substitution plugin whose async work never lands because the runner is synchronous.
 
-This is how I split mine. Three layers, each picked for one thing it's good at: **boundary hooks** at the exit points (git pre-push, publish-time CLIs), **tool-call hooks** in the agent's tool-use loop (`PreToolUse`, `PostToolUse`, OpenClaw `before_tool_call` / `tool_result_persist`), and **lifecycle hooks** at session edges (`SessionStart`, `Stop`, bootstrap, `before_prompt_build`, `message_sending`).
+This is how I split mine. Three layers, each picked for one thing it's good at: **boundary hooks** at the exit points (git pre-push, outbound-scrub CLIs), **tool-call hooks** in the agent's tool-use loop (`PreToolUse`, `PostToolUse`, OpenClaw `before_tool_call` / `tool_result_persist`), and **lifecycle hooks** at session edges (`SessionStart`, `Stop`, bootstrap, `before_prompt_build`, `message_sending`).
 
 Every gotcha below is from a real incident on this stack.
 
@@ -16,7 +16,7 @@ Three layers, each picked for what it's good at:
 
 | Layer | Good at | Bad at |
 |-------|---------|--------|
-| **Boundary hooks** (git pre-push, publish-time CLIs) | Catching leaks at the exit point with full context, blocking irreversible publishes, running scanners that are too slow for the inner loop | Anything inside the agent's turn — these don't fire until the agent is done |
+| **Boundary hooks** (git pre-push, outbound-scrub CLIs) | Catching leaks at the exit point with full context, blocking irreversible exports, running scanners that are too slow for the inner loop | Anything inside the agent's turn — these don't fire until the agent is done |
 | **Tool-call hooks** (`PreToolUse`/`PostToolUse`, `before_tool_call`, `tool_result_persist`) | Rewriting tool inputs before execution, inspecting tool outputs, blocking dangerous calls, capturing data for later use | Replacing tool output content (most frameworks don't actually substitute, despite what the schema implies) |
 | **Lifecycle hooks** (`SessionStart`, bootstrap, `before_prompt_build`, `message_sending`, `llm_output`) | Loading context, injecting just-in-time enforcement, scrubbing outbound messages, running per-session bookkeeping | Anything that needs to see the tool's actual input or output — too early or too late |
 
@@ -30,9 +30,9 @@ Specific hook names below are from Claude Code (boundary + tool-call + lifecycle
 
 | You run | Boundary | Tool-call | Lifecycle |
 |---------|----------|-----------|-----------|
-| Claude Code | git hooks, publish-time scripts | `PreToolUse`, `PostToolUse` | `SessionStart`, `Stop`, `UserPromptSubmit` |
-| OpenClaw | git hooks, publish-time scripts | `before_tool_call`, `after_tool_call`, `tool_result_persist` | `before_prompt_build`, `llm_output`, `message_sending`, `agent_end` |
-| Hermes Agent | git hooks, publish-time scripts | Whatever its current tool-event surface exposes | Whatever lifecycle events it exposes |
+| Claude Code | git hooks, outbound-boundary scripts | `PreToolUse`, `PostToolUse` | `SessionStart`, `Stop`, `UserPromptSubmit` |
+| OpenClaw | git hooks, outbound-boundary scripts | `before_tool_call`, `after_tool_call`, `tool_result_persist` | `before_prompt_build`, `llm_output`, `message_sending`, `agent_end` |
+| Hermes Agent | git hooks, outbound-boundary scripts | Whatever its current tool-event surface exposes | Whatever lifecycle events it exposes |
 | No orchestrator-level hooks | git hooks + CLI scrubs are still load-bearing — start there | Skip — push enforcement to system prompts and trust verification | Skip |
 
 The universal rule: the further from the LLM turn the hook runs, the more reliable it is. Boundary hooks always work. Lifecycle hooks usually work. Tool-call hooks often have surprising contracts.
@@ -46,7 +46,7 @@ The universal rule: the further from the LLM turn the hook runs, the more reliab
 
 ## Before / After
 
-**Before:** Ad-hoc enforcement scattered across system prompts, with no mechanical way to verify it's holding. The agent narrates "running it now" and then doesn't, you find out a day later. A blog post leaks an internal hostname because nothing stopped it. A sub-agent finds and calls a destructive endpoint because nothing inspected its tool calls.
+**Before:** Ad-hoc enforcement scattered across system prompts, with no mechanical way to verify it's holding. The agent narrates "running it now" and then doesn't, you find out a day later. A staged artifact leaks an internal hostname because nothing stopped it. A sub-agent finds and calls a destructive endpoint because nothing inspected its tool calls.
 
 **After:** Three layers, each visible:
 
@@ -61,8 +61,8 @@ Failures fail loud (push blocked, message annotated with a warning) instead of s
 ### Routing decision tree
 
 ```
-Does the policy need to fire only when content leaves the host (git push, publish, post)?
-├─ YES → Boundary hook. Git pre-push, or a CLI you run at the publish boundary.
+Does the policy need to fire only when artifacts leave the host (git push, export, release)?
+├─ YES → Boundary hook. Git pre-push, or a CLI you run at the outbound boundary.
 └─ NO  → Does it need to inspect or rewrite a specific tool call?
          ├─ YES → Tool-call hook. PreToolUse/before_tool_call to rewrite input,
          │        PostToolUse/tool_result_persist to inspect or substitute output
@@ -74,11 +74,11 @@ Does the policy need to fire only when content leaves the host (git push, publis
 
 ### Layer 1 — Boundary hooks
 
-Use for: catching leaks at exit points, blocking irreversible publishes, running scanners too slow for the inner loop.
+Use for: catching leaks at exit points, blocking irreversible exports, running scanners too slow for the inner loop.
 
 The two boundary hooks worth running on a stack like this:
 
-**Git pre-push** that runs a content scanner against the working tree before anything reaches a remote. Skeleton at [`../templates/hooks/pre-push`](../templates/hooks/pre-push). Drop it in `hooks/pre-push` of any repo you publish, then activate:
+**Git pre-push** that runs a content scanner against the working tree before anything reaches a remote. Skeleton at [`../templates/hooks/pre-push`](../templates/hooks/pre-push). Drop it in `hooks/pre-push` of any repo you export from, then activate:
 
 ```bash
 git config core.hooksPath hooks
@@ -86,19 +86,19 @@ git config core.hooksPath hooks
 
 The hook in this repo runs [content-guard](https://github.com/solomonneas/content-guard) against `policies/public-repo.json`. It blocks pushes that contain RFC 1918 IPs, secrets, or internal hostnames. Bypass with `git push --no-verify` only when you understand exactly what you're allowing through.
 
-**Publish-time CLI** that scrubs generated content before it touches the publishing pipeline. The shape that works on this stack is a sed-rules script with a preview mode and an apply mode:
+**Stage-boundary CLI** that scrubs staged artifacts before they move downstream. The shape that works on this stack is a sed-rules script with a preview mode and an apply mode:
 
 ```bash
-# Preview leaks across all drafts, no writes.
-scrub-content drafts/
+# Preview leaks across all staged files, no writes.
+scrub-content staging/
 
 # Apply scrubs in place once you've reviewed the diff.
-scrub-content --apply drafts/
+scrub-content --apply staging/
 ```
 
-Run it manually, or wire it as the first node in a publish workflow. Either way the file is the boundary, not the agent's output.
+Run it manually, or wire it as the first node in a downstream workflow. Either way the file is the boundary, not the agent's output.
 
-**Why two layers and not one?** The git hook catches commits before they reach a remote. The publish CLI catches generated content before it reaches a CMS, social platform, or static-site repo. They overlap deliberately — the failure modes are different (a wrong commit vs. a wrong DraftJS paste) and one not catching it doesn't mean the other won't.
+**Why two layers and not one?** The git hook catches commits before they reach a remote. The stage-boundary CLI catches sensitive content before it reaches any downstream system. They overlap deliberately — the failure modes are different (a wrong commit vs. a wrong staged artifact) and one not catching it doesn't mean the other won't.
 
 ### Layer 2 — Tool-call hooks
 
@@ -164,7 +164,7 @@ Three patterns from this plugin worth lifting:
 
 3. **Inject enforcement at `before_prompt_build`, not at `message_sending`.** The framework's behavior shapes via the prompt, not the chat output. Putting the warning in `prependContext` reaches the model. Putting it in the outbound message just yells at the user.
 
-For lifecycle hooks that need to scrub content, do not use `message_sending` for anything that fires on private DMs you actually rely on. Push that work to the publish-boundary CLI in Layer 1 (see Gotchas).
+For lifecycle hooks that need to scrub content, do not use `message_sending` for anything that fires on private DMs you actually rely on. Push that work to the outbound-boundary CLI in Layer 1 (see Gotchas).
 
 ## Verification
 
@@ -190,7 +190,7 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 
 **OpenClaw `tool_result_persist` is strictly synchronous and silently drops Promise returns.** The runner logs `"[hooks] tool_result_persist handler from <pluginId> returned a Promise; this hook is synchronous and the result was ignored."` and continues with the original message. **Fix:** any substitution work must run sync. Pre-load inputs at plugin registration time, cache in module scope, then transform inline in the handler. If you genuinely need async work, pivot to `before_tool_call` (which is async-safe and can rewrite the tool's `params` so the tool produces the output you want directly).
 
-**`message_sending` hooks scrub everything, including the DMs you rely on.** A content-scrubber prototype wired as a `message_sending` hook caught its target (generated blog text leaking internal hostnames), but it also scrubbed every chat reply the bot sent the operator. Real hostnames and ports were sometimes useful in those DMs. **Fix:** don't put publish-policy enforcement at the chat boundary. Push it to a publish-time CLI run against generated files, before they touch the publishing pipeline. The boundary you care about is "content leaves the host," not "bot sends a message."
+**`message_sending` hooks scrub everything, including the DMs you rely on.** A content-scrubber prototype wired as a `message_sending` hook caught its target (staged artifact text leaking internal hostnames), but it also scrubbed every chat reply the bot sent the operator. Real hostnames and ports were sometimes useful in those DMs. **Fix:** don't put downstream-policy enforcement at the chat boundary. Push it to a stage-boundary CLI run against files before they leave the host. The boundary you care about is "artifacts leave the host," not "bot sends a message."
 
 **Naïve narration detection produces false positives in multi-turn tool-use flows.** Checking only "did the last assistant message contain a tool call?" flags valid runs where earlier turns called tools and the final turn was a clean text summary. **Fix:** track tool calls per run id across the whole turn (in `after_tool_call`), then evaluate at `llm_output` time against the run-level set. Only flag a violation when action-promise keywords appear AND zero tools were called in the entire run.
 
@@ -208,6 +208,6 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 
 - [`automation/cron-patterns.md`](cron-patterns.md) — three-layer scheduling model that the hook layering here mirrors
 - [`automation/sandbox-shims.md`](README.md) (planned) — wrapping git/network/exec for sub-agents that should not have free access; pairs with tool-call hooks
-- [`security/publish-time-scrubbing.md`](../security/) (planned) — deep dive on the publish-boundary CLI pattern, including the rule set and false-positive handling
+- [`security/outbound-scrubbing.md`](../security/) (planned) — deep dive on the outbound-boundary CLI pattern, including the rule set and false-positive handling
 - [content-guard](https://github.com/solomonneas/content-guard) — the policy-driven scanner the pre-push template depends on
 - [tokenjuice](https://github.com/vincentkoc/tokenjuice) — Claude Code `PostToolUse` reducer; useful prior art for the `additionalContext`-only constraint
