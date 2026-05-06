@@ -320,4 +320,4 @@ jq '.channels.discord.routing.threads // {}' ~/.openclaw/openclaw.json
 
 7. **`plugins.allow` is exclusive.** Even bundled channel plugins (`telegram`, `discord`, `signal`) get blocked if they're not in the whitelist. One symptom of the channel being "silently broken" after an upgrade is that `plugins.allow` was regenerated without your channel in it. Check with `jq '.plugins.allow' ~/.openclaw/openclaw.json` before debugging deeper.
 
-8. **`message_sending` hooks scrub ALL outgoing messages.** Including DMs to the owner. No clean way to distinguish DM vs group in the event context. For content scrubbing (PII redaction, etc.), a CLI script at the publish boundary is a cleaner seam than a message hook.
+8. **`message_sending` hooks scrub ALL outgoing messages.** Including DMs to the owner. No clean way to distinguish DM vs group in the event context. For artifact scrubbing (PII redaction, etc.), a CLI script at the outbound boundary is a cleaner seam than a message hook.

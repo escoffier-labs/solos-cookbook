@@ -68,7 +68,7 @@ do       put      post     draft    polish   rewrite
 pass     send     build    finish   create   generate   compose
 ```
 
-A prompt like **"do another pass then put this draft through the opus polish"** is classed as non-actionable, the retry guard short-circuits, and GPT 5.4 gets away with a plan-only turn.
+A prompt like **"do another pass then send this for a deeper review"** is classed as non-actionable, the retry guard short-circuits, and GPT 5.4 gets away with a plan-only turn.
 
 ### Gap B: Short Confident Narration
 

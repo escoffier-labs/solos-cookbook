@@ -107,7 +107,7 @@ systemctl --user restart openclaw-gateway
 
 ## Assign It to an Agent
 
-ACP is best used for **escalation**, not as the default orchestrator. GPT-5.4 or another subscription model handles the hot path (tool loops, routing, cron); Claude Code-via-ACP handles the work that genuinely benefits from deeper reasoning — resume work, long-form writing, architecture review, humanizing output.
+ACP is best used for **escalation**, not as the default orchestrator. GPT-5.4 or another subscription model handles the hot path (tool loops, routing, cron); Claude Code-via-ACP handles the work that genuinely benefits from deeper reasoning — architecture review, security review, dense research, and design critique.
 
 ```json
 {
@@ -170,11 +170,10 @@ claude  # interactive, completes any token refresh
 
 Use it for:
 
-- **Review and critique.** Let your cheaper orchestrator produce a draft, hand it to ACP for a second opinion.
-- **Long-form writing.** Blog posts, documentation, email drafts where tone matters.
+- **Review and critique.** Let your cheaper orchestrator produce an initial pass, then hand it to ACP for a second opinion.
 - **Architecture reasoning.** Design discussions, trade-off analysis, refactoring plans.
-- **Humanizing output.** When a downstream consumer (reader, reviewer) is going to read the result, polish it here.
-- **Academic or formal writing.** If you have a pipeline that cares about voice consistency.
+- **Security analysis.** When you want a second set of eyes on failure modes or attack surface.
+- **Research-heavy analysis.** Dense source review and synthesis where deeper reasoning helps.
 
 Don't use it for:
 

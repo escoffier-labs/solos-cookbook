@@ -106,7 +106,7 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
       {
         "id": "acp-claude",
         "model": "acpx/claude-opus-4-6",
-        "description": "Escalation target — resume, intel, design, review, humanize, academic work"
+        "description": "Escalation target — intel, design, review, security analysis, academic work"
       }
     ]
   }
@@ -126,9 +126,9 @@ Research and imagegen are not separate agents in this setup — they're skills t
 | Code reviews | coder | Structured analysis |
 | Research, web analysis | browser skill (not an agent) | Perplexity Pro / Gemini web UI via Playwright |
 | Imagegen | browser skill | Web UI against existing subscriptions |
-| Resume/CV work | acp-claude | Opus quality, escalation lane |
-| Design critique, humanize passes | acp-claude | Opus voice |
+| Design critique | acp-claude | Stronger judgment on UX and system tradeoffs |
 | PR review requiring taste | acp-claude | Beyond mechanical correctness |
+| Security review | acp-claude | Better failure-mode analysis |
 | Long-form academic work | acp-claude | Reasoning depth |
 | Security evaluation | main | Orchestrator handles untrusted input |
 | Quick one-liners | main | Not worth spawn overhead |
@@ -227,7 +227,7 @@ Local model screens, main handles most work, ACP Opus gets the quality-critical 
 2. If ESCALATE: Main (GPT 5.4) reads and processes
 3. If action needed:
    - Mechanical/code work → main spawns coder
-   - Resume/design/review/humanize → main spawns acp-claude
+   - Design/review/security analysis → main spawns acp-claude
    - Research or imagegen → main calls the browser skill (not a sub-agent)
 ```
 
@@ -238,15 +238,15 @@ Claude Opus now lives behind the ACP boundary. To reach it:
 ```
 sessions_spawn(
   agentId: "acp-claude",
-  task: "Review this resume for voice, density, and line-by-line density. \
-         Flag any section that reads machine-generated. Return structured notes.",
+  task: "Review this architecture for hidden failure modes, unclear ownership boundaries, \
+         and risky assumptions. Return structured notes with priorities.",
   mode: "run"
 )
 ```
 
 Or open a dedicated Discord thread routed to `acp-claude` (see [multi-channel setup](../automation/multi-channel-setup.md)) and work with Opus directly. The ACP session has no access to your main agent's conversation history — pass all necessary context in the task itself.
 
-**When to escalate:** Resume, intel, design, PR review that needs taste, humanize passes, academic work.
+**When to escalate:** Intel, design, PR review that needs taste, security analysis, academic work.
 **When NOT to escalate:** Code generation, file scanning, bulk ops, anything mechanical. The coder agent (GPT 5.4) handles those faster and without burning Max-subscription quota.
 
 ## Verification
