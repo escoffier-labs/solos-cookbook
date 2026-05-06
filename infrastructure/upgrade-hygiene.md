@@ -2,8 +2,8 @@
 
 Every OpenClaw minor release has, at least once, silently regenerated my systemd unit and dropped custom directives. If you don't plan for this, the gateway crash-loops at 4am and you find out over breakfast.
 
-**Tested on:** OpenClaw 2026.1.29 → 2026.4.14, Ubuntu 24.04, source-linked install
-**Last updated:** 2026-04-20
+**Tested on:** OpenClaw 2026.1.29 → 2026.5.5, Ubuntu 24.04, source-linked install
+**Last updated:** 2026-05-06
 
 ---
 
@@ -18,7 +18,9 @@ Every OpenClaw minor release has, at least once, silently regenerated my systemd
 
 Upgrades that appear clean in the CLI output still break the next service restart.
 
-## The Failure Mode You Care About
+## Failure Modes You Care About
+
+### 1. EnvironmentFile dropped from the regenerated unit
 
 Without `EnvironmentFile=`, systemd doesn't load `~/.openclaw/workspace/.env`. The gateway starts, hits the first secret reference in `openclaw.json`, and dies:
 
@@ -27,6 +29,52 @@ SecretRefResolutionError: KIMI_API_KEY missing from environment
 ```
 
 It then crash-loops. If your upgrade runs via cron overnight, every downstream channel (Telegram, Discord, Signal) silently goes offline until morning.
+
+### 2. Stale lazy-imported bundles in the running process
+
+OpenClaw's compiled output ships dozens of `dist/*-<hash>.js` chunks that get loaded lazily the first time a feature is exercised. Each upgrade rewrites those chunks with fresh content hashes. A running gateway holds the OLD hash in memory for every lazy import that hasn't fired yet. The moment a user finally triggers that feature post-upgrade, the dynamic import fails:
+
+```
+[tools] diffs failed: Cannot find module
+'/home/you/openclaw/dist/markdown-Du8_98GG.js'
+imported from /home/you/openclaw/dist/extensions/diffs/index.js
+```
+
+The actual file on disk is `markdown-SzrEM4HD.js`. Same module, new hash, written by the update. The running process never reloaded its index, so the old import path is still cached.
+
+This silently breaks tools (diffs, document extraction, anything plugin-loaded) without crashing the gateway, so it can lurk for days. The journal will not show a fatal error, only intermittent `Cannot find module` lines whenever someone tries the affected feature.
+
+**Mitigation:** every upgrade ends with a gateway restart. Make the wrapper restart unconditional, not conditional on whether the unit file changed. The "no, the upgrade was clean" path is exactly what bites you.
+
+### 3. Channel-reload deferral pins the gateway for days
+
+When upgrades write a config delta to `openclaw.json` (`skills.entries`, `wizard.lastRunAt`, `channels.discord.threadBindings.spawn*`), the gateway treats it as a config-driven channel reload and defers the reload until active task runs drain:
+
+```
+[reload] config change requires channel reload (discord) — deferring until 1 task run(s) complete
+```
+
+If the task that's blocking the reload is stuck (orphaned ACP session, hung exec-approval-followup, anything that doesn't naturally complete), the deferral never resolves. The journal fills with one of these every 30 seconds:
+
+```
+[reload] channel reload still deferred after Nms with 1 task run(s) active
+```
+
+While that's happening, channels keep accepting messages, the agent keeps generating responses, but reply delivery wedges behind the deferred reload. The bot looks like it stopped typing mid-thread.
+
+The default for `gateway.reload.deferralTimeoutMs` is unset, which the gateway interprets as "wait forever." Set it explicitly so a future deferral can't pin the channel layer indefinitely:
+
+```json
+"gateway": {
+  "reload": {
+    "deferralTimeoutMs": 600000
+  }
+}
+```
+
+10 minutes gives roughly 2x headroom over typical cron task runs and forces the reload through even if the blocking task never completes.
+
+The manual escape from a stuck deferral remains `systemctl --user restart openclaw-gateway`. Once upstream lands the operator-side flag (`openclaw gateway restart --safe --skip-deferral`), that's the cleaner recovery because it goes through the OpenClaw-aware coordinated path while still bypassing the deferral gate.
 
 ## The Wrapper Script Pattern
 
@@ -183,6 +231,19 @@ openclaw secrets audit
 
 # No orphan sessions
 openclaw doctor | grep -iE 'warn|error' || echo "clean"
+
+# No deferred channel reloads pinning the gateway
+journalctl --user -u openclaw-gateway --since "-5min" \
+  | grep -E '\[reload\] channel reload still deferred' \
+  || echo "clean"
+
+# Lazy-import paths in compiled extensions still resolve on disk
+# (catches stale-bundle staleness if the gateway wasn't actually restarted)
+for ref in $(grep -hoE 'dist/[A-Za-z0-9_-]+-[A-Za-z0-9_-]+\.js' \
+                 ~/openclaw/dist/extensions/*/index.js \
+             | sort -u); do
+    [ -f ~/openclaw/$ref ] || echo "stale ref: $ref"
+done
 ```
 
 If the gateway is up but an agent silently landed on the wrong fallback model (OAuth rotation can do this), you won't see it here. Watch for it on the next real request.
