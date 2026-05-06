@@ -2,7 +2,7 @@
 
 How OpenClaw's prompt caching works across providers, how to keep your cache hit rate high, and the anti-patterns that silently cost you money every turn.
 
-**Tested on:** OpenClaw with OpenAI Codex (GPT 5.4) as main, ACP Opus 4.6 as escalation, cache-ttl context pruning
+**Tested on:** OpenClaw with OpenAI Codex (GPT 5.5) as main, ACP Opus 4.6 as escalation, cache-ttl context pruning
 **Last updated:** 2026-04-19
 
 ---
@@ -21,7 +21,7 @@ Since the April 2026 [claude-cli → ACP migration](claude-cli-to-acp-migration.
 
 OpenAI caches automatically on repeated prefixes when requests come from the same API key within a short window. There's no explicit `cache_control` block; you just keep the prefix stable.
 
-For GPT 5.4 on a Codex Pro subscription, the cost is already flat-rate, so caching savings show up as *rate-limit headroom* rather than a dollar reduction. Breaking the cache still costs you — it eats more of your weekly quota faster.
+For GPT 5.5 on a Codex Pro subscription, the cost is already flat-rate, so caching savings show up as *rate-limit headroom* rather than a dollar reduction. Breaking the cache still costs you — it eats more of your weekly quota faster.
 
 ### Other Backends
 
@@ -201,4 +201,4 @@ grep -rn "$(date +%Y)" ~/.openclaw/workspace/IDENTITY.md ~/.openclaw/workspace/S
 
 5. **Context pruning can split tool_use/tool_result pairs.** When the conversation grows past the pruning threshold, the pruner may remove a `tool_result` while keeping its `tool_use` — resulting in a hard Anthropic API error (`tool_use ids were found without tool_result blocks`). No cache advice will help here; the only fix is starting a fresh conversation. Upstream fix is queued.
 
-6. **Cache advice applies even without Anthropic.** If your main is GPT 5.4 on Codex Pro, the rules above still protect your quota. Stable prefix = more effective throughput before you hit the weekly cap.
+6. **Cache advice applies even without Anthropic.** If your main is GPT 5.5 on Codex Pro, the rules above still protect your quota. Stable prefix = more effective throughput before you hit the weekly cap.
