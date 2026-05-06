@@ -2,7 +2,7 @@
 
 How to use OpenClaw sub-agents effectively. Spawn patterns, model assignment, error handling, and the lessons we learned from breaking things.
 
-**Tested on:** OpenClaw with GPT 5.4 (main + coder), Claude Opus 4.6 via ACP (escalation), browser-LLM stack for research/imagegen
+**Tested on:** OpenClaw with GPT 5.5 (main + coder), Claude Opus 4.6 via ACP (escalation), browser-LLM stack for research/imagegen
 **Last updated:** 2026-04-19
 
 ---
@@ -22,7 +22,7 @@ Your main agent carries heavy context (memory, personality, conversation history
 - It involves security decisions or untrusted input
 - It's a quick one-liner that doesn't justify the spawn overhead
 
-**Post-April-2026 note:** The main agent no longer has to be your "strongest" model. GPT 5.4 on Codex Pro is a fine orchestrator, and Opus-quality work happens via [ACP escalation](claude-cli-to-acp-migration.md) when needed.
+**Post-April-2026 note:** The main agent no longer has to be your "strongest" model. GPT 5.5 on Codex Pro is a fine orchestrator, and Opus-quality work happens via [ACP escalation](claude-cli-to-acp-migration.md) when needed.
 
 ## Spawn Patterns
 
@@ -101,8 +101,8 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
 {
   "agents": {
     "list": [
-      { "id": "main",  "model": "openai-codex/gpt-5.4" },
-      { "id": "coder", "model": "gpt54" },
+      { "id": "main",  "model": "openai-codex/gpt-5.5" },
+      { "id": "coder", "model": "gpt55" },
       {
         "id": "acp-claude",
         "model": "acpx/claude-opus-4-6",
@@ -113,7 +113,7 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
 }
 ```
 
-`gpt54` is an alias defined in `agents.defaults.models` that resolves to `openai-codex/gpt-5.4`. See [multi-model orchestration](multi-model-orchestration.md) for the full alias setup.
+`gpt55` is an alias defined in `agents.defaults.models` that resolves to `openai-codex/gpt-5.5`. See [multi-model orchestration](multi-model-orchestration.md) for the full alias setup.
 
 Research and imagegen are not separate agents in this setup — they're skills the main/coder invoke against the [browser-LLM stack](multi-model-orchestration.md#tier-3-browser-llm-stack--playwright--novnc).
 
@@ -144,7 +144,7 @@ jq '.agents.list | map({id, model})' ~/.openclaw/openclaw.json
 We've been burned multiple times by agent misconfigurations:
 - Spawned Opus on ACP for a job Codex could have handled, wasting quota
 - Coder agent was on a stale alias after an OpenClaw upgrade reset plugin config
-- A one-time OpenAI 503 on `gpt-5.4` pinned a cron channel to `gpt-5.3-codex` for four days via the `auto` override system. `/reset` didn't clear it — we had to `/model` pin it back as a `user` source override.
+- A one-time OpenAI 503 on `gpt-5.5` pinned a cron channel to `gpt-5.3-codex` for four days via the `auto` override system. `/reset` didn't clear it — we had to `/model` pin it back as a `user` source override.
 
 Always check before assuming. After any OpenClaw upgrade, re-verify `agents.list` and `plugins.entries` — both have been observed to reset.
 
@@ -224,7 +224,7 @@ Local model screens, main handles most work, ACP Opus gets the quality-critical 
 
 ```
 1. Ollama (7B): Screen incoming email — SKIP or ESCALATE
-2. If ESCALATE: Main (GPT 5.4) reads and processes
+2. If ESCALATE: Main (GPT 5.5) reads and processes
 3. If action needed:
    - Mechanical/code work → main spawns coder
    - Design/review/security analysis → main spawns acp-claude
@@ -247,7 +247,7 @@ sessions_spawn(
 Or open a dedicated Discord thread routed to `acp-claude` (see [multi-channel setup](../automation/multi-channel-setup.md)) and work with Opus directly. The ACP session has no access to your main agent's conversation history — pass all necessary context in the task itself.
 
 **When to escalate:** Intel, design, PR review that needs taste, security analysis, academic work.
-**When NOT to escalate:** Code generation, file scanning, bulk ops, anything mechanical. The coder agent (GPT 5.4) handles those faster and without burning Max-subscription quota.
+**When NOT to escalate:** Code generation, file scanning, bulk ops, anything mechanical. The coder agent (GPT 5.5) handles those faster and without burning Max-subscription quota.
 
 ## Verification
 
@@ -292,6 +292,6 @@ fi
 
 6. **Auto-announce doesn't trigger a parent turn.** When a coder finishes and auto-announces, the result appears in the main agent's transcript but does NOT trigger a new inference turn. The main agent has to be woken by a user message. If the main says "I'll do X when coder gets back," it structurally can't follow through without another user message. Build your orchestration around this: either chain via send-and-wait, or have the user nudge.
 
-7. **Tool narration instead of tool calls.** GPT 5.4 occasionally narrates what it's about to do ("I'm running the build now") instead of actually calling the tool. We mitigate this with the `tool-narration-guard` plugin (run-level tracking with `prependContext` injection). Without it, you'll lose 30+ minutes waiting for work that never started. See [self-improving agents](self-improving-agents.md).
+7. **Tool narration instead of tool calls.** GPT 5.5 occasionally narrates what it's about to do ("I'm running the build now") instead of actually calling the tool. We mitigate this with the `tool-narration-guard` plugin (run-level tracking with `prependContext` injection). Without it, you'll lose 30+ minutes waiting for work that never started. See [self-improving agents](self-improving-agents.md).
 
 8. **`strict-agentic` has detection gaps.** The planning-only retry no-ops on (A) imperative prompts like "do X" / "put Y through Z" and (B) short confident narration like "I'm running it now." We carry a local patch in `dist/pi-embedded-runner-*.js` that tightens the actionable regex and rewrites the retry instruction to close the circular-blocker loophole. Ready-to-file issue body is queued upstream.

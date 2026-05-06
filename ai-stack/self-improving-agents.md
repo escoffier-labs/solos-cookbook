@@ -2,7 +2,7 @@
 
 How to build an AI agent that learns from corrections, captures mistakes as institutional knowledge, runs automated memory sweeps, and gets better over time instead of repeating the same errors.
 
-**Tested on:** OpenClaw 2026.4.x with GPT 5.4 (main + memory sweep), tokenjuice + tool-narration-guard plugins
+**Tested on:** OpenClaw 2026.4.x with GPT 5.5 (main + memory sweep), tokenjuice + tool-narration-guard plugins
 **Last updated:** 2026-04-19
 
 ---
@@ -118,7 +118,7 @@ Two plugins we run in production turn specific correction patterns into automati
 
 ### tool-narration-guard
 
-**What it fixes:** GPT 5.4 (and other models) sometimes narrate what they're *about* to do instead of actually calling the tool. "I'm running the build now" with no subsequent tool call. You notice 30 minutes later that nothing happened.
+**What it fixes:** GPT 5.5 (and other models) sometimes narrate what they're *about* to do instead of actually calling the tool. "I'm running the build now" with no subsequent tool call. You notice 30 minutes later that nothing happened.
 
 **How it works:** The plugin tracks runs at the session level. When it detects narration without a follow-up tool call in the same turn, it injects a `prependContext` rule on the next turn that forces the model to either call the tool or say "I can't." No more silent stalls.
 
@@ -227,14 +227,14 @@ Set up an automated cron job that reviews recent sessions across all channels an
   "payload": {
     "kind": "agentTurn",
     "message": "Review recent sessions across all channels. For each session:\n1. Identify significant decisions, corrections, or lessons\n2. Create or update knowledge cards for anything worth persisting\n3. Update daily log with session summaries\n4. Check for correction patterns that should be promoted to rules\n5. Skip trivial conversations (greetings, simple lookups)",
-    "model": "openai-codex/gpt-5.4"
+    "model": "openai-codex/gpt-5.5"
   },
   "delivery": { "mode": "none" },
   "sessionTarget": "isolated"
 }
 ```
 
-This runs on the main `gpt-5.4` (medium thinking), not `gpt-5.4:cron`. Memory sweep needs judgment about what's worth keeping — thinking low produces shallower cards.
+This runs on the main `gpt-5.5` (medium thinking), not `gpt-5.5:cron`. Memory sweep needs judgment about what's worth keeping — thinking low produces shallower cards.
 
 ### What the Sweep Does
 
@@ -247,7 +247,7 @@ This runs on the main `gpt-5.4` (medium thinking), not `gpt-5.4:cron`. Memory sw
 
 ### Model Selection
 
-Use your main orchestration model (GPT 5.4 medium) for the sweep. The task is structured extraction with some judgment — memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through ACP Opus: the escalation lane is for high-judgment review work, not back-office housekeeping.
+Use your main orchestration model (GPT 5.5 medium) for the sweep. The task is structured extraction with some judgment — memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through ACP Opus: the escalation lane is for high-judgment review work, not back-office housekeeping.
 
 ## Real Corrections We've Captured
 
@@ -337,7 +337,7 @@ echo "=== Error Detection ==="
 
 3. **Over-promotion clutters rules.** Not every one-off correction needs to be in AGENTS.md. Use the 3-occurrence threshold. One-time corrections stay as knowledge cards.
 
-4. **The sweep model matters.** A budget model doing the memory sweep might miss nuance in conversations. A code-specialized model (Codex, GPT 5.4) is better at structured extraction than a small local model.
+4. **The sweep model matters.** A budget model doing the memory sweep might miss nuance in conversations. A code-specialized model (Codex, GPT 5.5) is better at structured extraction than a small local model.
 
 5. **Corrections compound.** The first month of running a self-improving agent is noisy because there are lots of corrections. By month three, correction frequency drops significantly because the agent has internalized the patterns. The system works, but it takes time.
 

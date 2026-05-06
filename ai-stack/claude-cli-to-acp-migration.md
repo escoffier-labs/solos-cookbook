@@ -19,7 +19,7 @@ In April 2026, Anthropic started rejecting Claude Max subscription OAuth tokens 
 
 The path forward is to keep Opus reachable via the **Agent Client Protocol (ACP)** through the ACPX plugin. Claude Code runs natively on your machine as an ACP server; OpenClaw connects to it as a client. Anthropic's own CLI handles the Max OAuth handshake, and OpenClaw treats the resulting session as a sub-agent.
 
-Opus becomes an **escalation target**, not a primary orchestrator. Your main agent runs on something else (we use GPT 5.4 via Codex Pro — see [multi-model orchestration](multi-model-orchestration.md)).
+Opus becomes an **escalation target**, not a primary orchestrator. Your main agent runs on something else (we use GPT 5.5 via Codex Pro — see [multi-model orchestration](multi-model-orchestration.md)).
 
 ## Who This Is For
 
@@ -185,7 +185,7 @@ Notes on the config block:
   "agents": {
     "defaults": {
       "model": {
-        "primary": "openai-codex/gpt-5.4",
+        "primary": "openai-codex/gpt-5.5",
         "fallbacks": [
           "openai-codex/gpt-5.3-codex"
         ]
@@ -224,8 +224,8 @@ If you're not using *any* Anthropic-provided model path, drop it from the whitel
 {
   "agents": {
     "list": [
-      { "id": "main",       "model": "openai-codex/gpt-5.4" },
-      { "id": "coder",      "model": "gpt54" },
+      { "id": "main",       "model": "openai-codex/gpt-5.5" },
+      { "id": "coder",      "model": "gpt55" },
       {
         "id": "acp-claude",
         "model": "acpx/claude-opus-4-6",
@@ -238,7 +238,7 @@ If you're not using *any* Anthropic-provided model path, drop it from the whitel
 
 ### 4b. Add a Discord Thread Pattern (Optional but Recommended)
 
-Dedicate a Discord thread for direct Opus access. Posting in the thread routes straight to the ACP session, keeping Opus isolated from your main GPT 5.4 session:
+Dedicate a Discord thread for direct Opus access. Posting in the thread routes straight to the ACP session, keeping Opus isolated from your main GPT 5.5 session:
 
 ```json
 {
@@ -269,12 +269,12 @@ Update your AGENTS.md (or equivalent) with explicit escalation criteria. Mine:
 - USF academic work (all of it)
 
 Do NOT escalate for:
-- Code generation → coder (GPT 5.4)
+- Code generation → coder (GPT 5.5)
 - File scanning, grep, bulk ops → coder
-- Email triage, cron output → main (GPT 5.4)
+- Email triage, cron output → main (GPT 5.5)
 ```
 
-Without explicit criteria, GPT 5.4 either over-escalates (burns Opus quota) or never escalates (loses the quality win).
+Without explicit criteria, GPT 5.5 either over-escalates (burns Opus quota) or never escalates (loses the quality win).
 
 ---
 

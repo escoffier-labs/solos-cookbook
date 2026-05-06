@@ -99,11 +99,11 @@ Read these in order:
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Multi-Model Orchestration](ai-stack/multi-model-orchestration.md) | Run GPT 5.4, ACP Opus, browser-LLM skills, and Ollama in one setup with the right model per task | Any |
+| [Multi-Model Orchestration](ai-stack/multi-model-orchestration.md) | Run GPT 5.5, ACP Opus, browser-LLM skills, and Ollama in one setup with the right model per task | Any |
 | [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) | Move Opus off the main-agent slot after Anthropic's April 2026 subscription-OAuth block | Anthropic |
 | [Claude Code via ACP](ai-stack/acp-claude-code.md) | Running Claude Code as an ACP-driven escalation agent after Anthropic's April 2026 harness block | Any |
 | [Sub-Agent Patterns](ai-stack/sub-agent-patterns.md) | Spawn patterns, model assignment, ACP escalation, error handling, and the wrapper script | Any |
-| [GPT 5.4 Orchestration](ai-stack/gpt-54-orchestration.md) | Tool-call narration guard, strict-agentic detection gaps, silent-tool-loop triage, action-verb tuning | Any |
+| [GPT 5.5 Orchestration](ai-stack/gpt-55-orchestration.md) | Tool-call narration guard, strict-agentic detection gaps, silent-tool-loop triage, action-verb tuning | Any |
 | [Self-Improving Agents](ai-stack/self-improving-agents.md) | Correction capture, behavioral-guard plugins (tool-narration-guard, tokenjuice), memory sweeps, and promotion rules | Any |
 | [Session Management](ai-stack/session-management.md) | Why single-chat apps bottleneck your agent, Discord channel layouts, cron isolation, and the hybrid approach | Any |
 | [Skills Development](ai-stack/skills-development.md) | Write custom skills, structure for discoverability, real-world examples, and skill management | Any |

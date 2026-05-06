@@ -114,7 +114,7 @@ ACP is best used for **escalation**, not as the default orchestrator. GPT-5.4 or
   "agents": {
     "entries": {
       "main": {
-        "model": "openai:gpt-5.4",
+        "model": "openai:gpt-5.5",
         "fallbacks": ["openai:gpt-5.3-codex"]
       },
       "reviewer": {

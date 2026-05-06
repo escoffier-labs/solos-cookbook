@@ -149,15 +149,15 @@ Your main agent. This is what receives every message, makes every decision, and 
       },
       "models": {
         "openai-codex/gpt-5.5": {
-          "alias": "gpt54",
+          "alias": "gpt55",
           "params": { "thinking": "medium" }
         },
         "openai-codex/gpt-5.5:cron": {
-          "alias": "gpt54cron",
+          "alias": "gpt55cron",
           "params": { "thinking": "low" }
         },
         "openai-codex/gpt-5.5:high": {
-          "alias": "gpt54hi",
+          "alias": "gpt55hi",
           "params": { "thinking": "high" }
         }
       }

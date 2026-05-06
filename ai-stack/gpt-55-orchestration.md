@@ -1,23 +1,23 @@
-# Orchestrating with GPT 5.4: Narration Guards and Strict-Agentic Gaps
+# Orchestrating with GPT 5.5: Narration Guards and Strict-Agentic Gaps
 
-Running GPT 5.4 (via OpenAI Codex Pro) as your main orchestrator is cheap and fast compared to frontier API billing, but it has specific failure modes that will quietly eat hours of your time until you know to guard against them. This guide documents the real ones: tool-call narration, planning-only stalls, strict-agentic detection gaps, and the silent-tool-loop false alarm.
+Running GPT 5.5 (via OpenAI Codex Pro) as your main orchestrator is cheap and fast compared to frontier API billing, but it has specific failure modes that will quietly eat hours of your time until you know to guard against them. This guide documents the real ones: tool-call narration, planning-only stalls, strict-agentic detection gaps, and the silent-tool-loop false alarm.
 
-**Tested on:** GPT 5.4 (Codex OAuth), OpenClaw 2026.4.x, `executionContract: strict-agentic`
+**Tested on:** GPT 5.5 (Codex OAuth), OpenClaw 2026.4.x, `executionContract: strict-agentic`
 **Last updated:** 2026-04-20
 
 ---
 
 ## Why This Guide Exists
 
-Anthropic blocked third-party harness OAuth in April 2026. The cheapest path to a subscription-grade frontier orchestrator became GPT 5.4 via the OpenAI Codex Pro plan. It is a strong orchestrator. It also has three distinct failure patterns that `default` and even `strict-agentic` execution contracts do not fully catch.
+Anthropic blocked third-party harness OAuth in April 2026. The cheapest path to a subscription-grade frontier orchestrator became GPT 5.5 via the OpenAI Codex Pro plan. It is a strong orchestrator. It also has three distinct failure patterns that `default` and even `strict-agentic` execution contracts do not fully catch.
 
-If you're running GPT 5.4 as main and wondering why the bot sometimes "goes silent" for 30 minutes or posts confident "running it now" messages without actually running anything, the patterns below are why.
+If you're running GPT 5.5 as main and wondering why the bot sometimes "goes silent" for 30 minutes or posts confident "running it now" messages without actually running anything, the patterns below are why.
 
 ## Failure Mode 1: Tool Call Narration
 
-GPT 5.4 will say it's doing the work — "On it", "Running it now", "Dual-lane running", "I'll handle this" — and then end the turn with **zero tool calls**. From the user's perspective the bot promised action; nothing happens. Hours pass. You check the session and see no tool activity after the confident message.
+GPT 5.5 will say it's doing the work — "On it", "Running it now", "Dual-lane running", "I'll handle this" — and then end the turn with **zero tool calls**. From the user's perspective the bot promised action; nothing happens. Hours pass. You check the session and see no tool activity after the confident message.
 
-The root cause is that OpenAI's assistant-style RLHF rewards conversational fluency. Narrating the plan *is* the reward signal. Without a mechanical guard, GPT 5.4 will occasionally substitute the narration for the work.
+The root cause is that OpenAI's assistant-style RLHF rewards conversational fluency. Narrating the plan *is* the reward signal. Without a mechanical guard, GPT 5.5 will occasionally substitute the narration for the work.
 
 ### The Tool Narration Guard Plugin
 
@@ -53,7 +53,7 @@ What makes these dangerous is that they're *confident and short*. Long planning 
 
 ## Failure Mode 2: Planning-Only Stalls
 
-Related but distinct. GPT 5.4 writes a bulleted plan ("I'll do this in two steps: 1)… 2)…") and ends the turn without executing step 1. This is what `executionContract: "strict-agentic"` is supposed to fix — it injects a `PLANNING_ONLY_RETRY_INSTRUCTION` and forces another turn.
+Related but distinct. GPT 5.5 writes a bulleted plan ("I'll do this in two steps: 1)… 2)…") and ends the turn without executing step 1. This is what `executionContract: "strict-agentic"` is supposed to fix — it injects a `PLANNING_ONLY_RETRY_INSTRUCTION` and forces another turn.
 
 It works most of the time. It has two known gaps as of OpenClaw 2026.4.14.
 
@@ -68,7 +68,7 @@ do       put      post     draft    polish   rewrite
 pass     send     build    finish   create   generate   compose
 ```
 
-A prompt like **"do another pass then send this for a deeper review"** is classed as non-actionable, the retry guard short-circuits, and GPT 5.4 gets away with a plan-only turn.
+A prompt like **"do another pass then send this for a deeper review"** is classed as non-actionable, the retry guard short-circuits, and GPT 5.5 gets away with a plan-only turn.
 
 ### Gap B: Short Confident Narration
 
@@ -92,7 +92,7 @@ Use all three together. They fail in different ways — the patch fixes the guar
 
 ## Failure Mode 3: Silent Tool Loops (False Alarm)
 
-The opposite problem. GPT 5.4 goes 10–30+ minutes without surfacing anything to the channel, and you assume it froze. Usually it hasn't. Deep SSH→pct→docker chains, long-running `infer` calls, n8n workflow patching — all of these produce long gaps between assistant messages while tool calls are actively running.
+The opposite problem. GPT 5.5 goes 10–30+ minutes without surfacing anything to the channel, and you assume it froze. Usually it hasn't. Deep SSH→pct→docker chains, long-running `infer` calls, n8n workflow patching — all of these produce long gaps between assistant messages while tool calls are actively running.
 
 The Discord typing indicator expires after ~2 minutes regardless of actual activity, which makes an active agent look dead.
 
@@ -139,7 +139,7 @@ The mechanical guards are the load-bearing fix. These soft adjustments reduce ho
 
 ## Config: Agents Section
 
-Minimum viable config for GPT 5.4 as main with the guards active:
+Minimum viable config for GPT 5.5 as main with the guards active:
 
 ```json
 {
@@ -149,7 +149,7 @@ Minimum viable config for GPT 5.4 as main with the guards active:
         "executionContract": "strict-agentic"
       },
       "model": {
-        "primary": "openai-codex/gpt-5.4",
+        "primary": "openai-codex/gpt-5.5",
         "fallbacks": [
           "openai-codex/gpt-5.3-codex",
           "acp:claude-opus-4-7"
@@ -158,7 +158,7 @@ Minimum viable config for GPT 5.4 as main with the guards active:
     },
     "entries": {
       "main": {
-        "model": "openai-codex/gpt-5.4:medium",
+        "model": "openai-codex/gpt-5.5:medium",
         "thinking": "medium"
       }
     }
@@ -199,11 +199,11 @@ jq 'select(.type=="plugin_event" and .name=="tool-narration-guard")' \
     ~/.openclaw/agents/main/sessions/*.jsonl | head -20
 ```
 
-If the plugin never fires in a week of real usage, either GPT 5.4 isn't narrating much for you (nice) or the keyword regex is too narrow for your bot's voice. Widen it.
+If the plugin never fires in a week of real usage, either GPT 5.5 isn't narrating much for you (nice) or the keyword regex is too narrow for your bot's voice. Widen it.
 
 ## Gotchas
 
-1. **Model-pinning stickiness.** A single OpenAI 503 on gpt-5.4 can pin a channel to gpt-5.3-codex for days. `/reset` doesn't clear `auto` overrides reliably; use `/model <name>` explicitly to repin.
+1. **Model-pinning stickiness.** A single OpenAI 503 on gpt-5.5 can pin a channel to gpt-5.3-codex for days. `/reset` doesn't clear `auto` overrides reliably; use `/model <name>` explicitly to repin.
 
 2. **Codex rate limits can read 0% while failing.** GPT 5.3 Codex has a known bug where weekly usage shows 0% but requests return rate-limit errors. Resets around 3:45am local. When Codex breaks, coder subagent tasks surface as `FailoverError` — not as a rate limit message.
 
