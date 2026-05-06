@@ -1,9 +1,9 @@
 # Claude Code Memory Handoffs: A Sync Path Into OpenClaw
 
-If you run Claude Code locally (in terminal sessions, in an IDE, on a separate machine) alongside an OpenClaw gateway, you end up with two memory systems. This guide describes the handoff format and ingester that keeps OpenClaw as the canonical durable-memory owner while letting Claude Code sessions produce memory as a first-class output.
+If you run Claude Code locally (in terminal sessions, in an IDE, on a separate machine) alongside an OpenClaw gateway, you end up with two memory systems. In this stack, Codex is wired into the same handoff path too. This guide describes the shared handoff format and ingester that keep OpenClaw as the canonical durable-memory owner while letting Claude Code and Codex sessions produce memory as a first-class output.
 
-**Tested on:** Claude Code 2.1.113, OpenClaw 2026.4.x, cron ingester every 30 minutes
-**Last updated:** 2026-04-20
+**Tested on:** Claude Code 2.1.113, Codex, OpenClaw 2026.4.x, cron ingester every 30 minutes
+**Last updated:** 2026-05-06
 
 ---
 
@@ -15,13 +15,13 @@ Claude Code has its own memory system (`~/.claude/projects/<project>/memory/MEMO
 - It's per-project. A handoff written in `~/repos/foo` doesn't reach sessions working in `~/repos/bar`.
 - It competes with OpenClaw's memory cards as "the place durable knowledge lives".
 
-Two canonical memory systems is one too many. The rule on this setup: **Claude Code may keep local memory, but durable knowledge must flow back into OpenClaw.**
+Two canonical memory systems is one too many. The rule on this setup: **Claude Code and Codex may keep local session memory, but durable knowledge must flow back into OpenClaw.**
 
 ## Architecture
 
 ```
 ┌──────────────────────┐    .claude/memory-handoffs/    ┌─────────────────────┐
-│  Claude Code         │────────────────────────────────►│   Handoff inbox     │
+│  Claude Code / Codex │────────────────────────────────►│   Handoff inbox     │
 │  (any machine,       │       YYYY-MM-DD-HHMM-slug.md   │   memory/           │
 │   any repo)          │                                  │   handoff-inbox/    │
 └──────────────────────┘                                  └──────────┬──────────┘
@@ -43,7 +43,7 @@ The canonical OpenClaw host owns final routing. Workstations, laptops, VPS hosts
 
 ## The Handoff Format
 
-A handoff is a single markdown file written by Claude Code at the end of a substantial task. Format:
+A handoff is a single markdown file written by Claude Code or Codex at the end of a substantial task. Format:
 
 ```markdown
 # Memory Handoff
@@ -94,7 +94,7 @@ Two sections are mutually exclusive: a handoff is either a card promotion (`Targ
 
 ## Where Handoffs Live
 
-On any machine running Claude Code, handoffs are written to the active repo at:
+On any machine running Claude Code or Codex, handoffs are written to the active repo at:
 
 ```
 <repo-root>/.claude/memory-handoffs/YYYY-MM-DD-HHMM-<slug>.md
@@ -127,7 +127,25 @@ to be reminded. Prefer updating shared OpenClaw knowledge over creating
 duplicate memory.
 ```
 
-The rule is what makes handoffs get written *without being asked for every task*. Without the closeout instruction, Claude Code will still produce handoffs when prompted — but the point is self-directed durable-memory capture.
+The rule is what makes handoffs get written *without being asked for every task*. Without the closeout instruction, Claude Code will still produce handoffs when prompted, but the point is self-directed durable-memory capture.
+
+## Codex Uses the Same Inbox
+
+Codex in this stack does not get its own parallel memory bridge. It is pointed at the same handoff destination and the same canonical owner.
+
+The pattern is simple:
+
+1. Codex keeps whatever local session context it wants.
+2. Durable findings that belong to the shared stack get written to `.claude/memory-handoffs/` in the active repo.
+3. the canonical host ingests those handoffs on the canonical OpenClaw host and routes them into cards, `TOOLS.md`, `USER.md`, `rules/*.md`, or `.learnings/*.md`.
+
+On this setup, the Codex workspace instructions explicitly say:
+
+- follow the the canonical host memory handoff rule in `~/.claude/CLAUDE.md`
+- write durable findings to `.claude/memory-handoffs/` in the relevant repo
+- do not invent a parallel memory system
+
+That means Claude Code and Codex converge on the same durable-memory path. Different coding harness, same handoff inbox, same ingester, same canonical storage.
 
 ## The Ingester
 
@@ -260,14 +278,15 @@ What matters is that workstation/laptop/VPS handoffs are **not ingested locally.
 
 ## Bootstrapping a Machine for Handoffs
 
-On any new Claude Code install you want in the system:
+On any new Claude Code or Codex install you want in the system:
 
-1. Drop the closeout instruction into `~/.claude/CLAUDE.md` (global) or the project's `CLAUDE.md`.
-2. Create `.claude/memory-handoffs/` in each repo you work in (or have Claude do it).
-3. If not the canonical host, wire the sync path.
-4. Test end-to-end: ask Claude Code to do a small task, then `ls .claude/memory-handoffs/` to confirm it emitted a handoff.
+1. Drop the closeout instruction into `~/.claude/CLAUDE.md` or another instruction file that your local coding harness reliably loads.
+2. Make sure the instruction explicitly routes durable knowledge to `.claude/memory-handoffs/` in the active repo.
+3. Create `.claude/memory-handoffs/` in each repo you work in.
+4. If not the canonical host, wire the sync path.
+5. Test end-to-end: do a small task, then `ls .claude/memory-handoffs/` to confirm the harness emitted a handoff.
 
-The test loop matters. If the closeout rule isn't firing, you won't notice for weeks — just slowly accumulating untracked durable knowledge that never reached OpenClaw.
+The test loop matters. If the closeout rule is not firing, you will not notice for weeks, just slowly accumulating durable knowledge that never reached OpenClaw.
 
 ## Verification
 
@@ -288,7 +307,7 @@ find ~/.openclaw/workspace/memory/cards -mtime -7 -name "*.md"
 ls ~/.openclaw/workspace/memory/handoff-inbox/ | wc -l
 ```
 
-An inbox that grows unboundedly means the auto-promotion rules are too strict for your handoff quality. An empty inbox plus zero card promotions in a week means the closeout rule isn't firing — go check CLAUDE.md on every machine.
+An inbox that grows unboundedly means the auto-promotion rules are too strict for your handoff quality. An empty inbox plus zero card promotions in a week means the closeout rule is not firing. Go check the instruction file loaded by Claude Code or Codex on every machine.
 
 ## Gotchas
 
