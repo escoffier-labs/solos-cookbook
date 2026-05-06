@@ -1,10 +1,10 @@
-# Publishing
+# Outbound Boundary
 
-The blog → social fan-out, X articles, content scrubbing, and the pipeline that ties it all together.
+Reserved for docs about sanitizing and validating artifacts before they leave the host.
 
 ## Planned guides
 
-- [ ] `blog-pipeline.md` — manual-trigger n8n fan-out (Dev.to + Hashnode + socials)
-- [ ] `content-scrubbers.md` — regex + PII filters at the publish boundary
+- [ ] `artifact-scrubbers.md` — regex + PII filters at the outbound boundary
+- [ ] `release-boundary-checks.md` — preflight validation before files or exports move downstream
 
 > Stubs. Per-guide format lives in [`../automation/cron-patterns.md`](../automation/cron-patterns.md).

@@ -55,7 +55,7 @@ Discord (or any platform with channels and threads) solves this by giving you **
 #infrastructure    → Server configs, networking, deployments
 #security          → Audits, hardening, incident response
 #portfolio         → Website, content, GitHub repos
-#career            → Job search, resume, interview prep
+#career            → Job search, interview prep, negotiation
 #media             → Jellyfin, Sonarr, media management
 #cron-output       → All cron jobs deliver here (out of your way)
 ```
@@ -83,7 +83,7 @@ The biggest quality-of-life improvement: **route cron output to a dedicated chan
 #cron-output
   [08:00] Morning briefing: 3 urgent emails, 2 calendar events
   [09:00] Token usage: 12% weekly, 45% hourly
-  [10:00] LinkedIn drafts: 2 posts ready for review
+  [10:00] Security review queue: 2 items ready for review
   [14:00] Backup verification: all healthy
 ```
 
@@ -146,7 +146,7 @@ The sub-agent gets its own thread, its own session, and its own context. You can
 
 📁 ESCALATION
   Thread: acp-opus     → Dedicated ACP thread for Claude Opus escalation
-                         (resume, intel, design, review, humanize work)
+                         (intel, design, security review, academic work)
 ```
 
 See [multi-channel setup](../automation/multi-channel-setup.md) for the ACP thread routing config.

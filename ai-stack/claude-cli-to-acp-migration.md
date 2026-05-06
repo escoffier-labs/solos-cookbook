@@ -229,7 +229,7 @@ If you're not using *any* Anthropic-provided model path, drop it from the whitel
       {
         "id": "acp-claude",
         "model": "acpx/claude-opus-4-6",
-        "description": "Escalation target for resume, intel, design, review, humanize, academic work"
+        "description": "Escalation target for intel, design, review, and academic work"
       }
     ]
   }
@@ -262,11 +262,10 @@ Update your AGENTS.md (or equivalent) with explicit escalation criteria. Mine:
 
 ```markdown
 ## Escalate to ACP Opus (via acp-claude) when:
-- Resume/CV writing or review
 - Long-form reasoning over intel dossiers
-- Design critique (architecture, visual, content)
+- Design critique (architecture, visual systems, UX)
 - PR review that needs taste, not just correctness
-- "Humanize" passes on machine-generated content
+- Security review where failure-mode analysis matters
 - USF academic work (all of it)
 
 Do NOT escalate for:

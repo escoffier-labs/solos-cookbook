@@ -2,7 +2,7 @@
 
 How to schedule automated tasks in OpenClaw, assign the right model to each job, batch checks into heartbeats, and avoid the pitfalls that waste tokens and break silently.
 
-**Tested on:** OpenClaw 2026.4.x with 36+ active cron jobs, GPT 5.4 (with `:cron` thinking-low alias), browser-LLM stack for research-heavy pipelines, ACP Opus for final polish
+**Tested on:** OpenClaw 2026.4.x with 36+ active cron jobs, GPT 5.4 (with `:cron` thinking-low alias), browser-LLM stack for research-heavy pipelines, ACP Opus for deeper review
 **Last updated:** 2026-04-19
 
 ---
@@ -37,11 +37,11 @@ Precise scheduled tasks that run in isolated sessions with their own model assig
 | Need | Use |
 |------|-----|
 | Check email + calendar + weather | Heartbeat (batch) |
-| Post to LinkedIn at 10am MWF | Cron |
+| Run a scheduled security review at 10am MWF | Cron |
 | Morning briefing at 8am | Cron |
 | "Remind me in 30 minutes" | Cron (one-shot) |
 | Monitor for urgent messages | Heartbeat |
-| Weekly content generation | Cron |
+| Weekly backlog review | Cron |
 | Background maintenance | Cron |
 
 **Rule of thumb:** Batch similar periodic checks into `HEARTBEAT.md` instead of creating multiple cron jobs. Use cron for precise schedules and standalone tasks.
@@ -122,8 +122,8 @@ Not every cron job needs the same thinking budget. Match the model and alias to 
 | Code reviews | `gpt-5.4` (thinking medium) | Structured analysis |
 | Memory sweep | `gpt-5.4` | Read + distill, needs some judgment |
 | Research-heavy pipelines | `gpt-5.4:cron` + browser research skill | Skill pulls findings from Perplexity Pro / Gemini web via Playwright |
-| Weekly content polish | `acpx/claude-opus-4-6` via sub-agent spawn | Voice and taste |
-| Creative drafts (public-facing) | Spawn `acp-claude`, don't cron directly | Opus via ACP is a spawn target, not a primary |
+| Security deep-dive review | `acpx/claude-opus-4-6` via sub-agent spawn | Stronger failure-mode analysis |
+| Architecture critique | Spawn `acp-claude`, don't cron directly | Opus via ACP is a spawn target, not a primary |
 
 ### The `:cron` Alias
 
@@ -142,7 +142,7 @@ Use this alias for 80% of your cron jobs. The medium thinking budget is wasteful
 
 ### Model Assignment Gotchas
 
-1. **Don't put Opus in a cron directly.** Opus runs via ACP as an escalation target, not a primary cron model. If a cron needs Opus quality, have it run a coder pass on GPT 5.4, then the *result* spawns an `acp-claude` polish pass. Keeps the Opus quota targeted.
+1. **Don't put Opus in a cron directly.** Opus runs via ACP as an escalation target, not a primary cron model. If a cron needs deeper judgment, have it run the main pass on GPT 5.4, then let the *result* spawn an `acp-claude` review pass. Keeps the Opus quota targeted.
 
 2. **Small local models fail silently on reasoning.** We tested qwen3:8b for cron triage and its thinking mode burned all 512 output tokens on internal reasoning, producing empty responses. Test local models with your actual cron prompts before scheduling.
 
@@ -214,7 +214,7 @@ Here's what a real OpenClaw cron schedule looks like:
 | 4:00 AM | Nightly security audit | Haiku | Isolated |
 | 8:00 AM | Morning briefing + email | Haiku | Isolated |
 | 9:00 AM | Token usage report (weekly) | Haiku | Isolated |
-| 10:00 AM MWF | LinkedIn content drafts | Opus | Isolated |
+| 10:00 AM MWF | Security review backlog | Opus | Isolated |
 | 2:00 PM | Afternoon check-in | System event | Main |
 | 6:00 PM | Memory sweep | Codex | Isolated |
 | 9:00 PM | Daily standup summary | Haiku | Isolated |
