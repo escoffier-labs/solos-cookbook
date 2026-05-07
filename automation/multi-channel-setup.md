@@ -241,6 +241,63 @@ Set up a periodic cron job that reviews recent sessions across all channels and 
 }
 ```
 
+## Local-First Message Archives Beyond OpenClaw
+
+OpenClaw gives you **live transport and session routing**. It is not the same thing as a durable, queryable archive of everything that happened across every chat surface.
+
+If you want that second layer, pair your agent setup with the crawl tools Peter Steinberger and Vincent Koc have been building around the same local-first idea: mirror message history into SQLite, index it well, and keep the archive portable.
+
+### Why This Matters
+
+Channel sessions are great for live work, but they are not enough for archaeology:
+
+- You want to query old conversations with SQL or FTS, not hope platform search works
+- You want retention you control, not whatever Discord or Slack decides to surface
+- You want a backup that can move across machines
+- You want read-only local inspection without granting every machine live bot credentials
+
+### The Crawl Pattern
+
+The pattern is simple and strong:
+
+1. Pull or ingest message history from the platform
+2. Normalize it into a local SQLite archive
+3. Add FTS indexes and structured metadata for search/querying
+4. Optionally publish private Git-backed snapshots so other machines can clone the archive and query it locally
+
+That gives you something OpenClaw itself does not try to be: a local message warehouse.
+
+### Relevant Tools
+
+- **discrawl**: Discord archive crawler. Mirrors guilds, channels, threads, members, and message history into SQLite. Supports private Git-backed snapshot sync, which is the killer feature if you want a read-only searchable archive on multiple machines without distributing Discord bot credentials everywhere.
+- **slacrawl**: Slack archive crawler. Same general shape for Slack: local SQLite, FTS, structured querying, and Git-backed archive publishing for portable workspace history.
+- **wacrawl**: WhatsApp Desktop archaeology. Copies the local WhatsApp Desktop SQLite state into its own read-only archive so chats are searchable outside the app.
+- **imsg**: Local iMessage/SMS access on macOS. Reads Messages.app's local database and exposes chats/history/watch surfaces for automation. Not the same sync model as discrawl/slacrawl, but it belongs in the same toolbox when you want Apple Messages to be queryable and scriptable.
+
+You can think of OpenClaw as the live operator and the crawl tools as the historical record.
+
+### Practical Fit with OpenClaw
+
+A good split looks like this:
+
+- **OpenClaw** handles message routing, session isolation, agent actions, and real-time replies
+- **discrawl / slacrawl / wacrawl / imsg** handle durable local archives for later search, audits, memory extraction, and offline analysis
+- **Memory files** keep the distilled facts and decisions
+- **SQLite archives** keep the raw conversation corpus when you need the receipts
+
+That combination is much better than trying to force one tool to do all four jobs.
+
+### Where Git-Backed Snapshots Help
+
+Git-backed archive sync is especially useful when:
+
+- one machine has the live credentials, but several machines need read-only access
+- you want versioned backups of the archive itself
+- you want local queryability even while offline
+- you want to keep org memory portable and inspectable without relying on a SaaS search box
+
+For a serious multi-channel setup, this is the missing layer between ephemeral chat sessions and distilled long-term memory.
+
 ## Access Control
 
 ### Per-Channel Allowlists
