@@ -13,7 +13,7 @@ category: safety
 
 # Content Scrubber
 
-Use a deterministic scrubber between your agent and any external messaging or publishing surface.
+Use a deterministic scrubber between your agent and any external delivery surface.
 
 ## Goal
 
@@ -44,7 +44,7 @@ Deterministic scrubbing is:
 Run the scrubber as close to outbound delivery as possible:
 - before chat sends
 - before webhook delivery
-- before publish flows
+- before external release flows
 - before logging content to less-trusted destinations
 
 ## Replacement strategy

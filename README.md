@@ -168,7 +168,7 @@ Drop-in artifacts you can lift without adopting the whole thing. See [`templates
 
 ## Who This Is For
 
-Engineers running an always-on AI agent on real infrastructure: bare metal, VPS, homelab, or enterprise. If you have an agent that has access to your systems, you need to lock it down properly. These guides assume you're comfortable with Linux administration and want actionable steps, not blog posts.
+Engineers running an always-on AI agent on real infrastructure: bare metal, VPS, homelab, or enterprise. If you have an agent that has access to your systems, you need to lock it down properly. These guides assume you're comfortable with Linux administration and want actionable steps, not vague overviews.
 
 > 🦞 *Built by an engineer who runs this stack 24/7 on bare metal and broke everything at least once so you don't have to.*
 
