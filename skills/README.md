@@ -35,7 +35,7 @@ skills/
 - no private hostnames, internal IPs, or browser profile paths
 - no secrets, tokens, or auth-state assumptions
 - no hardcoded local repo paths from the source environment
-- no operator-specific publishing or automation flow assumptions
+- no operator-specific distribution or automation flow assumptions
 
 ## Philosophy
 
