@@ -71,7 +71,7 @@ Fetch the 3 to 5 most promising results in full.
 
 Prioritize:
 - active Reddit threads
-- detailed blog posts
+- detailed long-form articles
 - primary-source announcements
 - news articles with specifics
 
