@@ -16,7 +16,7 @@
             "_command_comment": "Path to your hook binary or script. Claude Code spawns it with the hook event JSON on stdin and reads JSON from stdout.",
 
             "timeout": 5000,
-            "_timeout_comment": "Milliseconds. Keep it tight — every tool call waits on this. 5000ms is generous for a regex pass."
+            "_timeout_comment": "Milliseconds. Keep it tight - every tool call waits on this. 5000ms is generous for a regex pass."
           }
         ]
       }

@@ -1,0 +1,3 @@
+SSH into user@example-host and check the service on localhost:1234.
+Post the draft to channel:EXAMPLE.
+The local draft lives under /home/example/workspace/drafts/post.md.

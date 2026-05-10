@@ -16,9 +16,9 @@ Three layers, each picked for what it's good at:
 
 | Layer | Good at | Bad at |
 |-------|---------|--------|
-| **Boundary hooks** (git pre-push, outbound-scrub CLIs) | Catching leaks at the exit point with full context, blocking irreversible exports, running scanners that are too slow for the inner loop | Anything inside the agent's turn — these don't fire until the agent is done |
+| **Boundary hooks** (git pre-push, outbound-scrub CLIs) | Catching leaks at the exit point with full context, blocking irreversible exports, running scanners that are too slow for the inner loop | Anything inside the agent's turn - these don't fire until the agent is done |
 | **Tool-call hooks** (`PreToolUse`/`PostToolUse`, `before_tool_call`, `tool_result_persist`) | Rewriting tool inputs before execution, inspecting tool outputs, blocking dangerous calls, capturing data for later use | Replacing tool output content (most frameworks don't actually substitute, despite what the schema implies) |
-| **Lifecycle hooks** (`SessionStart`, bootstrap, `before_prompt_build`, `message_sending`, `llm_output`) | Loading context, injecting just-in-time enforcement, scrubbing outbound messages, running per-session bookkeeping | Anything that needs to see the tool's actual input or output — too early or too late |
+| **Lifecycle hooks** (`SessionStart`, bootstrap, `before_prompt_build`, `message_sending`, `llm_output`) | Loading context, injecting just-in-time enforcement, scrubbing outbound messages, running per-session bookkeeping | Anything that needs to see the tool's actual input or output - too early or too late |
 
 The wrong layer doesn't just feel awkward, it produces failures the docs won't warn you about. A `message_sending` hook scrubbing localhost out of DMs your bot uses to talk to you. A `PostToolUse` hook whose `decision: "block"` is ignored, leaving the unreduced tool output in context anyway. A `tool_result_persist` plugin whose async file read returns a Promise that the runner silently drops.
 
@@ -33,7 +33,7 @@ Specific hook names below are from Claude Code (boundary + tool-call + lifecycle
 | Claude Code | git hooks, outbound-boundary scripts | `PreToolUse`, `PostToolUse` | `SessionStart`, `Stop`, `UserPromptSubmit` |
 | OpenClaw | git hooks, outbound-boundary scripts | `before_tool_call`, `after_tool_call`, `tool_result_persist` | `before_prompt_build`, `llm_output`, `message_sending`, `agent_end` |
 | Hermes Agent | git hooks, outbound-boundary scripts | Whatever its current tool-event surface exposes | Whatever lifecycle events it exposes |
-| No orchestrator-level hooks | git hooks + CLI scrubs are still load-bearing — start there | Skip — push enforcement to system prompts and trust verification | Skip |
+| No orchestrator-level hooks | git hooks + CLI scrubs are still load-bearing - start there | Skip - push enforcement to system prompts and trust verification | Skip |
 
 The universal rule: the further from the LLM turn the hook runs, the more reliable it is. Boundary hooks always work. Lifecycle hooks usually work. Tool-call hooks often have surprising contracts.
 
@@ -42,7 +42,7 @@ The universal rule: the further from the LLM turn the hook runs, the more reliab
 - A Linux host with git (any modern distro)
 - An orchestrator with at least a tool-call hook surface, or a willingness to live with boundary + lifecycle only
 - Comfort with editing JSON config and writing small scripts
-- A scanner like [content-guard](https://github.com/solomonneas/content-guard) for the boundary layer (or roll your own — the pattern is regex + policy file)
+- A scanner like [content-guard](https://github.com/solomonneas/content-guard) for the boundary layer (or roll your own - the pattern is regex + policy file)
 
 ## Before / After
 
@@ -66,13 +66,13 @@ Does the policy need to fire only when artifacts leave the host (git push, expor
 └─ NO  → Does it need to inspect or rewrite a specific tool call?
          ├─ YES → Tool-call hook. PreToolUse/before_tool_call to rewrite input,
          │        PostToolUse/tool_result_persist to inspect or substitute output
-         │        (caveats below — substitution is not always what it looks like).
+         │        (caveats below - substitution is not always what it looks like).
          └─ NO  → Lifecycle hook. SessionStart/before_prompt_build to inject context,
                   llm_output/message_sending to inspect or annotate the agent's output,
                   agent_end/Stop for per-run bookkeeping.
 ```
 
-### Layer 1 — Boundary hooks
+### Layer 1 - Boundary hooks
 
 Use for: catching leaks at exit points, blocking irreversible exports, running scanners too slow for the inner loop.
 
@@ -98,13 +98,13 @@ scrub-content --apply staging/
 
 Run it manually, or wire it as the first node in a downstream workflow. Either way the file is the boundary, not the agent's output.
 
-**Why two layers and not one?** The git hook catches commits before they reach a remote. The stage-boundary CLI catches sensitive content before it reaches any downstream system. They overlap deliberately — the failure modes are different (a wrong commit vs. a wrong staged artifact) and one not catching it doesn't mean the other won't.
+**Why two layers and not one?** The git hook catches commits before they reach a remote. The stage-boundary CLI catches sensitive content before it reaches any downstream system. They overlap deliberately - the failure modes are different (a wrong commit vs. a wrong staged artifact) and one not catching it doesn't mean the other won't.
 
-### Layer 2 — Tool-call hooks
+### Layer 2 - Tool-call hooks
 
 Use for: rewriting tool inputs before execution, inspecting outputs, blocking dangerous calls, capturing tool data for downstream hooks.
 
-Skeletons live in [`../templates/hooks/`](../templates/hooks/) — one Claude Code `PostToolUse` settings.json snippet, one OpenClaw sync `tool_result_persist` plugin.
+Skeletons live in [`../templates/hooks/`](../templates/hooks/) - one Claude Code `PostToolUse` settings.json snippet, one OpenClaw sync `tool_result_persist` plugin.
 
 Three things to get right (orchestrator-agnostic):
 
@@ -118,8 +118,8 @@ Three things to get right (orchestrator-agnostic):
 
 Claude Code hooks are configured in `~/.claude/settings.json` (or `$CLAUDE_CONFIG_DIR/settings.json` if set). Each entry is a shell command the binary spawns; communication is JSON over stdin/stdout. The events that matter most for tool-call layer:
 
-- `PreToolUse` — fires before a tool call. Returning `{ "decision": "block", "reason": "..." }` actually blocks the call. Returning a rewrite is also supported.
-- `PostToolUse` — fires after a tool call. **`decision: "block"` plus `reason` does NOT replace the tool result content** (verified through 2.1.116, see Gotchas). Only `hookSpecificOutput.additionalContext` lands. If you need to replace tool output, rewrite the call in `PreToolUse`.
+- `PreToolUse` - fires before a tool call. Returning `{ "decision": "block", "reason": "..." }` actually blocks the call. Returning a rewrite is also supported.
+- `PostToolUse` - fires after a tool call. **`decision: "block"` plus `reason` does NOT replace the tool result content** (verified through 2.1.116, see Gotchas). Only `hookSpecificOutput.additionalContext` lands. If you need to replace tool output, rewrite the call in `PreToolUse`.
 
 #### OpenClaw specifics
 
@@ -134,14 +134,14 @@ OpenClaw plugins register hooks via the SDK's `api.on(eventName, handler)` from 
 
 The events that matter most:
 
-- `before_tool_call` — async-safe. Can rewrite `params`, block with `blockReason`, or require approval. Use for command rewriting and dangerous-call gates.
-- `after_tool_call` — append-only. Returns void. Same trap as Claude Code `PostToolUse` — do not use for substitution.
-- `tool_result_persist` — **strictly synchronous**. Returning `{ message }` substitutes the persisted toolResult. Promise returns are silently dropped with a warning in the gateway log. Use for substitution only when your work can run sync.
-- `before_message_write` — also synchronous. Broader than `tool_result_persist` (fires for all messages, not just toolResults). Same `{ block: true }` and `{ message }` semantics.
+- `before_tool_call` - async-safe. Can rewrite `params`, block with `blockReason`, or require approval. Use for command rewriting and dangerous-call gates.
+- `after_tool_call` - append-only. Returns void. Same trap as Claude Code `PostToolUse` - do not use for substitution.
+- `tool_result_persist` - **strictly synchronous**. Returning `{ message }` substitutes the persisted toolResult. Promise returns are silently dropped with a warning in the gateway log. Use for substitution only when your work can run sync.
+- `before_message_write` - also synchronous. Broader than `tool_result_persist` (fires for all messages, not just toolResults). Same `{ block: true }` and `{ message }` semantics.
 
 The tool name for shell execution in OpenClaw is `"exec"`, not `"bash"`. ToolResult content is Anthropic-style `[{ type: "text", text: "..." }]`. `message.details.aggregated` holds the full raw output if OpenClaw capped `content[0].text`.
 
-### Layer 3 — Lifecycle hooks
+### Layer 3 - Lifecycle hooks
 
 Use for: loading context at session start, injecting just-in-time enforcement before the next prompt, scrubbing or annotating outbound messages, per-run bookkeeping.
 
@@ -171,18 +171,18 @@ For lifecycle hooks that need to scrub content, do not use `message_sending` for
 After wiring hooks across the three layers, you should be able to enumerate them all in three commands:
 
 ```bash
-# Layer 1 — boundary hooks
+# Layer 1 - boundary hooks
 git config --get core.hooksPath; ls "$(git config --get core.hooksPath || echo .git/hooks)"
 
-# Layer 2/3 — orchestrator hooks (Claude Code)
+# Layer 2/3 - orchestrator hooks (Claude Code)
 jq '.hooks // {}' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json"
 
-# Layer 2/3 — orchestrator hooks (OpenClaw)
+# Layer 2/3 - orchestrator hooks (OpenClaw)
 ls ~/.openclaw/workspace/.openclaw/extensions/
 jq '.plugins.entries' ~/.openclaw/openclaw.json
 ```
 
-A live behavioral hook should also show up in its plugin dir as a `state.json` (or whatever you named the persistence file). If the plugin claims to be tracking violations but `state.json` never changes, the hook isn't firing — read the gateway log for plugin-init errors.
+A live behavioral hook should also show up in its plugin dir as a `state.json` (or whatever you named the persistence file). If the plugin claims to be tracking violations but `state.json` never changes, the hook isn't firing - read the gateway log for plugin-init errors.
 
 ## Gotchas
 
@@ -200,14 +200,14 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 
 ## Templates
 
-- [`templates/hooks/pre-push`](../templates/hooks/pre-push) — git pre-push wrapper that runs content-guard against the working tree
-- [`templates/hooks/claude-code-posttooluse.json`](../templates/hooks/claude-code-posttooluse.json) — Claude Code `~/.claude/settings.json` snippet for a `PostToolUse` hook (with the `additionalContext`-only caveat baked into the comment)
-- [`templates/hooks/openclaw-sync-hook.ts`](../templates/hooks/openclaw-sync-hook.ts) — OpenClaw plugin skeleton for a synchronous `tool_result_persist` substitution hook, with the Promise-return warning called out
+- [`templates/hooks/pre-push`](../templates/hooks/pre-push) - git pre-push wrapper that runs content-guard against the working tree
+- [`templates/hooks/claude-code-posttooluse.json`](../templates/hooks/claude-code-posttooluse.json) - Claude Code `~/.claude/settings.json` snippet for a `PostToolUse` hook (with the `additionalContext`-only caveat baked into the comment)
+- [`templates/hooks/openclaw-sync-hook.ts`](../templates/hooks/openclaw-sync-hook.ts) - OpenClaw plugin skeleton for a synchronous `tool_result_persist` substitution hook, with the Promise-return warning called out
 
 ## Related
 
-- [`automation/cron-patterns.md`](cron-patterns.md) — three-layer scheduling model that the hook layering here mirrors
-- [`automation/sandbox-shims.md`](README.md) (planned) — wrapping git/network/exec for sub-agents that should not have free access; pairs with tool-call hooks
-- [`security/outbound-scrubbing.md`](../security/) (planned) — deep dive on the outbound-boundary CLI pattern, including the rule set and false-positive handling
-- [content-guard](https://github.com/solomonneas/content-guard) — the policy-driven scanner the pre-push template depends on
-- [tokenjuice](https://github.com/vincentkoc/tokenjuice) — Claude Code `PostToolUse` reducer; useful prior art for the `additionalContext`-only constraint
+- [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model that the hook layering here mirrors
+- [`automation/sandbox-shims.md`](README.md) (planned) - wrapping git/network/exec for sub-agents that should not have free access; pairs with tool-call hooks
+- [`security/outbound-scrubbing.md`](../security/) (planned) - deep dive on the outbound-boundary CLI pattern, including the rule set and false-positive handling
+- [content-guard](https://github.com/solomonneas/content-guard) - the policy-driven scanner the pre-push template depends on
+- [tokenjuice](https://github.com/vincentkoc/tokenjuice) - Claude Code `PostToolUse` reducer; useful prior art for the `additionalContext`-only constraint

@@ -1,0 +1,30 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openai-codex/gpt-5.5",
+        "fallbacks": [
+          "openai-codex/gpt-5.4",
+          "openai-codex/gpt-5.3-codex"
+        ]
+      },
+      "models": {
+        "openai-codex/gpt-5.5": {
+          "alias": "gpt55",
+          "params": {
+            "thinking": "medium"
+          }
+        },
+        "openai-codex/gpt-5.4:cron": {
+          "alias": "gpt54cron",
+          "params": {
+            "thinking": "low"
+          }
+        },
+        "ollama/qwen3-coder-next:cloud": {
+          "alias": "qwenCoderNext"
+        }
+      }
+    }
+  }
+}

@@ -297,4 +297,4 @@ restic -r /mnt/nas/backups/openclaw-restic check --read-data-subset=1% 2>/dev/nu
 
 7. **Back up OAuth state files, not just OpenClaw config.** `~/.codex/auth.json` and `~/.claude/` (ACP session state) aren't in `~/.openclaw/`, but losing them means re-authenticating every subscription after a restore. Include them in your backup paths.
 
-8. **The agent can write to the NAS if you let it.** We enforce read-only-by-default on `/mnt/nas` via mount options, and the only writer is `backup-restic.sh`. If an agent ever gets a writable NAS mount, assume it will eventually touch files it shouldn't. The photos on that NAS are irreplaceable — the mount policy is deliberate, not paranoid.
+8. **The agent can write to the NAS if you let it.** We enforce read-only-by-default on `/mnt/nas` via mount options, and the only writer is `backup-restic.sh`. If an agent ever gets a writable NAS mount, assume it will eventually touch files it shouldn't. The photos on that NAS are irreplaceable - the mount policy is deliberate, not paranoid.

@@ -185,6 +185,6 @@ Healthy signs:
 
 ## Related
 
-- [`memory-architecture.md`](memory-architecture.md) — where transcript evidence fits in the trust hierarchy
-- [`memory-token-optimization.md`](memory-token-optimization.md) — how transcript search plugs into a lean memory system
-- [`claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) — promoting durable machine-local knowledge without copying raw session logs
+- [`memory-architecture.md`](memory-architecture.md) - where transcript evidence fits in the trust hierarchy
+- [`memory-token-optimization.md`](memory-token-optimization.md) - how transcript search plugs into a lean memory system
+- [`claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) - promoting durable machine-local knowledge without copying raw session logs
