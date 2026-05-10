@@ -51,7 +51,7 @@ This silently breaks tools (diffs, document extraction, anything plugin-loaded) 
 When upgrades write a config delta to `openclaw.json` (`skills.entries`, `wizard.lastRunAt`, `channels.discord.threadBindings.spawn*`), the gateway treats it as a config-driven channel reload and defers the reload until active task runs drain:
 
 ```
-[reload] config change requires channel reload (discord) — deferring until 1 task run(s) complete
+[reload] config change requires channel reload (discord) - deferring until 1 task run(s) complete
 ```
 
 If the task that's blocking the reload is stuck (orphaned ACP session, hung exec-approval-followup, anything that doesn't naturally complete), the deferral never resolves. The journal fills with one of these every 30 seconds:
@@ -100,7 +100,7 @@ openclaw update
 
 # 3. Restore EnvironmentFile= if the upgrade dropped it.
 if ! grep -q "^EnvironmentFile=$ENV_FILE" "$UNIT_FILE"; then
-    echo "[restore] EnvironmentFile directive missing — reinserting"
+    echo "[restore] EnvironmentFile directive missing - reinserting"
     sed -i "/^\[Service\]/a EnvironmentFile=$ENV_FILE" "$UNIT_FILE"
     systemctl --user daemon-reload
 fi
@@ -116,7 +116,7 @@ done
 systemctl --user restart openclaw-gateway
 sleep 3
 systemctl --user is-active openclaw-gateway || {
-    echo "[fail] gateway did not come back — check journalctl"
+    echo "[fail] gateway did not come back - check journalctl"
     journalctl --user -u openclaw-gateway -n 40 --no-pager
     exit 1
 }
@@ -130,7 +130,7 @@ Schedule it via cron and pipe the output to a log you actually read:
 
 ## Auth Profile Sync
 
-OpenClaw stores OAuth tokens in multiple `auth-profiles.json` files, one per agent. If you rotate a token manually (common with OpenAI Codex OAuth — see [Multi-Model Orchestration](../ai-stack/multi-model-orchestration.md)), all copies must update together or the fallback chain picks a stale one.
+OpenClaw stores OAuth tokens in multiple `auth-profiles.json` files, one per agent. If you rotate a token manually (common with OpenAI Codex OAuth - see [Multi-Model Orchestration](../ai-stack/multi-model-orchestration.md)), all copies must update together or the fallback chain picks a stale one.
 
 The full set on a standard install:
 
@@ -174,7 +174,7 @@ git diff dist/pi-embedded-runner-*.js > ~/.openclaw/patches/strict-agentic-actio
 
 On the next upgrade, the wrapper reapplies it. `patch --forward` makes the reapply a no-op if upstream already fixed it, so stale patches don't wedge the build.
 
-**Version-pin the bundle hash in the patch filename.** OpenClaw bundlers include a content hash (e.g. `pi-embedded-runner-C7n0Gv_F.js`) that changes every release. Match on the prefix, not the full name, in your patch hunks. When the hash drifts far enough, the patch will fail — that's your signal to regenerate against the new bundle.
+**Version-pin the bundle hash in the patch filename.** OpenClaw bundlers include a content hash (e.g. `pi-embedded-runner-C7n0Gv_F.js`) that changes every release. Match on the prefix, not the full name, in your patch hunks. When the hash drifts far enough, the patch will fail - that's your signal to regenerate against the new bundle.
 
 ## Schema Drift
 
@@ -209,7 +209,7 @@ Any upgrade wrapper worth running saves restore points. At minimum:
 - Each `auth-profiles.json`
 - `~/.openclaw/workspace/.env`
 
-Keep at least 14 days of these. Upgrades that go wrong often don't fail at upgrade time — they fail on the first heartbeat cron 6 hours later. You want to diff against what worked yesterday, not what you remember.
+Keep at least 14 days of these. Upgrades that go wrong often don't fail at upgrade time - they fail on the first heartbeat cron 6 hours later. You want to diff against what worked yesterday, not what you remember.
 
 ## Verification
 
@@ -252,10 +252,10 @@ If the gateway is up but an agent silently landed on the wrong fallback model (O
 
 1. **`systemctl --user` under cron needs `XDG_RUNTIME_DIR` and `DBUS_SESSION_BUS_ADDRESS`.** Cron's environment is minimal. If your wrapper restarts the gateway from cron, export both or the restart silently fails.
 
-2. **Upgrade unit Description is cosmetic.** The `Description=OpenClaw Gateway v2026.1.29` line in the unit file doesn't update with the binary. Don't use `systemctl status` to confirm the version — use `openclaw --version`.
+2. **Upgrade unit Description is cosmetic.** The `Description=OpenClaw Gateway v2026.1.29` line in the unit file doesn't update with the binary. Don't use `systemctl status` to confirm the version - use `openclaw --version`.
 
 3. **`plugins.allow` is an exclusive whitelist.** If you added entries to silence a startup warning, even bundled plugins get blocked when not listed. Re-audit after upgrades that add new bundled plugins (the most likely being `anthropic` and `openai`).
 
-4. **Context pruning can split tool_use/tool_result pairs across upgrades.** If a post-upgrade restart happens mid-session with a long conversation, the pruner may drop a `tool_result` while keeping its `tool_use`. The next turn hits a hard Anthropic 400: `tool_use ids were found without tool_result blocks`. Only fix is a fresh session — so pick your upgrade window.
+4. **Context pruning can split tool_use/tool_result pairs across upgrades.** If a post-upgrade restart happens mid-session with a long conversation, the pruner may drop a `tool_result` while keeping its `tool_use`. The next turn hits a hard Anthropic 400: `tool_use ids were found without tool_result blocks`. Only fix is a fresh session - so pick your upgrade window.
 
 5. **Don't upgrade and reconfigure in the same window.** If the gateway crash-loops, you won't know whether the upgrade or your edits broke it. Upgrade, verify, commit. Reconfigure on a separate day.

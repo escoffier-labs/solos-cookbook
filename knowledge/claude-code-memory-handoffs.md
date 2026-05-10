@@ -87,7 +87,7 @@ TOOLS.md | USER.md | rules/<name>.md | .learnings/LEARNINGS.md | .learnings/ERRO
 ## Suggested document content
 Exact content to append when this handoff should update a non-card document
 instead of a memory card. Use `###` headings or deeper inside this section.
-Never use `##` here — it would look like a new handoff section to the parser.
+Never use `##` here - it would look like a new handoff section to the parser.
 ```
 
 Two sections are mutually exclusive: a handoff is either a card promotion (`Target card` + `Suggested card content`) or a document update (`Target document` + `Suggested document content`). Never both.
@@ -137,11 +137,11 @@ The pattern is simple:
 
 1. Codex keeps whatever local session context it wants.
 2. Durable findings that belong to the shared stack get written to `.claude/memory-handoffs/` in the active repo.
-3. the canonical host ingests those handoffs on the canonical OpenClaw host and routes them into cards, `TOOLS.md`, `USER.md`, `rules/*.md`, or `.learnings/*.md`.
+3. The canonical OpenClaw host ingests those handoffs and routes them into cards, `TOOLS.md`, `USER.md`, `rules/*.md`, or `.learnings/*.md`.
 
 On this setup, the Codex workspace instructions explicitly say:
 
-- follow the the canonical host memory handoff rule in `~/.claude/CLAUDE.md`
+- follow the canonical memory handoff rule in `~/.claude/CLAUDE.md`
 - write durable findings to `.claude/memory-handoffs/` in the relevant repo
 - do not invent a parallel memory system
 
@@ -241,7 +241,7 @@ Run the ingester on a short cron so durable knowledge stops aging in the filesys
 */30 * * * * bash ~/.openclaw/workspace/scripts/run-memory-handoff-ingest.sh
 ```
 
-Wrap it to log cleanly and emit a `NO_UPDATES` line when nothing happened — useful for a heartbeat dashboard to distinguish "ingester didn't run" from "ingester ran and found nothing".
+Wrap it to log cleanly and emit a `NO_UPDATES` line when nothing happened - useful for a heartbeat dashboard to distinguish "ingester didn't run" from "ingester ran and found nothing".
 
 ```bash
 #!/usr/bin/env bash
@@ -313,10 +313,10 @@ An inbox that grows unboundedly means the auto-promotion rules are too strict fo
 
 1. **`##` inside `Suggested document content` parses as a new handoff section.** The parser is naive. If your proposed content has `## Something` inside it, the ingester will think you started a new top-level section. Use `###` or deeper, or escape it.
 
-2. **Bisync conflicts on the handoff directory are usually safe to resolve either way.** Handoff files are write-once and named with timestamps; duplicate-looking files are actually distinct handoffs. Don't auto-resolve by deleting "duplicates" — they're not.
+2. **Bisync conflicts on the handoff directory are usually safe to resolve either way.** Handoff files are write-once and named with timestamps; duplicate-looking files are actually distinct handoffs. Don't auto-resolve by deleting "duplicates" - they're not.
 
 3. **Auto-promotion writes to the filesystem on the canonical host immediately.** If that host also runs OpenClaw, a card landing mid-session invalidates the prefix cache for the remaining turns (see [Prompt Caching](../ai-stack/prompt-caching.md)). Ingest during quiet hours if you care about cache continuity.
 
-4. **The `processed/` folder grows forever if you don't prune.** A cron that deletes processed handoffs older than 30 days is fine — by then the durable content is either in a card or you decided it didn't belong there.
+4. **The `processed/` folder grows forever if you don't prune.** A cron that deletes processed handoffs older than 30 days is fine - by then the durable content is either in a card or you decided it didn't belong there.
 
 5. **Don't ingest your own OpenClaw session memory as handoffs.** It's tempting to wire the OpenClaw agent to emit handoffs about its own sessions; this creates a loop where OpenClaw ingests its own output. If you want OpenClaw to promote session knowledge to cards, do it through OpenClaw's native memory writes, not through the handoff path.

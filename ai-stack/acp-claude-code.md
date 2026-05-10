@@ -18,7 +18,7 @@ Anthropic now rejects those tokens unless the request comes from Claude Code its
 1. **Don't store `anthropic:claude-cli` tokens anymore.** They won't refresh cleanly, and the deprecation warning in `openclaw doctor` is real.
 2. **If you want subscription Claude inside OpenClaw, use ACP.** Claude Code runs as its own process, OpenClaw speaks ACP to it, and the subscription check passes because it really is Claude Code making the call.
 
-Direct Anthropic API access (billed per-token) still works through the `anthropic` plugin — but if you have a Max sub you already paid for, ACP is how you get it back.
+Direct Anthropic API access (billed per-token) still works through the `anthropic` plugin - but if you have a Max sub you already paid for, ACP is how you get it back.
 
 ## Architecture
 
@@ -67,7 +67,7 @@ claude
 # exit the REPL once it confirms
 ```
 
-The tokens now live in `~/.claude/`. Don't copy them anywhere — ACPX will hand them off implicitly by running `claude` as a subprocess.
+The tokens now live in `~/.claude/`. Don't copy them anywhere - ACPX will hand them off implicitly by running `claude` as a subprocess.
 
 ## Wire It Into OpenClaw
 
@@ -107,7 +107,7 @@ systemctl --user restart openclaw-gateway
 
 ## Assign It to an Agent
 
-ACP is best used for **escalation**, not as the default orchestrator. GPT-5.4 or another subscription model handles the hot path (tool loops, routing, cron); Claude Code-via-ACP handles the work that genuinely benefits from deeper reasoning — architecture review, security review, dense research, and design critique.
+ACP is best used for **escalation**, not as the default orchestrator. GPT-5.4 or another subscription model handles the hot path (tool loops, routing, cron); Claude Code-via-ACP handles the work that genuinely benefits from deeper reasoning - architecture review, security review, dense research, and design critique.
 
 ```json
 {
@@ -126,11 +126,11 @@ ACP is best used for **escalation**, not as the default orchestrator. GPT-5.4 or
 }
 ```
 
-Route to `reviewer` from your orchestrator for the specific lanes where you want Claude. Don't set ACP as a fallback for the main agent — ACP sessions are stateful and slow to spin up, and falling into one mid-turn produces surprising latency.
+Route to `reviewer` from your orchestrator for the specific lanes where you want Claude. Don't set ACP as a fallback for the main agent - ACP sessions are stateful and slow to spin up, and falling into one mid-turn produces surprising latency.
 
 ## Dedicated ACP Channels
 
-For interactive Claude Code sessions (where you want to talk to Opus directly, not via the orchestrator), expose ACP through a dedicated Discord thread or Telegram topic. The ACP agent holds its own session state and conversation history — don't try to multiplex it through the main agent's channel.
+For interactive Claude Code sessions (where you want to talk to Opus directly, not via the orchestrator), expose ACP through a dedicated Discord thread or Telegram topic. The ACP agent holds its own session state and conversation history - don't try to multiplex it through the main agent's channel.
 
 A minimal channel config:
 
@@ -151,7 +151,7 @@ A minimal channel config:
 
 ## Post-Upgrade Recovery
 
-OpenClaw upgrades can reset `plugins.entries` — ACPX config in particular goes missing on minor bumps. Verify after every upgrade:
+OpenClaw upgrades can reset `plugins.entries` - ACPX config in particular goes missing on minor bumps. Verify after every upgrade:
 
 ```bash
 jq '.plugins.entries.acpx' ~/.openclaw/openclaw.json
@@ -200,12 +200,12 @@ If `openclaw infer` hangs for more than 15 seconds on first call, the `claude` s
 
 ## Gotchas
 
-1. **`claude-cli` config left behind breaks startup.** If you upgraded from the pre-April setup, any leftover `anthropic:claude-cli` entries in `cliBackends` or `auth-profiles.json` will produce confusing errors. Delete them fully — `jq 'del(.cliBackends["claude-cli"])'` in `openclaw.json`, and remove the `claude-cli` profile from every `auth-profiles.json`.
+1. **`claude-cli` config left behind breaks startup.** If you upgraded from the pre-April setup, any leftover `anthropic:claude-cli` entries in `cliBackends` or `auth-profiles.json` will produce confusing errors. Delete them fully - `jq 'del(.cliBackends["claude-cli"])'` in `openclaw.json`, and remove the `claude-cli` profile from every `auth-profiles.json`.
 
-2. **OAuth tokens live in `~/.claude/`, not `~/.openclaw/`.** Don't back them up as part of your OpenClaw workspace backup — they're machine-specific and regenerate fine with one interactive `claude` login.
+2. **OAuth tokens live in `~/.claude/`, not `~/.openclaw/`.** Don't back them up as part of your OpenClaw workspace backup - they're machine-specific and regenerate fine with one interactive `claude` login.
 
 3. **`plugins.allow` must list `acpx`.** If you use the allowlist (see [Upgrade Hygiene](../infrastructure/upgrade-hygiene.md)), omitting acpx silently disables it. The gateway starts, the model vanishes from `openclaw models list`, and routing falls back without any warning.
 
-4. **Claude Code 2.1.92+ changed arg parsing.** Positional args get treated as MCP config file paths when `--strict-mcp-config` is active. The ACPX agent config must set `"input": "stdin"` and use `--print` with `--input-format stream-json` — don't pass the prompt positionally.
+4. **Claude Code 2.1.92+ changed arg parsing.** Positional args get treated as MCP config file paths when `--strict-mcp-config` is active. The ACPX agent config must set `"input": "stdin"` and use `--print` with `--input-format stream-json` - don't pass the prompt positionally.
 
 5. **Don't route the main orchestrator through ACP.** Latency and statefulness both fight you. Keep ACP as an escalation target, not the default.
