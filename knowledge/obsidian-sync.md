@@ -182,6 +182,6 @@ If that six-step loop is clean, your sync model is probably healthy.
 
 ## Related
 
-- [`memory-architecture.md`](memory-architecture.md) — what belongs in long-term notes versus short-lived workflow state
-- [`session-jsonl.md`](session-jsonl.md) — using transcript logs as a search source instead of dumping raw conversations into the vault
-- [`claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) — when durable machine-local knowledge should become canonical shared memory
+- [`memory-architecture.md`](memory-architecture.md) - what belongs in long-term notes versus short-lived workflow state
+- [`session-jsonl.md`](session-jsonl.md) - using transcript logs as a search source instead of dumping raw conversations into the vault
+- [`claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) - when durable machine-local knowledge should become canonical shared memory

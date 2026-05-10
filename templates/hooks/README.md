@@ -17,6 +17,6 @@ Drop-in skeletons for the three hook layers covered in [`../../automation/hooks.
 
 ## A note on Layer 3 (lifecycle)
 
-Lifecycle hooks (`SessionStart`, `before_prompt_build`, `message_sending`, `agent_end`) are not shipped as standalone templates because the useful version is the four-hook pattern in [`tool-narration-guard`](https://github.com/openclaw/openclaw) — track tool calls per `runId`, evaluate at `llm_output`, inject enforcement at `before_prompt_build`, persist state to disk with TTL. Lift that whole shape, not a single-event skeleton.
+Lifecycle hooks (`SessionStart`, `before_prompt_build`, `message_sending`, `agent_end`) are not shipped as standalone templates because the useful version is the four-hook pattern in [`tool-narration-guard`](https://github.com/openclaw/openclaw) - track tool calls per `runId`, evaluate at `llm_output`, inject enforcement at `before_prompt_build`, persist state to disk with TTL. Lift that whole shape, not a single-event skeleton.
 
 License: MIT (see [`../../LICENSE`](../../LICENSE)).

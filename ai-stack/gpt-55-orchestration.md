@@ -15,7 +15,7 @@ If you're running GPT 5.5 as main and wondering why the bot sometimes "goes sile
 
 ## Failure Mode 1: Tool Call Narration
 
-GPT 5.5 will say it's doing the work — "On it", "Running it now", "Dual-lane running", "I'll handle this" — and then end the turn with **zero tool calls**. From the user's perspective the bot promised action; nothing happens. Hours pass. You check the session and see no tool activity after the confident message.
+GPT 5.5 will say it's doing the work - "On it", "Running it now", "Dual-lane running", "I'll handle this" - and then end the turn with **zero tool calls**. From the user's perspective the bot promised action; nothing happens. Hours pass. You check the session and see no tool activity after the confident message.
 
 The root cause is that OpenAI's assistant-style RLHF rewards conversational fluency. Narrating the plan *is* the reward signal. Without a mechanical guard, GPT 5.5 will occasionally substitute the narration for the work.
 
@@ -53,7 +53,7 @@ What makes these dangerous is that they're *confident and short*. Long planning 
 
 ## Failure Mode 2: Planning-Only Stalls
 
-Related but distinct. GPT 5.5 writes a bulleted plan ("I'll do this in two steps: 1)… 2)…") and ends the turn without executing step 1. This is what `executionContract: "strict-agentic"` is supposed to fix — it injects a `PLANNING_ONLY_RETRY_INSTRUCTION` and forces another turn.
+Related but distinct. GPT 5.5 writes a bulleted plan ("I'll do this in two steps: 1)… 2)…") and ends the turn without executing step 1. This is what `executionContract: "strict-agentic"` is supposed to fix - it injects a `PLANNING_ONLY_RETRY_INSTRUCTION` and forces another turn.
 
 It works most of the time. It has two known gaps as of OpenClaw 2026.4.14.
 
@@ -85,14 +85,14 @@ It does **not** match `i'm running`, `i'm doing`, `on it`, `handling that now`. 
 You have three options, in increasing order of effort:
 
 1. **Local patch on `dist/pi-embedded-runner-*.js`.** Extend both regexes to cover the missing verbs and the present-continuous narration pattern. Persist the patch through upgrades via [Upgrade Hygiene](../infrastructure/upgrade-hygiene.md). This is what runs in production for me.
-2. **Deny-list instead of allow-list** on the actionable-prompt gate. Skip retry only for obvious chit-chat (`thanks`, `ok cool`, `lol`, `nice`, `got it`). More durable — allowlists keep growing forever.
+2. **Deny-list instead of allow-list** on the actionable-prompt gate. Skip retry only for obvious chit-chat (`thanks`, `ok cool`, `lol`, `nice`, `got it`). More durable - allowlists keep growing forever.
 3. **Rely on the narration guard plugin.** It catches what `strict-agentic` misses, but it warns rather than retrying. The user sees a visible warning on the message; the turn doesn't re-fire automatically.
 
-Use all three together. They fail in different ways — the patch fixes the guard regex, the denylist catches new verbs, the plugin warns visibly when both miss.
+Use all three together. They fail in different ways - the patch fixes the guard regex, the denylist catches new verbs, the plugin warns visibly when both miss.
 
 ## Failure Mode 3: Silent Tool Loops (False Alarm)
 
-The opposite problem. GPT 5.5 goes 10–30+ minutes without surfacing anything to the channel, and you assume it froze. Usually it hasn't. Deep SSH→pct→docker chains, long-running `infer` calls, n8n workflow patching — all of these produce long gaps between assistant messages while tool calls are actively running.
+The opposite problem. GPT 5.5 goes 10–30+ minutes without surfacing anything to the channel, and you assume it froze. Usually it hasn't. Deep SSH→pct→docker chains, long-running `infer` calls, n8n workflow patching - all of these produce long gaps between assistant messages while tool calls are actively running.
 
 The Discord typing indicator expires after ~2 minutes regardless of actual activity, which makes an active agent look dead.
 
@@ -129,7 +129,7 @@ Before restarting the gateway for a suspected freeze, check mtime. Restarting a 
 
 The mechanical guards are the load-bearing fix. These soft adjustments reduce how often the guards need to fire:
 
-1. **Put the instruction in present tense.** "Run the intel pipeline" beats "I need you to run the intel pipeline when you can" — the second one invites a commitment narration. Imperative framings get imperative execution.
+1. **Put the instruction in present tense.** "Run the intel pipeline" beats "I need you to run the intel pipeline when you can" - the second one invites a commitment narration. Imperative framings get imperative execution.
 
 2. **Avoid "please" on execution prompts.** It's a small thing, but polite phrasing triggers the assistant-mode RLHF. For chat tasks it's fine; for agent work, strip it.
 
@@ -178,7 +178,7 @@ Minimum viable config for GPT 5.5 as main with the guards active:
 Two notes on that config:
 
 - **Thinking level is `medium`, not `xhigh`.** On Codex Pro, high thinking burns rate limit faster than it returns value for orchestration. Save high for escalation lanes via ACP.
-- **Codex first in the fallbacks.** Gemini fallback silently lands requests on a different model without notifying the user. If you must include Gemini, put it last and only if you actually want that behavior — which these days, you probably don't (see [Multi-Model Orchestration](multi-model-orchestration.md)).
+- **Codex first in the fallbacks.** Gemini fallback silently lands requests on a different model without notifying the user. If you must include Gemini, put it last and only if you actually want that behavior - which these days, you probably don't (see [Multi-Model Orchestration](multi-model-orchestration.md)).
 
 ## Verification
 
@@ -205,7 +205,7 @@ If the plugin never fires in a week of real usage, either GPT 5.5 isn't narratin
 
 1. **Model-pinning stickiness.** A single OpenAI 503 on gpt-5.5 can pin a channel to gpt-5.3-codex for days. `/reset` doesn't clear `auto` overrides reliably; use `/model <name>` explicitly to repin.
 
-2. **Codex rate limits can read 0% while failing.** GPT 5.3 Codex has a known bug where weekly usage shows 0% but requests return rate-limit errors. Resets around 3:45am local. When Codex breaks, coder subagent tasks surface as `FailoverError` — not as a rate limit message.
+2. **Codex rate limits can read 0% while failing.** GPT 5.3 Codex has a known bug where weekly usage shows 0% but requests return rate-limit errors. Resets around 3:45am local. When Codex breaks, coder subagent tasks surface as `FailoverError` - not as a rate limit message.
 
 3. **Concurrent subagents on the same OAuth.** Main and coder both on the same Codex token will sometimes 500 under load. If you run concurrent subagents, give coder its own profile or a different provider.
 

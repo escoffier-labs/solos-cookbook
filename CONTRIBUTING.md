@@ -38,7 +38,7 @@ Tradeoffs vs the obvious alternatives. Why you settled here.
 What the system looked like before, what it looks like after.
 
 ## Implementation
-Step-by-step. Code blocks. Real paths (scrubbed — see hostname rule).
+Step-by-step. Code blocks. Real paths (scrubbed - see hostname rule).
 
 ## Verification
 Commands the reader runs to confirm it works. Expected output.

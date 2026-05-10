@@ -59,7 +59,7 @@ Replace sensitive values with stable placeholders such as:
 ## Example
 
 Before:
-> SSH into admin@10.0.0.50 and check the service on localhost:8096
+> SSH into user@[redacted-ip] and check the service on [redacted-service]
 
 After:
 > SSH into [redacted-target] and check the service on [redacted-service]

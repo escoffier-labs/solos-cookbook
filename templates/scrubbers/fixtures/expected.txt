@@ -1,0 +1,3 @@
+SSH into [redacted-target] and check the service on [redacted-service].
+Post the draft to [redacted-channel].
+The local draft lives under [redacted-path].
