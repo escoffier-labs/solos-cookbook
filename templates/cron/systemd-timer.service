@@ -12,7 +12,7 @@ Description=<one-line description of what this does>
 
 [Service]
 Type=oneshot
-# Use absolute paths — systemd's PATH is minimal.
+# Use absolute paths - systemd's PATH is minimal.
 ExecStart=/path/to/your/script.sh
 # Optional: load env vars from a file (rotated separately from this unit)
 # EnvironmentFile=%h/.config/<name>/env

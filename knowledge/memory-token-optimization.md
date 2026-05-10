@@ -117,7 +117,7 @@ Configure OpenClaw to use it (nested under `agents.defaults.memorySearch`):
 }
 ```
 
-**Why qwen3-embedding:8b over nomic-embed-text (the 2026-03 recommendation):** Qwen3 embeddings gave us noticeably better ranking on memory cards with mixed domains (security, infra, career, code). Nomic is still fine if 8GB VRAM is tight — it's ~1.6GB on disk vs. ~5GB for qwen3-embedding.
+**Why qwen3-embedding:8b over nomic-embed-text (the 2026-03 recommendation):** Qwen3 embeddings gave us noticeably better ranking on memory cards with mixed domains (security, infra, career, code). Nomic is still fine if 8GB VRAM is tight - it's ~1.6GB on disk vs. ~5GB for qwen3-embedding.
 
 ### How It Works
 
@@ -190,7 +190,7 @@ Two failure modes depending on your provider:
 
 **Pay-per-token (direct Anthropic API):** Prefix cost drops ~90% with caching. A 10K-token prefix with caching runs ~$0.005/turn; without caching, ~$0.05/turn. One mid-session bootstrap edit at turn 25 costs ~$3.51 in extra spend over the remaining session.
 
-**Subscription (Codex Pro, Claude Max via ACP):** You don't see dollars — you see rate-limit headroom. A session that used to last 4 hours hits the cap at 2.5 hours if you keep invalidating the prefix. Same pain, different dashboard. See [prompt caching](../ai-stack/prompt-caching.md) for provider-specific detail.
+**Subscription (Codex Pro, Claude Max via ACP):** You don't see dollars - you see rate-limit headroom. A session that used to last 4 hours hits the cap at 2.5 hours if you keep invalidating the prefix. Same pain, different dashboard. See [prompt caching](../ai-stack/prompt-caching.md) for provider-specific detail.
 
 ## Memory Maintenance
 
@@ -289,7 +289,7 @@ fi
 
 ## Gotchas
 
-1. **Local embeddings are more than good enough.** qwen3-embedding:8b (5GB) or nomic-embed-text (274M / 1.6GB) both beat round-tripping to OpenAI's embedding API for memory search. You need *good enough* relevance ranking, not SOTA — and the round-trip latency alone makes cloud embeddings a worse experience.
+1. **Local embeddings are more than good enough.** qwen3-embedding:8b (5GB) or nomic-embed-text (274M / 1.6GB) both beat round-tripping to OpenAI's embedding API for memory search. You need *good enough* relevance ranking, not SOTA - and the round-trip latency alone makes cloud embeddings a worse experience.
 
 2. **Don't load the backup.** If you migrated from a monolithic MEMORY.md, the backup file might be 50-60KB. Never load it in a session. It exists for reference only.
 

@@ -1,0 +1,5 @@
+# pattern	replacement
+user@[A-Za-z0-9._-]+	[redacted-target]
+localhost:[0-9]+	[redacted-service]
+channel:[A-Za-z0-9_-]+	[redacted-channel]
+/home/[A-Za-z0-9._-]+/[A-Za-z0-9._/-]+\.(md|txt|json|js|ts|sh)	[redacted-path]

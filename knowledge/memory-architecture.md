@@ -20,7 +20,7 @@ Three operating models exist. Two of them break:
 | **Memory as ephemeral notes** | Read card for color, verify everything against current state every time. | No leverage from prior sessions. Same investigations repeat weekly. Cards drift further out of date because nobody is updating them when they're caught wrong. |
 | **Layered trust + verify-before-recommend** | Memory is one input among several with explicit precedence: current code > current git log > recent memory > older memory > stub. Verify any specific claim (path, function, line, flag) before acting. | Slower turn time on tasks that touch a memory'd subsystem; otherwise this is the model that works. |
 
-The cost of model 1 (ground truth) is a steady stream of wrong recommendations, none of which are obviously the agent's fault — it's just doing what the card said. The cost of model 2 (ephemeral) is that durable knowledge never accumulates and the agent's per-session quality plateaus low. The cost of model 3 is one extra `Read` or `grep` before recommending any specific identifier the memory mentions.
+The cost of model 1 (ground truth) is a steady stream of wrong recommendations, none of which are obviously the agent's fault - it's just doing what the card said. The cost of model 2 (ephemeral) is that durable knowledge never accumulates and the agent's per-session quality plateaus low. The cost of model 3 is one extra `Read` or `grep` before recommending any specific identifier the memory mentions.
 
 Pay the verify cost. The other two costs compound.
 
@@ -48,10 +48,10 @@ Pay the verify cost. The other two costs compound.
 
 | Store | What it holds | Lifetime | Authority |
 |-------|---------------|----------|-----------|
-| **Index** (`MEMORY.md` in OpenClaw, per-project `MEMORY.md` for Claude Code) | One-line pointers into cards | Edited at session boundaries; loaded into prompt every turn | Pointer only — never the source of truth for content |
+| **Index** (`MEMORY.md` in OpenClaw, per-project `MEMORY.md` for Claude Code) | One-line pointers into cards | Edited at session boundaries; loaded into prompt every turn | Pointer only - never the source of truth for content |
 | **Cards** (`memory/cards/*.md`) | Atomic durable knowledge, one topic per card, semantic-search-able | Updated when wrong; rarely deleted | Highest among memory stores; still subordinate to current code |
-| **Daily logs** (`memory/YYYY-MM-DD.md`) | Raw session notes, what happened, what was decided | Skim today + yesterday on session start; older only via search | Time-anchored — useful for "when did this change?" queries |
-| **Handoffs** (`.claude/memory-handoffs/`) | Pending durable knowledge from per-machine sessions, awaiting ingest into cards or rule docs | Move to `processed/` after ingest; review inbox for low-confidence ones | Pre-canonical — content is a *proposal* until promoted |
+| **Daily logs** (`memory/YYYY-MM-DD.md`) | Raw session notes, what happened, what was decided | Skim today + yesterday on session start; older only via search | Time-anchored - useful for "when did this change?" queries |
+| **Handoffs** (`.claude/memory-handoffs/`) | Pending durable knowledge from per-machine sessions, awaiting ingest into cards or rule docs | Move to `processed/` after ingest; review inbox for low-confidence ones | Pre-canonical - content is a *proposal* until promoted |
 | **Session transcripts** (`~/.openclaw/agents/<agent>/sessions/*.jsonl`) | Full message history of past conversations | Search-only; never load whole files | Authoritative for "what was said when," but not curated |
 
 The index never holds content. The cards never hold timeline. The daily logs never replace cards. The handoffs never bypass review. The transcripts are the audit trail, not the answer.
@@ -88,7 +88,7 @@ Before *recommending* (not just citing) anything from a memory:
 | A file path | `Read` it; if missing, memory is stale |
 | A function or flag name | `grep` for it in current code |
 | A specific line number | Read the file; lines drift even if the symbol survives |
-| A bundle hash filename (`*-CQnl8oWA.js`) | Find the bundle by symbol grep, not filename — bundle hashes change every release |
+| A bundle hash filename (`*-CQnl8oWA.js`) | Find the bundle by symbol grep, not filename - bundle hashes change every release |
 | A workflow ID, container ID, port number | Query the live system once before acting |
 | A "we decided X" claim | Check `git log` for the actual change |
 
@@ -132,9 +132,9 @@ The dates are not decoration. They are how the trust hierarchy resolves "recent 
 
 Memory accumulates wrong claims if nothing is removing them. The decay loop is what keeps the store healthy:
 
-1. **At read time, surface age.** When a memory entry is loaded, the system should annotate it with how old the claim is. (OpenClaw and Claude Code both do this — the system reminders that say "this memory is N days old" exist for exactly this reason.)
-2. **At verify time, replace stale claims.** When verify-before-recommend catches a memory that's wrong (path renamed, line moved), update the card immediately. Bump the `updated` date. Do not amend around the wrong claim with a "(formerly at line 380, now at line 414)" note — those don't decay either.
-3. **At conflict time, drop the loser.** If a memory contradicts current code or git log, the memory is wrong. Update or delete. Do not record a new memory saying "the old card is wrong" — that is two pieces of incorrect state.
+1. **At read time, surface age.** When a memory entry is loaded, the system should annotate it with how old the claim is. (OpenClaw and Claude Code both do this - the system reminders that say "this memory is N days old" exist for exactly this reason.)
+2. **At verify time, replace stale claims.** When verify-before-recommend catches a memory that's wrong (path renamed, line moved), update the card immediately. Bump the `updated` date. Do not amend around the wrong claim with a "(formerly at line 380, now at line 414)" note - those don't decay either.
+3. **At conflict time, drop the loser.** If a memory contradicts current code or git log, the memory is wrong. Update or delete. Do not record a new memory saying "the old card is wrong" - that is two pieces of incorrect state.
 4. **At maintenance time, prune handoff inbox.** Anything in the review inbox older than ~30 days is either content nobody decided on (delete) or content that has already become true another way (delete).
 
 The decay loop is the part most stacks miss. They write enthusiastically, verify reluctantly, and never delete. After six months the index is full of pointers to claims that haven't been true for months.
@@ -176,25 +176,25 @@ A healthy store has: index under target size, no card older than your decay budg
 
 ## Gotchas
 
-**Stale file/line citations rot the fastest.** A card that says "function X lives at `dist/foo-CQnl8oWA.js:382`" stops being true the moment the bundle is rebuilt. Bundle hashes change every release; line numbers drift on any edit. **Fix:** never store identifiers that change frequently. Store *symbol grep targets* instead — `PLANNING_ONLY_PROMISE_RE\\s*=` survives bundle renames; the explicit filename does not. Wrap any tool that depends on a hashed bundle to find the file by symbol grep, not filename pattern.
+**Stale file/line citations rot the fastest.** A card that says "function X lives at `dist/foo-CQnl8oWA.js:382`" stops being true the moment the bundle is rebuilt. Bundle hashes change every release; line numbers drift on any edit. **Fix:** never store identifiers that change frequently. Store *symbol grep targets* instead - `PLANNING_ONLY_PROMISE_RE\\s*=` survives bundle renames; the explicit filename does not. Wrap any tool that depends on a hashed bundle to find the file by symbol grep, not filename pattern.
 
 **Duplicate cards happen when the write loop skips the read step.** "I'll write this down before I forget" produces a second card on a topic that already has one. Six months later the contradictions are lurking. **Fix:** make "search index for this topic" a hard prerequisite of writing any new card. If you find an existing card, update it. The line in the index doesn't double; the card content gets the new fact appended or merged.
 
-**Saving the wrong things bloats the store.** "User asked me to remember they prefer tabs over spaces" — that's already in their dotfiles. "Remember the auth token is X" — that's in the credential store. "Remember we fixed the bug by checking for null first" — the fix is in the code, the why is in the commit. **Fix:** apply the durability filter from the write loop. If the answer is in current code, current git log, current dotfiles, current secrets store, or already in CLAUDE.md, do not save it. Memory is for things that those stores can't tell future-you about.
+**Saving the wrong things bloats the store.** "User asked me to remember they prefer tabs over spaces" - that's already in their dotfiles. "Remember the auth token is X" - that's in the credential store. "Remember we fixed the bug by checking for null first" - the fix is in the code, the why is in the commit. **Fix:** apply the durability filter from the write loop. If the answer is in current code, current git log, current dotfiles, current secrets store, or already in CLAUDE.md, do not save it. Memory is for things that those stores can't tell future-you about.
 
-**Memory and current code disagreeing causes confidently-wrong recommendations.** This is the failure mode that drives "what breaks most" — an agent reads a card, follows the card, and the card was right two months ago but isn't now. **Fix:** verify before recommending. Memory's job is "remember this exists, here's where to look"; current code's job is "actually run." Treat them as different sources with different authorities.
+**Memory and current code disagreeing causes confidently-wrong recommendations.** This is the failure mode that drives "what breaks most" - an agent reads a card, follows the card, and the card was right two months ago but isn't now. **Fix:** verify before recommending. Memory's job is "remember this exists, here's where to look"; current code's job is "actually run." Treat them as different sources with different authorities.
 
-**Index truncation is invisible until it bites.** Most agent harnesses load the index into the prompt and truncate past some line count (Claude Code's auto-memory truncates after ~200 lines, OpenClaw's MEMORY.md is bounded by the context budget). Pointers below the truncation line silently disappear from prompt context. **Fix:** keep the index under target size *with margin*. When it grows, consolidate (multiple related lines → one line + sub-card) before adding. Never put long content in the index itself — that's what cards are for.
+**Index truncation is invisible until it bites.** Most agent harnesses load the index into the prompt and truncate past some line count (Claude Code's auto-memory truncates after ~200 lines, OpenClaw's MEMORY.md is bounded by the context budget). Pointers below the truncation line silently disappear from prompt context. **Fix:** keep the index under target size *with margin*. When it grows, consolidate (multiple related lines → one line + sub-card) before adding. Never put long content in the index itself - that's what cards are for.
 
 **Cross-machine drift from multiple canonical writers.** If two machines both write canonical memory, eventually they diverge in non-trivial ways (one ingested handoff A first, the other B, both updated the same card differently). **Fix:** exactly one host is the canonical writer. Other hosts produce handoffs that sync to the canonical host's inbox. The pipeline is in [claude-code-memory-handoffs](claude-code-memory-handoffs.md); this guide just states the rule: one canonical writer, full stop.
 
-**"User said remember X" is not a durability check.** A user asking you to remember something does not, on its own, mean it belongs in long-term memory. They might be venting, working through a thought, or assuming the memory system is the right fit when CLAUDE.md or a project-level note is. **Fix:** when explicitly asked to save, save the thing — but pick the right store. Stable preferences → user-profile memory. Workflow rules → `rules/*.md`. Architecture decisions → cards. Project state → conversation/plan tools, not memory.
+**"User said remember X" is not a durability check.** A user asking you to remember something does not, on its own, mean it belongs in long-term memory. They might be venting, working through a thought, or assuming the memory system is the right fit when CLAUDE.md or a project-level note is. **Fix:** when explicitly asked to save, save the thing - but pick the right store. Stable preferences → user-profile memory. Workflow rules → `rules/*.md`. Architecture decisions → cards. Project state → conversation/plan tools, not memory.
 
 **Conversation context written as memory rots immediately.** "We're currently debugging X, the next step is Y" is plan/task content, not memory. By the next session it's stale; by next week it's actively misleading. **Fix:** use the plan/task tools for in-flight work. Save memory only when the *outcome* of the work is durable knowledge. The thing that gets saved is "X was caused by Y because of Z," not "we are debugging X."
 
 ## Related
 
-- [`knowledge/memory-token-optimization.md`](memory-token-optimization.md) — three-tier physical layout (index, cards, daily logs), semantic search with local embeddings, prompt-caching hygiene
-- [`knowledge/claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) — cross-machine handoff format, ingester, auto-promotion rules, the canonical-writer pattern
-- [`obsidian-sync.md`](obsidian-sync.md) — bidirectional cloud sync that does not turn your vault into a conflict graveyard
-- [`session-jsonl.md`](session-jsonl.md) — using session transcripts as a memory source for "what was said when" questions
+- [`knowledge/memory-token-optimization.md`](memory-token-optimization.md) - three-tier physical layout (index, cards, daily logs), semantic search with local embeddings, prompt-caching hygiene
+- [`knowledge/claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) - cross-machine handoff format, ingester, auto-promotion rules, the canonical-writer pattern
+- [`obsidian-sync.md`](obsidian-sync.md) - bidirectional cloud sync that does not turn your vault into a conflict graveyard
+- [`session-jsonl.md`](session-jsonl.md) - using session transcripts as a memory source for "what was said when" questions

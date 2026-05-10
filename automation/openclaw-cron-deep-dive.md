@@ -106,7 +106,7 @@ Precise scheduled tasks that run in isolated sessions with their own model assig
 
 **Two critical fields here:**
 
-- `model: "openai-codex/gpt-5.5:cron"` routes through the `thinking: low` alias. Same model as main, less thinking budget — perfect for mechanical briefing work.
+- `model: "openai-codex/gpt-5.5:cron"` routes through the `thinking: low` alias. Same model as main, less thinking budget - perfect for mechanical briefing work.
 - `delivery.to: "telegram:<user_id>"` is explicit. **Always set this.** Bare `"mode": "announce"` with multiple channels enabled guesses wrong and posts to whichever channel the bot *isn't* in. (Incident: 2026-03-02. We patched all 20 cron configs with explicit targets the same day.)
 
 ## Model Assignment for Cron Jobs
@@ -266,7 +266,7 @@ Options:
 - `"announce"`: Send results to a specific chat target
 - `"webhook"`: POST results to a URL
 
-**Always set `to`.** The fields `channel` and vague `mode: "announce"` routing are not reliable when multiple channels are enabled — the gateway will pick a channel the bot isn't in and the message disappears. Format is `"telegram:<user_id>"`, `"discord:<channel_id>"`, or `"signal:<contact>"`.
+**Always set `to`.** The fields `channel` and vague `mode: "announce"` routing are not reliable when multiple channels are enabled - the gateway will pick a channel the bot isn't in and the message disappears. Format is `"telegram:<user_id>"`, `"discord:<channel_id>"`, or `"signal:<contact>"`.
 
 ## Quiet Hours
 
@@ -326,7 +326,7 @@ openclaw cron list
 # Check for jobs with stale/failing runs
 openclaw cron runs <jobId> --limit 10
 
-# Audit delivery targets — every job should have an explicit "to"
+# Audit delivery targets - every job should have an explicit "to"
 openclaw cron list --json | jq '.[] | select(.delivery.mode == "announce" and .delivery.to == null) | .name'
 # Expected output: nothing. Any name listed is a routing-roulette risk.
 
@@ -346,7 +346,7 @@ cat ~/.openclaw/workspace/HEARTBEAT.md
 
 5. **Don't create cron jobs for what heartbeats handle.** If you need "check X every so often and report if something's wrong," that's a heartbeat task. Cron is for "do Y at exactly Z time."
 
-6. **Bare `announce` without `to` is a routing coin-flip.** With both Telegram and Discord enabled, the gateway guesses — and we've confirmed the guess is wrong often enough to treat it as a bug. Always set `"to": "<channel>:<target_id>"`.
+6. **Bare `announce` without `to` is a routing coin-flip.** With both Telegram and Discord enabled, the gateway guesses - and we've confirmed the guess is wrong often enough to treat it as a bug. Always set `"to": "<channel>:<target_id>"`.
 
 7. **Haiku is no longer in the cron roster.** Older versions of this guide recommended Anthropic Haiku for cheap cron work. That path went away with the [claude-cli removal](../ai-stack/claude-cli-to-acp-migration.md). `gpt-5.5:cron` (thinking low) is the current equivalent and stays on the same subscription envelope as your main agent.
 

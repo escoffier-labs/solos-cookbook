@@ -181,7 +181,7 @@ Channels are plugins. Register them in `plugins.allow` and `plugins.entries`, th
 }
 ```
 
-**Schema break heads-up (2026-04-14):** The `2026.4.14` release removed `ackReaction`, `typingIndicator`, and scalar-streaming options from the telegram channel schema. `openclaw doctor --fix` is a stub for this — migrate with `jq` before restarting the gateway, or the gateway crash-loops on validation.
+**Schema break heads-up (2026-04-14):** The `2026.4.14` release removed `ackReaction`, `typingIndicator`, and scalar-streaming options from the telegram channel schema. `openclaw doctor --fix` is a stub for this - migrate with `jq` before restarting the gateway, or the gateway crash-loops on validation.
 
 ## ACP Escalation via Discord Thread
 
