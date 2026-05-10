@@ -31,7 +31,7 @@ type Config = {
 let RULES: Array<{ pattern: RegExp; replacement: string }> = [];
 
 function loadRulesSync(): typeof RULES {
-  // Read files, parse configs, build state — synchronously, at boot.
+  // Read files, parse configs, build state - synchronously, at boot.
   // Do NOT do this work inside the hook handler.
   return [
     // { pattern: /<SOME_REGEX>/g, replacement: "<REDACTED>" },

@@ -1,5 +1,5 @@
 # Skeleton systemd timer unit. Pairs with systemd-timer.service.
-# OnCalendar uses systemd's calendar event syntax — see `man systemd.time`.
+# OnCalendar uses systemd's calendar event syntax - see `man systemd.time`.
 
 [Unit]
 Description=Run <name>.service on schedule

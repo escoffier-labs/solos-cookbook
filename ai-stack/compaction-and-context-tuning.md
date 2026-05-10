@@ -173,7 +173,7 @@ Without re-injection, a 4-hour session will gradually lose your agent's personal
 A single `web_fetch` can dump 50K characters into your context. Multiply that by a few research queries and you've burned half your window on content you referenced once. Cache-TTL prunes these after the configured time while keeping recent tool outputs available for follow-up questions.
 
 **Tuning notes:**
-- The `ttl: "5m"` above is aggressive — it's what we run because we do lots of web research and file scanning. Use `"1h"` or `"2h"` if your workflow is quieter.
+- The `ttl: "5m"` above is aggressive - it's what we run because we do lots of web research and file scanning. Use `"1h"` or `"2h"` if your workflow is quieter.
 - `minPrunableToolChars: 20000` skips prunning anything under 20K chars. Smaller outputs cost less to keep around; big ones are the actual problem.
 - `keepLastAssistants: 3` keeps the recent thread intact regardless of what the pruner does to tool outputs.
 
@@ -245,4 +245,4 @@ The result: your agent maintains personality across multi-hour sessions, preserv
 - **Setting `softThresholdTokens` too low.** If flush triggers on every other message, you'll get dozens of near-empty memory files. Set it high enough that flush only fires when there's real content to preserve.
 - **Not verifying after patching.** `config.patch` merges silently. If you typo a field name, it creates a new (ignored) field instead of failing. Always verify with `config.get`.
 - **Changing bootstrap files to shift compaction behavior.** Any edit to SOUL.md, AGENTS.md, TOOLS.md, IDENTITY.md, or MEMORY.md invalidates the whole prefix cache. Don't treat bootstrap edits as free. See [prompt caching](prompt-caching.md).
-- **Not setting `keepLastAssistants` low enough.** Older guides recommended `10`. We run `3` in production — compaction has more room to work without sacrificing recent conversational coherence.
+- **Not setting `keepLastAssistants` low enough.** Older guides recommended `10`. We run `3` in production - compaction has more room to work without sacrificing recent conversational coherence.

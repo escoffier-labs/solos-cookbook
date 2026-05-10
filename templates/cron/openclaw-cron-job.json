@@ -11,7 +11,7 @@
   "_model_comment": "Use a model alias with thinking: 'low'. Reserve high-thinking for interactive.",
 
   "prompt": "Run /path/to/your/script.sh and post the result.",
-  "_prompt_comment": "Reference a script file. Do NOT compose shell here — heredoc detection will trip the security gate.",
+  "_prompt_comment": "Reference a script file. Do NOT compose shell here - heredoc detection will trip the security gate.",
 
   "delivery": {
     "mode": "announce",

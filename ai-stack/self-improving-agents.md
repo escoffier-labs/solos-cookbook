@@ -14,7 +14,7 @@ AI agents wake up fresh every session. They have no memory of what they did wron
 - "Stop pushing directly to main"
 - "Don't use em dashes"
 - "Check what's already loaded before searching"
-- "Stop narrating what you're about to do — just call the tool"
+- "Stop narrating what you're about to do - just call the tool"
 - "Check the PR state before pushing follow-ups"
 
 Each correction costs you time and tokens. A self-improving agent captures corrections once and applies them forever.
@@ -149,7 +149,7 @@ The plugin lives at `~/.openclaw/workspace/.openclaw/extensions/tool-narration-g
 
 Pi is the flagship surface. OpenClaw loads the same extension format, so tokenjuice lands there too.
 
-**Caveat:** Claude Code 2.1.113+ doesn't substitute `tool_result` from PostToolUse hooks — only `additionalContext` lands. If you're chasing the full Pi savings profile on Claude Code, don't expect it.
+**Caveat:** Claude Code 2.1.113+ doesn't substitute `tool_result` from PostToolUse hooks - only `additionalContext` lands. If you're chasing the full Pi savings profile on Claude Code, don't expect it.
 
 ## Error Detection & Learning Capture
 
@@ -234,7 +234,7 @@ Set up an automated cron job that reviews recent sessions across all channels an
 }
 ```
 
-This runs on the main `gpt-5.5` (medium thinking), not `gpt-5.5:cron`. Memory sweep needs judgment about what's worth keeping — thinking low produces shallower cards.
+This runs on the main `gpt-5.5` (medium thinking), not `gpt-5.5:cron`. Memory sweep needs judgment about what's worth keeping - thinking low produces shallower cards.
 
 ### What the Sweep Does
 
@@ -247,7 +247,7 @@ This runs on the main `gpt-5.5` (medium thinking), not `gpt-5.5:cron`. Memory sw
 
 ### Model Selection
 
-Use your main orchestration model (GPT 5.5 medium) for the sweep. The task is structured extraction with some judgment — memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through ACP Opus: the escalation lane is for high-judgment review work, not back-office housekeeping.
+Use your main orchestration model (GPT 5.5 medium) for the sweep. The task is structured extraction with some judgment - memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through ACP Opus: the escalation lane is for high-judgment review work, not back-office housekeeping.
 
 ## Real Corrections We've Captured
 
@@ -343,6 +343,6 @@ echo "=== Error Detection ==="
 
 6. **Don't skip the pre-task search.** The whole system falls apart if the agent doesn't check for relevant corrections before starting work. Make the self-audit a non-negotiable part of AGENTS.md.
 
-7. **Prompt-level guards don't scale; hook-level guards do.** If a correction keeps surfacing, don't keep adding sentences to AGENTS.md — build (or enable) a plugin that makes the wrong behavior structurally impossible. `tool-narration-guard` is the canonical example.
+7. **Prompt-level guards don't scale; hook-level guards do.** If a correction keeps surfacing, don't keep adding sentences to AGENTS.md - build (or enable) a plugin that makes the wrong behavior structurally impossible. `tool-narration-guard` is the canonical example.
 
 8. **Validate memory before acting on it.** A memory card naming a specific file, function, or flag is a claim about a snapshot in time. Files get renamed, endpoints get removed. Before recommending something pulled from a memory card, grep for it or read the file. "The card says X exists" is not the same as "X exists now."

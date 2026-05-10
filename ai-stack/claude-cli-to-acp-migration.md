@@ -19,7 +19,7 @@ In April 2026, Anthropic started rejecting Claude Max subscription OAuth tokens 
 
 The path forward is to keep Opus reachable via the **Agent Client Protocol (ACP)** through the ACPX plugin. Claude Code runs natively on your machine as an ACP server; OpenClaw connects to it as a client. Anthropic's own CLI handles the Max OAuth handshake, and OpenClaw treats the resulting session as a sub-agent.
 
-Opus becomes an **escalation target**, not a primary orchestrator. Your main agent runs on something else (we use GPT 5.5 via Codex Pro — see [multi-model orchestration](multi-model-orchestration.md)).
+Opus becomes an **escalation target**, not a primary orchestrator. Your main agent runs on something else (we use GPT 5.5 via Codex Pro - see [multi-model orchestration](multi-model-orchestration.md)).
 
 ## Who This Is For
 
@@ -195,7 +195,7 @@ Notes on the config block:
 }
 ```
 
-Replace the primary with whatever you're standardizing on. Keep the fallback list short and confined to providers you actively use — fallback hops you haven't tested will silently degrade quality when the primary hiccups.
+Replace the primary with whatever you're standardizing on. Keep the fallback list short and confined to providers you actively use - fallback hops you haven't tested will silently degrade quality when the primary hiccups.
 
 ### 3c. Delete claude-cli Auth Profiles
 
@@ -327,7 +327,7 @@ cp ~/.openclaw/openclaw.json.pre-acp.<DATE> ~/.openclaw/openclaw.json
 systemctl --user restart openclaw-gateway
 ```
 
-If `claude` itself stopped working (Anthropic rolled out a new block), rollback doesn't help — you need to move your primary off Claude regardless. That's what this migration prepares you for.
+If `claude` itself stopped working (Anthropic rolled out a new block), rollback doesn't help - you need to move your primary off Claude regardless. That's what this migration prepares you for.
 
 ---
 
@@ -338,7 +338,7 @@ Worth naming honestly:
 - **Opus no longer sees every incoming message.** The main agent does. If you valued Opus's injection resistance and nuance on every interaction, that goes away.
 - **ACP sessions are short-lived by design.** Each invocation is a fresh Claude Code session. Cross-turn memory relies on your workspace files, not the model's context.
 - **Response latency is higher.** ACP adds a subprocess hop. Expect 1–3s overhead on top of normal model latency.
-- **Tool use is mediated twice.** Claude Code has its own tool layer. OpenClaw wraps the ACP session. Complex tool chains can get tangled — keep escalation tasks narrow.
+- **Tool use is mediated twice.** Claude Code has its own tool layer. OpenClaw wraps the ACP session. Complex tool chains can get tangled - keep escalation tasks narrow.
 
 For most users, the trade is worth it: you preserve access to Opus for the tasks where it shines, and you stop fighting Anthropic's subscription-OAuth policy.
 

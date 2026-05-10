@@ -14,9 +14,9 @@ Three interfaces to n8n exist. Each has a different job and a different failure 
 
 | Interface | Good at | Silently breaks on |
 |-----------|---------|---------------------|
-| **`n8n-ops-mcp` (MCP server)** | Agent-driven reads/writes with confirm gates, batch operations, redaction at the tool layer, schema-aware updates that don't strip settings | Anything not yet exposed as a tool — fall through to API for the gap |
+| **`n8n-ops-mcp` (MCP server)** | Agent-driven reads/writes with confirm gates, batch operations, redaction at the tool layer, schema-aware updates that don't strip settings | Anything not yet exposed as a tool - fall through to API for the gap |
 | **REST API (`/api/v1/...`)** | Programmatic creates, single-workflow updates of nodes/connections, audit and credential reads | `PUT /workflows/:id` strips `settings.errorWorkflow`. `POST /workflows/:id/run` returns 405. Error workflows do not fire on CLI or manual runs. |
-| **Direct sqlite** | Surgical fixes when import is awkward, settings columns where the API has a contract bug, recovery when a workflow gets corrupted by repeated PUTs | Updating `workflow_entity.nodes` or `connections` without also updating the active `workflow_history` row — n8n re-syncs from history on startup and clobbers your edit |
+| **Direct sqlite** | Surgical fixes when import is awkward, settings columns where the API has a contract bug, recovery when a workflow gets corrupted by repeated PUTs | Updating `workflow_entity.nodes` or `connections` without also updating the active `workflow_history` row - n8n re-syncs from history on startup and clobbers your edit |
 
 Beyond interfaces, two cross-cutting traps catch every n8n stack eventually: the Code node sandbox is more limited than the docs imply, and the JS task runner does parse-time substitution over user code that produces cryptic SyntaxErrors when JS-meaningful characters end up in named consts.
 
@@ -24,7 +24,7 @@ The cost of getting these right once is low. The cost of getting them wrong is s
 
 ## Prerequisites
 
-- n8n running somewhere (Docker, native, hosted) — this guide assumes Docker on Linux, but most patterns transfer
+- n8n running somewhere (Docker, native, hosted) - this guide assumes Docker on Linux, but most patterns transfer
 - An MCP-capable client (Claude Code, Claude Desktop, OpenClaw, Hermes Agent, Codex CLI) for the recommended interface
 - Comfort with sqlite, JSON, and reading n8n's OpenAPI schema when the gaps need filling
 
@@ -54,7 +54,7 @@ Need to interact with n8n programmatically?
       in one transaction, restart, verify with a fresh GET.
 ```
 
-### Layer 1 — Recommended interface: `n8n-ops-mcp`
+### Layer 1 - Recommended interface: `n8n-ops-mcp`
 
 `n8n-ops-mcp` is an ops-focused MCP server that wraps the n8n API with the gotchas already handled: schema-aware updates that don't strip settings, batch operations with proper abort semantics, redaction of secrets at the tool layer, and confirm gates on irreversible writes.
 
@@ -75,7 +75,7 @@ npm install -g n8n-ops-mcp
         "N8N_BASE_URL": "https://<YOUR_N8N>",
         "N8N_API_KEY": "<API_KEY>",
         "N8N_ENABLE_EDIT": "true",
-        "_comment": "Set N8N_ENABLE_CREDENTIALS_WRITE=true ONLY when you need it. Default off — second gate on top of enableEdit.",
+        "_comment": "Set N8N_ENABLE_CREDENTIALS_WRITE=true ONLY when you need it. Default off - second gate on top of enableEdit.",
         "N8N_ENABLE_CREDENTIALS_WRITE": "false"
       }
     }
@@ -100,7 +100,7 @@ The same `command` + `env` shape works for OpenClaw (`plugins.entries.<id>.confi
 
 If you build your own n8n integration, treat this list as the minimum bar to clear before you trust it.
 
-### Layer 2 — REST API gaps and traps
+### Layer 2 - REST API gaps and traps
 
 Where the MCP doesn't cover what you need, fall through to the REST API. The traps to know:
 
@@ -118,15 +118,15 @@ docker exec n8n sh -c 'N8N_RUNNERS_ENABLED=false N8N_RUNNERS_BROKER_PORT=5680 n8
 
 Or, in a script, the MCP's `n8n_trigger_workflow`. **Note:** error workflows fire only on trigger-mode executions (Schedule, Webhook, Cron). They do NOT fire on `n8n execute --id` or manual editor runs. If you're smoke-testing the error chain, use an Execute Workflow Trigger as the entry node so the cascade actually fires.
 
-**Workflows can corrupt after multiple PUTs.** If executions start failing with no diagnostic info — `status: error, lastNode: null, runData: {}` — and the workflow has been PUT-edited a lot, the fix is delete + recreate. Save the workflow JSON first.
+**Workflows can corrupt after multiple PUTs.** If executions start failing with no diagnostic info - `status: error, lastNode: null, runData: {}` - and the workflow has been PUT-edited a lot, the fix is delete + recreate. Save the workflow JSON first.
 
-### Layer 3 — Direct sqlite (escape hatch)
+### Layer 3 - Direct sqlite (escape hatch)
 
 n8n's data model is two-table for an unobvious reason:
 
-- `workflow_entity` — the editable "draft" view the UI renders and POSTs against
-- `workflow_history` — versioned snapshots; each save creates a new row
-- `workflow_entity.activeVersionId` — foreign key into `workflow_history`. **This is the runtime source of truth.** When n8n activates a workflow on startup, it reads `nodes` and `connections` from the history row, then re-syncs `workflow_entity` to match.
+- `workflow_entity` - the editable "draft" view the UI renders and POSTs against
+- `workflow_history` - versioned snapshots; each save creates a new row
+- `workflow_entity.activeVersionId` - foreign key into `workflow_history`. **This is the runtime source of truth.** When n8n activates a workflow on startup, it reads `nodes` and `connections` from the history row, then re-syncs `workflow_entity` to match.
 
 So an UPDATE against `workflow_entity.nodes` looks like it worked (SELECT confirms the new value), survives until n8n restarts, then gets clobbered when n8n re-syncs from history. Silent revert. The fix is to update both rows in one transaction:
 
@@ -155,7 +155,7 @@ con.commit()
 
 **Preferred alternative:** `docker exec n8n n8n import:workflow --input=file.json` goes through the normal import path, updates both tables, and creates a new history version. Use that when the edit isn't surgical enough to need direct DB. Be aware: `import:workflow` auto-deactivates the imported workflow ("Remember to activate later"). For workflows that were active before import, re-activate after.
 
-### Layer 4 — Code node sandbox
+### Layer 4 - Code node sandbox
 
 n8n's Code node JavaScript sandbox has non-obvious holes. The ones that bite:
 
@@ -182,11 +182,11 @@ n8n's js-task-runner does parse-time substitution and folding over user code bef
 
 - Inline the character via escape sequence directly: `'\n'`, `'\x60'`, `` `\\n` ``
 - Wrap behind a function call so the folder can't fold over it: `String.fromCharCode(96)` at every use site, no intermediate const
-- For embedded scripts (e.g., `String.raw\`...\`` passed to `cp.spawnSync('node', ['-e', script])`), the rule applies to identifiers used INSIDE the embedded script too — the runner appears to fold across the template boundary
+- For embedded scripts (e.g., `String.raw\`...\`` passed to `cp.spawnSync('node', ['-e', script])`), the rule applies to identifiers used INSIDE the embedded script too - the runner appears to fold across the template boundary
 
 The bug is data-dependent and intermittent. One workflow self-healed after an n8n restart with no code change. Don't trust "it's working now" without removing the trigger pattern.
 
-### Layer 5 — Failure classification
+### Layer 5 - Failure classification
 
 The default behavior on a multi-workflow stack is one Error Trigger workflow that posts raw error text to a chat channel. Within a week the channel is unreadable: 80 messages a day, most of them the same SyntaxError repeating from a single broken Code node.
 
@@ -216,12 +216,12 @@ Error Trigger -> Classify + Dedup -> Post to Chat
 - `sha1(workflowId + lastNode + bucket + normalized_message_first_line)`, first 12 hex chars
 - Normalize: strip hex IDs, numbers, paths, URLs so similar errors collapse
 - State in `$getWorkflowStaticData('global').failures[fingerprint]` with `count`, `count24h`, `firstSeen`, `lastSeen`, `recent` (last 5 exec ids), `seenInLast24h` (timestamps)
-- Suppress chat post if `count24h > 3` AND `lastSeen < 30min ago` AND `count24h NOT in {10, 50, 100, 500, ...}` — escalation thresholds always break suppression
+- Suppress chat post if `count24h > 3` AND `lastSeen < 30min ago` AND `count24h NOT in {10, 50, 100, 500, ...}` - escalation thresholds always break suppression
 - Always report to your agent system regardless of suppression (separate lane)
 
 **Escalation rules:**
 
-- `code-error` AND `count24h >= 3` → "AUTO-DISABLE RECOMMENDED — will never succeed on retry"
+- `code-error` AND `count24h >= 3` → "AUTO-DISABLE RECOMMENDED - will never succeed on retry"
 - `count24h == 10` → "10 identical failures in 24h"
 - `count24h == 50` → "50 identical failures in 24h"
 - Multiples of 100 → "DISABLE THIS WORKFLOW"
@@ -257,9 +257,9 @@ If a workflow is active but its `errorWorkflow` is null, a recent `PUT /workflow
 
 **`PUT /api/v1/workflows/:id` strips `settings.errorWorkflow`.** If you script a workflow update and don't re-set errorWorkflow, the error chain disappears for that workflow with no warning. **Fix:** prefer `n8n-ops-mcp` (which wraps this correctly), or use direct sqlite UPDATE on `workflow_entity.settings` (settings is single-table, with n8n stopped), or `n8n import:workflow`.
 
-**`POST /workflows/:id/run` returns 405.** No public manual-run endpoint exists. **Fix:** `docker exec n8n n8n execute --id <id>` from a host script, or the MCP's `n8n_trigger_workflow`. Be aware that CLI executes do NOT cascade to `errorWorkflow` — only auto-triggered runs (schedule, webhook, cron) do. For smoke-testing the error chain, use an Execute Workflow Trigger as the entry node.
+**`POST /workflows/:id/run` returns 405.** No public manual-run endpoint exists. **Fix:** `docker exec n8n n8n execute --id <id>` from a host script, or the MCP's `n8n_trigger_workflow`. Be aware that CLI executes do NOT cascade to `errorWorkflow` - only auto-triggered runs (schedule, webhook, cron) do. For smoke-testing the error chain, use an Execute Workflow Trigger as the entry node.
 
-**`n8n import:workflow` auto-deactivates the imported workflow.** The "Remember to activate later" message is the only signal. **Fix:** re-activate after import. If the workflow was active in DB before import, the `active=1` column survives, but the runtime registration may need a touch — verify with a quick activation API call, idempotent.
+**`n8n import:workflow` auto-deactivates the imported workflow.** The "Remember to activate later" message is the only signal. **Fix:** re-activate after import. If the workflow was active in DB before import, the `active=1` column survives, but the runtime registration may need a touch - verify with a quick activation API call, idempotent.
 
 **Task-runner constant-folding produces SyntaxErrors from JS-meaningful characters in `const`.** `const NL = '\n'` used in template literals or `.join(NL)` can produce `Invalid or unexpected token` at runtime depending on surrounding context. **Fix:** inline the character at every use site, or wrap behind a function call (`String.fromCharCode(96)` for backticks, `'\n'` literal for newlines). Same rule applies INSIDE embedded scripts passed to `spawn`/`spawnSync`.
 
@@ -269,17 +269,17 @@ If a workflow is active but its `errorWorkflow` is null, a recent `PUT /workflow
 
 **Docker `:latest` tag lags GitHub releases by ~1 minor version.** A new minor on GitHub doesn't mean it's pulled by `docker compose pull n8n` on the same day. **Fix:** if you need the latest, re-pull a few days later, or pin a specific tag in compose.
 
-**Code node `JSON.parse` of an upstream response can leak the request body in error messages.** V8's `SyntaxError` from `JSON.parse(badText)` includes a slice of the unparseable text in the error message. On a write path that carries plaintext secrets, a malformed 2xx response that echoes the request body would leak the secret through this parse-error. **Fix:** wrap ALL error classes into a body-free synthetic before logging or surfacing, and do NOT chain the original via `cause` — `cause.message` carries the leak too. (Same defense `n8n-ops-mcp` does at its tool layer.)
+**Code node `JSON.parse` of an upstream response can leak the request body in error messages.** V8's `SyntaxError` from `JSON.parse(badText)` includes a slice of the unparseable text in the error message. On a write path that carries plaintext secrets, a malformed 2xx response that echoes the request body would leak the secret through this parse-error. **Fix:** wrap ALL error classes into a body-free synthetic before logging or surfacing, and do NOT chain the original via `cause` - `cause.message` carries the leak too. (Same defense `n8n-ops-mcp` does at its tool layer.)
 
 ## Templates
 
-- `n8n-ops-mcp` install + wire snippet — see Layer 1 above; full schema documentation at the [`n8n-ops-mcp`](https://github.com/solomonneas/n8n-ops-mcp) README
-- Direct-sqlite dual-table UPDATE pattern — see Layer 3 above; lift the Python snippet directly
-- Classifier + dedup node — exhaustive recipe in Layer 5 above; standalone deep-dive planned at [`automation/failure-classifier.md`](README.md)
+- `n8n-ops-mcp` install + wire snippet - see Layer 1 above; full schema documentation at the [`n8n-ops-mcp`](https://github.com/solomonneas/n8n-ops-mcp) README
+- Direct-sqlite dual-table UPDATE pattern - see Layer 3 above; lift the Python snippet directly
+- Classifier + dedup node - exhaustive recipe in Layer 5 above; standalone deep-dive planned at [`automation/failure-classifier.md`](README.md)
 
 ## Related
 
-- [`automation/cron-patterns.md`](cron-patterns.md) — three-layer scheduling model; n8n is layer 3
-- [`automation/hooks.md`](hooks.md) — three-layer hook model; the failure classifier is the pattern that pairs with `errorWorkflow` wiring
-- [`automation/failure-classifier.md`](README.md) (planned) — full deep-dive on the classifier topology, taxonomy tuning, and escalation rules
-- [n8n-ops-mcp](https://github.com/solomonneas/n8n-ops-mcp) — the MCP server this guide recommends
+- [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model; n8n is layer 3
+- [`automation/hooks.md`](hooks.md) - three-layer hook model; the failure classifier is the pattern that pairs with `errorWorkflow` wiring
+- [`automation/failure-classifier.md`](README.md) (planned) - full deep-dive on the classifier topology, taxonomy tuning, and escalation rules
+- [n8n-ops-mcp](https://github.com/solomonneas/n8n-ops-mcp) - the MCP server this guide recommends

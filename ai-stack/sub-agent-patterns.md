@@ -106,7 +106,7 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
       {
         "id": "acp-claude",
         "model": "acpx/claude-opus-4-6",
-        "description": "Escalation target — intel, design, review, security analysis, academic work"
+        "description": "Escalation target - intel, design, review, security analysis, academic work"
       }
     ]
   }
@@ -115,7 +115,7 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
 
 `gpt55` is an alias defined in `agents.defaults.models` that resolves to `openai-codex/gpt-5.5`. See [multi-model orchestration](multi-model-orchestration.md) for the full alias setup.
 
-Research and imagegen are not separate agents in this setup — they're skills the main/coder invoke against the [browser-LLM stack](multi-model-orchestration.md#tier-3-browser-llm-stack--playwright--novnc).
+Research and imagegen are not separate agents in this setup - they're skills the main/coder invoke against the [browser-LLM stack](multi-model-orchestration.md#tier-3-browser-llm-stack--playwright--novnc).
 
 ### Assignment Rules
 
@@ -144,9 +144,9 @@ jq '.agents.list | map({id, model})' ~/.openclaw/openclaw.json
 We've been burned multiple times by agent misconfigurations:
 - Spawned Opus on ACP for a job Codex could have handled, wasting quota
 - Coder agent was on a stale alias after an OpenClaw upgrade reset plugin config
-- A one-time OpenAI 503 on `gpt-5.5` pinned a cron channel to `gpt-5.3-codex` for four days via the `auto` override system. `/reset` didn't clear it — we had to `/model` pin it back as a `user` source override.
+- A one-time OpenAI 503 on `gpt-5.5` pinned a cron channel to `gpt-5.3-codex` for four days via the `auto` override system. `/reset` didn't clear it - we had to `/model` pin it back as a `user` source override.
 
-Always check before assuming. After any OpenClaw upgrade, re-verify `agents.list` and `plugins.entries` — both have been observed to reset.
+Always check before assuming. After any OpenClaw upgrade, re-verify `agents.list` and `plugins.entries` - both have been observed to reset.
 
 ## Sub-Agent Isolation
 
@@ -223,7 +223,7 @@ Multiple sub-agents working simultaneously:
 Local model screens, main handles most work, ACP Opus gets the quality-critical tasks:
 
 ```
-1. Ollama (7B): Screen incoming email — SKIP or ESCALATE
+1. Ollama (7B): Screen incoming email - SKIP or ESCALATE
 2. If ESCALATE: Main (GPT 5.5) reads and processes
 3. If action needed:
    - Mechanical/code work → main spawns coder
@@ -244,7 +244,7 @@ sessions_spawn(
 )
 ```
 
-Or open a dedicated Discord thread routed to `acp-claude` (see [multi-channel setup](../automation/multi-channel-setup.md)) and work with Opus directly. The ACP session has no access to your main agent's conversation history — pass all necessary context in the task itself.
+Or open a dedicated Discord thread routed to `acp-claude` (see [multi-channel setup](../automation/multi-channel-setup.md)) and work with Opus directly. The ACP session has no access to your main agent's conversation history - pass all necessary context in the task itself.
 
 **When to escalate:** Intel, design, PR review that needs taste, security analysis, academic work.
 **When NOT to escalate:** Code generation, file scanning, bulk ops, anything mechanical. The coder agent (GPT 5.5) handles those faster and without burning Max-subscription quota.

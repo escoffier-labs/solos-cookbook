@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-23-red?style=for-the-badge" alt="23 guides">
+  <img src="https://img.shields.io/badge/guides-27-red?style=for-the-badge" alt="27 guides">
   <img src="https://img.shields.io/badge/updated-2026--04--28-white?style=for-the-badge" alt="Updated 2026-04-28">
 </p>
 
@@ -126,6 +126,7 @@ Read these in order:
 |-------|-------------|----------|
 | [Backup & Recovery](infrastructure/backup-recovery.md) | Restic to NAS + Google Drive, twice-daily schedule, snapshot mounts, and disaster recovery | Any |
 | [Upgrade Hygiene](infrastructure/upgrade-hygiene.md) | Surviving `openclaw update`: systemd regeneration, dist patches, OAuth sync, schema drift | Any |
+| [OpenClaw Host Topology](infrastructure/openclaw-host-topology.md) | Audit the production host shape: services, config, agents, plugins, cron, memory, browser automation, and health checks | OpenClaw |
 
 ### Knowledge management
 
@@ -134,6 +135,7 @@ Read these in order:
 | [Memory & Token Optimization](knowledge/memory-token-optimization.md) | Three-tier memory architecture, local embedding search, memory sweep cadence, and 50-100x token reduction | Any |
 | [Claude Code Memory Handoffs](knowledge/claude-code-memory-handoffs.md) | Cross-machine sync format and scheduled ingest path that keeps OpenClaw the canonical memory owner | Any |
 | [Memory Architecture](knowledge/memory-architecture.md) | Operating model: memory as point-in-time claims, trust hierarchy, write/verify/decay loops, and stale-card handling | Any |
+| [Bootstrap Files](knowledge/bootstrap-files.md) | What each durable agent file owns: AGENTS, CLAUDE, SOUL, USER, TOOLS, MEMORY, and safety files | Any |
 | [Obsidian Sync Without Conflict Roulette](knowledge/obsidian-sync.md) | One canonical vault, one sync layer, and strict writer rules for bidirectional sync that stays boring | Any |
 | [Session JSONL as Memory Source, Not Noise](knowledge/session-jsonl.md) | Search transcript logs for evidence, then promote only durable facts into memory | OpenClaw |
 
@@ -165,6 +167,16 @@ Drop-in artifacts you can lift without adopting the whole thing. See [`templates
 |----------|---------|
 | [`templates/cron/`](templates/cron/) | systemd timer, agent cron, n8n schedule trigger skeletons, paired with [`automation/cron-patterns.md`](automation/cron-patterns.md) |
 | [`templates/hooks/`](templates/hooks/) | git pre-push, Claude Code PostToolUse, OpenClaw sync plugin skeletons, paired with [`automation/hooks.md`](automation/hooks.md) |
+| [`templates/bootstrap/`](templates/bootstrap/) | sanitized workspace file skeletons, paired with [`knowledge/bootstrap-files.md`](knowledge/bootstrap-files.md) |
+| [`templates/skills/`](templates/skills/) | public-safe `SKILL.md` skeleton and sanitization checklist, paired with [`ai-stack/skills-development.md`](ai-stack/skills-development.md) |
+| [`templates/ai-stack/`](templates/ai-stack/) | model alias snippets, ACP wrapper shape, plugin smoke check, paired with [`ai-stack/multi-model-orchestration.md`](ai-stack/multi-model-orchestration.md) |
+| [`templates/n8n/`](templates/n8n/) | workflow and failure-classifier skeletons, paired with [`automation/n8n-patterns.md`](automation/n8n-patterns.md) |
+| [`templates/scrubbers/`](templates/scrubbers/) | deterministic publish-boundary scrubber skeleton and fixtures, paired with [`automation/hooks.md`](automation/hooks.md) |
+| [`templates/sandbox/`](templates/sandbox/) | restricted worker command wrappers, paired with [`automation/hooks.md`](automation/hooks.md) |
+
+## Skills
+
+Public, sanitized skills copied from the real stack live in [`skills/`](skills/). These are reusable patterns, not private machine dumps.
 
 ## Who This Is For
 

@@ -9,23 +9,23 @@ How OpenClaw's prompt caching works across providers, how to keep your cache hit
 
 ## Caching By Provider
 
-The advice in this guide applies across providers, but the mechanics differ. OpenClaw handles the translation automatically — you only need to know the shape so you can debug cache misses.
+The advice in this guide applies across providers, but the mechanics differ. OpenClaw handles the translation automatically - you only need to know the shape so you can debug cache misses.
 
 ### Anthropic (Direct API and ACP Opus)
 
 Anthropic caches the system prompt prefix server-side with explicit `cache_control` markers. OpenClaw maps `cacheControlTtl: "1h"` to `cacheRetention: "long"` on direct calls and injects `cache_control: { type: "ephemeral" }` via OpenRouter. Cache reads run ~90% cheaper than uncached input.
 
-Since the April 2026 [claude-cli → ACP migration](claude-cli-to-acp-migration.md), Opus is no longer the main agent in most OpenClaw setups. Caching still matters on the ACP escalation path — each Opus call pays the cache penalty if the prefix shifts — but the cost surface is smaller.
+Since the April 2026 [claude-cli → ACP migration](claude-cli-to-acp-migration.md), Opus is no longer the main agent in most OpenClaw setups. Caching still matters on the ACP escalation path - each Opus call pays the cache penalty if the prefix shifts - but the cost surface is smaller.
 
 ### OpenAI Codex (Main Agent Path)
 
 OpenAI caches automatically on repeated prefixes when requests come from the same API key within a short window. There's no explicit `cache_control` block; you just keep the prefix stable.
 
-For GPT 5.5 on a Codex Pro subscription, the cost is already flat-rate, so caching savings show up as *rate-limit headroom* rather than a dollar reduction. Breaking the cache still costs you — it eats more of your weekly quota faster.
+For GPT 5.5 on a Codex Pro subscription, the cost is already flat-rate, so caching savings show up as *rate-limit headroom* rather than a dollar reduction. Breaking the cache still costs you - it eats more of your weekly quota faster.
 
 ### Other Backends
 
-OpenClaw supports other provider backends (Gemini CLI, direct Anthropic API, OpenRouter). The cache hygiene rules in this guide still apply — stable prefix, no mid-session bootstrap edits — but the per-turn savings are less visible on providers that handle context management internally. If you add a backend, measure whether your bootstrap stability is actually helping before assuming.
+OpenClaw supports other provider backends (Gemini CLI, direct Anthropic API, OpenRouter). The cache hygiene rules in this guide still apply - stable prefix, no mid-session bootstrap edits - but the per-turn savings are less visible on providers that handle context management internally. If you add a backend, measure whether your bootstrap stability is actually helping before assuming.
 
 ## OpenClaw Cache Configuration
 
@@ -58,9 +58,9 @@ OpenClaw handles caching automatically. The relevant config:
 }
 ```
 
-**Do not change these without a specific reason.** They represent optimal caching through config — the only user-facing knobs that actually matter for cache hit rate.
+**Do not change these without a specific reason.** They represent optimal caching through config - the only user-facing knobs that actually matter for cache hit rate.
 
-**Hardcoded internals you can't tune.** Bootstrap file load order, system-prompt section ordering, skill loading strategy, and cache metrics are all compiled into OpenClaw's runtime JS. Don't waste time trying to reorder context via hooks — it won't stick.
+**Hardcoded internals you can't tune.** Bootstrap file load order, system-prompt section ordering, skill loading strategy, and cache metrics are all compiled into OpenClaw's runtime JS. Don't waste time trying to reorder context via hooks - it won't stick.
 
 ## Bootstrap File Load Order
 
@@ -158,7 +158,7 @@ One mid-session bootstrap edit at turn 25 costs an extra $3.51 over the remainin
 
 ### Subscription Path (Codex Pro, Claude Max via ACP)
 
-On a flat-rate subscription, a cache miss doesn't show up on your bill — it shows up as earlier rate-limit throttling. A session that used to last 4 hours might hit the hourly cap at 2.5 hours if you're invalidating the prefix every turn. Same effect on your workflow, different failure mode.
+On a flat-rate subscription, a cache miss doesn't show up on your bill - it shows up as earlier rate-limit throttling. A session that used to last 4 hours might hit the hourly cap at 2.5 hours if you're invalidating the prefix every turn. Same effect on your workflow, different failure mode.
 
 ## Verification
 
@@ -199,6 +199,6 @@ grep -rn "$(date +%Y)" ~/.openclaw/workspace/IDENTITY.md ~/.openclaw/workspace/S
 
 4. **You can't force a cache build.** The cache is built automatically on the first request with a given prefix. There's no "warm the cache" command. The first turn of each session always pays full price for the prefix.
 
-5. **Context pruning can split tool_use/tool_result pairs.** When the conversation grows past the pruning threshold, the pruner may remove a `tool_result` while keeping its `tool_use` — resulting in a hard Anthropic API error (`tool_use ids were found without tool_result blocks`). No cache advice will help here; the only fix is starting a fresh conversation. Upstream fix is queued.
+5. **Context pruning can split tool_use/tool_result pairs.** When the conversation grows past the pruning threshold, the pruner may remove a `tool_result` while keeping its `tool_use` - resulting in a hard Anthropic API error (`tool_use ids were found without tool_result blocks`). No cache advice will help here; the only fix is starting a fresh conversation. Upstream fix is queued.
 
 6. **Cache advice applies even without Anthropic.** If your main is GPT 5.5 on Codex Pro, the rules above still protect your quota. Stable prefix = more effective throughput before you hit the weekly cap.

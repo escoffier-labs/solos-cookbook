@@ -4,8 +4,8 @@ Drop-in skeletons for the three scheduling layers covered in [`../../automation/
 
 | File | Layer | Use when |
 |------|-------|----------|
-| `systemd-timer.service` + `systemd-timer.timer` | systemd | OS plumbing — backups, sync, mounts, log rotation |
-| `openclaw-cron-job.json` | OpenClaw cron | Single-shot agent tasks — research, summarize, post |
+| `systemd-timer.service` + `systemd-timer.timer` | systemd | OS plumbing - backups, sync, mounts, log rotation |
+| `openclaw-cron-job.json` | OpenClaw cron | Single-shot agent tasks - research, summarize, post |
 | `n8n-schedule-trigger.json` | n8n | Multi-step workflows with branches, fan-out, error handling |
 
 ## How to use
