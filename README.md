@@ -17,8 +17,8 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-33-red?style=for-the-badge" alt="33 guides">
-  <img src="https://img.shields.io/badge/updated-2026--05--11-white?style=for-the-badge" alt="Updated 2026-05-11">
+  <img src="https://img.shields.io/badge/guides-44-red?style=for-the-badge" alt="44 guides">
+  <img src="https://img.shields.io/badge/updated-2026--05--12-white?style=for-the-badge" alt="Updated 2026-05-12">
 </p>
 
 <p align="center">
@@ -158,17 +158,31 @@ Read these in order:
 |-------|-------------|----------|
 | [Publish-Time Scrubbing](publishing/publish-time-scrubbing.md) | Deterministic scrubbers, scanner gates, media review, and publish logs before artifacts leave the private workspace | Any |
 
-### Hardware *(planned)*
+### Hardware
 
-The physical layer: choosing the box, partitioning the disk, deciding what the host OS owns vs what gets virtualized. See [`hardware/`](hardware/).
+| Guide | Description | Platform |
+|-------|-------------|----------|
+| [Bare-Metal Setup](hardware/bare-metal-setup.md) | Hardware spec, OS install, baseline tuning for a single-host agent stack | Ubuntu 24.04 |
+| [Disk Layout with LVM](hardware/disk-layout-lvm.md) | Two-disk LVM design that survives "I need to grow this" without a reinstall | Any |
+| [Kernel Tuning](hardware/kernel-tuning.md) | sysctl, swap, scheduler choices, per-user limits for an always-on AI host | Linux 6.x |
 
-### Tools *(planned)*
+### Tools
 
-Index of MCP servers, dashboards, and helpers shipped from this stack. See [`tools/`](tools/).
+| Guide | Description | Platform |
+|-------|-------------|----------|
+| [MCP Catalog](tools/mcp-catalog.md) | Every MCP server published from this stack, what each one wraps, who uses it | Any |
+| [OpsDeck](tools/opsdeck.md) | Self-hosted ops dashboard, eight pages over the OpenClaw workspace, with auto-detected sidecar | Any |
+| [Repo Redeploy](tools/repo-redeploy.md) | One cron job that watches your own MCP/CLI repos and redeploys them across hosts | Any |
+| [MCP READMEs: All Five Clients](tools/mcp-readme-five-clients.md) | Every MCP repo ships setup blocks for Claude Desktop, Claude Code, OpenClaw, Hermes, Codex CLI | Any |
 
-### Philosophy *(planned)*
+### Philosophy
 
-Why this stack is shaped the way it is. What I won't do. See [`philosophy/`](philosophy/).
+| Essay | Description |
+|-------|-------------|
+| [Why One Host](philosophy/why-one-host.md) | The case for not distributing what one machine can do |
+| [Why Dogfood Everything](philosophy/why-dogfood-everything.md) | Ship → use → break → fix → write it down, in that order |
+| [What This Stack Is Not](philosophy/what-this-stack-is-not.md) | Hard nos: SaaS lock-in, k8s, microservices, untested fashion |
+| [Manifesto vs Framework](philosophy/manifesto-vs-framework.md) | Why this is a cookbook and not a tool |
 
 ## Templates
 

@@ -1,12 +1,12 @@
 # Philosophy
 
-The opinions. Why this stack is shaped the way it is. What I won't do.
+The opinions. Why this stack is shaped the way it is. What I will not do. Why this body of work is a cookbook and not a tool.
 
-## Planned essays
+## Essays
 
-- [ ] `why-one-host.md` - the case for not distributing what one machine can do
-- [ ] `why-dogfood-everything.md` - ship → use → break → fix → write it down
-- [ ] `what-this-stack-is-not.md` - hard nos: SaaS lock-in, k8s, microservices, untested fashion
-- [ ] `manifesto-vs-framework.md`. Why this is a cookbook and not a tool.
+- [`why-one-host.md`](why-one-host.md) - the case for not distributing what one machine can do
+- [`why-dogfood-everything.md`](why-dogfood-everything.md) - ship to use to break to fix to write it down, in that order
+- [`what-this-stack-is-not.md`](what-this-stack-is-not.md) - hard nos: SaaS lock-in, k8s, microservices, untested fashion
+- [`manifesto-vs-framework.md`](manifesto-vs-framework.md) - why this is a cookbook and not a tool
 
-> Stubs. Philosophy pieces are written last - easier once the technical guides are in place.
+> Read these last. They make more sense once you have seen the technical guides they justify.
