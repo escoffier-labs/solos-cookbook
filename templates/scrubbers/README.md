@@ -15,4 +15,4 @@ templates/scrubbers/scrub-content.sh templates/scrubbers/fixtures/input.txt
 templates/scrubbers/scrub-content.sh --apply drafts/
 ```
 
-Use this at the boundary where content leaves the host, not on every private chat reply.
+Use this at the boundary where content leaves the host, not on every private chat reply. The full workflow lives in [`../../publishing/publish-time-scrubbing.md`](../../publishing/publish-time-scrubbing.md).
