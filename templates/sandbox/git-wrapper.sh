@@ -6,7 +6,7 @@ case "${1:-}" in
     exec /usr/bin/git "$@"
     ;;
   *)
-    echo "sandbox: git $1 is not allowed in this worker lane" >&2
+    echo "sandbox: git ${1:-<none>} is not allowed in this worker lane" >&2
     exit 126
     ;;
 esac

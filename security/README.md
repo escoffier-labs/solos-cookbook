@@ -9,7 +9,7 @@ Defense in depth across host, agents, network, and outbound boundary. Plus what 
 - [x] [`agent-security-hardening.md`](agent-security-hardening.md) - API gateway isolation, RBAC, sandboxing, circuit breakers, post-mortem from a sub-agent nuking a database
 - [ ] `wazuh-triage.md` - RCA → fix → narrow suppress in one pass
 - [ ] `outbound-scrubbing.md` - hostname + PII scrubbers as preflight, not afterthought
-- [ ] `incident-runbook.md` - agent did a destructive thing, here's what you do
-- [ ] `secret-management.md` - env files, systemd EnvironmentFile, never in config
+- [x] [`incident-runbook.md`](incident-runbook.md) - agent did a destructive thing, secret leaked, or automation ran away, here's what you do
+- [x] [`secret-management.md`](secret-management.md) - env files, systemd EnvironmentFile, browser profiles, rotation, never in config
 
 > 🦞 Per-guide format lives in [`../automation/cron-patterns.md`](../automation/cron-patterns.md).

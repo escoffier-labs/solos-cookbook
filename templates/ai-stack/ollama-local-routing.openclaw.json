@@ -1,0 +1,31 @@
+{
+  "agents": {
+    "defaults": {
+      "memorySearch": {
+        "provider": "openai",
+        "remote": {
+          "baseUrl": "<ollama-openai-compatible-base-url>",
+          "apiKey": "ollama"
+        },
+        "fallback": "none",
+        "model": "qwen3-embedding:8b"
+      },
+      "models": {
+        "ollama/qwen3:7b": {
+          "alias": "localTriage",
+          "params": {
+            "temperature": 0,
+            "numPredict": 256
+          }
+        },
+        "ollama/qwen3-coder:14b": {
+          "alias": "localCommit",
+          "params": {
+            "temperature": 0.2,
+            "numPredict": 512
+          }
+        }
+      }
+    }
+  }
+}

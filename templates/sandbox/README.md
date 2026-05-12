@@ -8,3 +8,5 @@ Wrappers for worker lanes that should not have full network, git, or package-man
 - `git-wrapper.sh` - allow read-only git commands and block pushes by default
 
 Place wrappers earlier in `PATH` for the restricted worker process.
+
+See [`../../automation/sandbox-shims.md`](../../automation/sandbox-shims.md) for the full worker-lane pattern.
