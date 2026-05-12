@@ -17,8 +17,8 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-27-red?style=for-the-badge" alt="27 guides">
-  <img src="https://img.shields.io/badge/updated-2026--04--28-white?style=for-the-badge" alt="Updated 2026-04-28">
+  <img src="https://img.shields.io/badge/guides-33-red?style=for-the-badge" alt="33 guides">
+  <img src="https://img.shields.io/badge/updated-2026--05--11-white?style=for-the-badge" alt="Updated 2026-05-11">
 </p>
 
 <p align="center">
@@ -109,6 +109,8 @@ Read these in order:
 | [Skills Development](ai-stack/skills-development.md) | Write custom skills, structure for discoverability, real-world examples, and skill management | Any |
 | [Prompt Caching](ai-stack/prompt-caching.md) | Cache hygiene across Anthropic and OpenAI, so you avoid silent cost/quota leaks | Any |
 | [Compaction & Context Tuning](ai-stack/compaction-and-context-tuning.md) | Compaction, memory flush, context pruning, and session search for long-running agents | Any |
+| [Browser LLM Stack](ai-stack/browser-llm-stack.md) | Chromium lanes, persistent login profiles, noVNC inspection, and flock-locked browser-native model workflows | Any |
+| [Local LLM Fallback](ai-stack/local-llm-fallback.md) | Ollama lanes for embeddings, commit drafts, cron triage, and bounded utility work without degrading the main chain | Any |
 
 ### Automation
 
@@ -119,6 +121,7 @@ Read these in order:
 | [Multi-Channel Setup](automation/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, ACP threads, and access control | Any |
 | [Hooks](automation/hooks.md) | Three-layer hook model: boundary (git pre-push, outbound-scrub CLIs), tool-call (PreToolUse/PostToolUse, OpenClaw `before_tool_call`/`tool_result_persist`), lifecycle (SessionStart, `before_prompt_build`, `message_sending`) | Any |
 | [n8n Patterns](automation/n8n-patterns.md) | Three interfaces (n8n-ops-mcp, REST API, direct sqlite), Code node sandbox + task-runner constant-folding trap, failure-classifier topology | n8n |
+| [Sandbox Shims](automation/sandbox-shims.md) | PATH wrappers for read-only git, denied network tools, package-manager controls, and restricted worker lanes | Any |
 
 ### Infrastructure
 
@@ -146,6 +149,14 @@ Read these in order:
 | [Linux Hardening](security/linux-hardening.md) | UFW, SSH hardening, fail2ban, service binding, and defense-in-depth for an OpenClaw host | Ubuntu 24.04 |
 | [WSL2 Hardening](security/wsl-hardening.md) | Windows Firewall, RDP/SSH/SMB lockdown, port proxy hygiene, sleep prevention, and dual-OS defense | Windows 11 + WSL2 |
 | [Agent Security](security/agent-security-hardening.md) | API gateway isolation, RBAC, sandboxing, circuit breakers, and a real post-mortem from a sub-agent nuking a database | Any |
+| [Secret Management](security/secret-management.md) | Env files, systemd `EnvironmentFile`, browser profiles, rotation, and keeping secrets out of repos and memory | Any |
+| [Agent Incident Runbook](security/incident-runbook.md) | Freeze automation, preserve evidence, rotate or restore, and turn agent failures into durable controls | Any |
+
+### Publishing
+
+| Guide | Description | Platform |
+|-------|-------------|----------|
+| [Publish-Time Scrubbing](publishing/publish-time-scrubbing.md) | Deterministic scrubbers, scanner gates, media review, and publish logs before artifacts leave the private workspace | Any |
 
 ### Hardware *(planned)*
 
@@ -171,8 +182,9 @@ Drop-in artifacts you can lift without adopting the whole thing. See [`templates
 | [`templates/skills/`](templates/skills/) | public-safe `SKILL.md` skeleton and sanitization checklist, paired with [`ai-stack/skills-development.md`](ai-stack/skills-development.md) |
 | [`templates/ai-stack/`](templates/ai-stack/) | model alias snippets, ACP wrapper shape, plugin smoke check, paired with [`ai-stack/multi-model-orchestration.md`](ai-stack/multi-model-orchestration.md) |
 | [`templates/n8n/`](templates/n8n/) | workflow and failure-classifier skeletons, paired with [`automation/n8n-patterns.md`](automation/n8n-patterns.md) |
-| [`templates/scrubbers/`](templates/scrubbers/) | deterministic publish-boundary scrubber skeleton and fixtures, paired with [`automation/hooks.md`](automation/hooks.md) |
-| [`templates/sandbox/`](templates/sandbox/) | restricted worker command wrappers, paired with [`automation/hooks.md`](automation/hooks.md) |
+| [`templates/scrubbers/`](templates/scrubbers/) | deterministic publish-boundary scrubber skeleton and fixtures, paired with [`publishing/publish-time-scrubbing.md`](publishing/publish-time-scrubbing.md) and [`automation/hooks.md`](automation/hooks.md) |
+| [`templates/sandbox/`](templates/sandbox/) | restricted worker command wrappers, paired with [`automation/sandbox-shims.md`](automation/sandbox-shims.md) and [`automation/hooks.md`](automation/hooks.md) |
+| [`templates/security/`](templates/security/) | env-file and incident-note placeholders, paired with [`security/secret-management.md`](security/secret-management.md) and [`security/incident-runbook.md`](security/incident-runbook.md) |
 
 ## Skills
 
