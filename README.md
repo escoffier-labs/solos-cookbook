@@ -76,7 +76,7 @@ Full migration runbook in [claude-cli → ACP Migration](ai-stack/claude-cli-to-
 
 ## Quick start
 
-There is nothing to install. This is a collection of standalone guides. Pick the one that solves a problem you have right now:
+There is nothing to install for the cookbook itself - it is a collection of standalone guides. Pick the one that solves a problem you have right now:
 
 - **[automation/cron-patterns.md](automation/cron-patterns.md)**: decide which layer (systemd, agent cron, n8n) each scheduled task in your stack actually belongs in
 - **[ai-stack/multi-model-orchestration.md](ai-stack/multi-model-orchestration.md)**: wire one orchestrator across many models with the right model per task
@@ -92,6 +92,18 @@ Read these in order:
 3. **[ai-stack/self-improving-agents.md](ai-stack/self-improving-agents.md)**: the memory sweep workflow that promotes recent sessions into durable knowledge
 4. **[knowledge/claude-code-memory-handoffs.md](knowledge/claude-code-memory-handoffs.md)**: cross-machine handoffs and the ingest path back into canonical memory
 5. **[automation/openclaw-cron-deep-dive.md](automation/openclaw-cron-deep-dive.md)**: scheduling patterns for sweep jobs, decay scans, and quiet-hour-safe maintenance
+
+### If you want the installable version
+
+The cookbook is the long-form guide. **[Solomon's Mise en Place (`solo-mise`)](https://github.com/solomonneas/solo-mise)** is the installable starter kit that turns the patterns here into a working agent kitchen in one command:
+
+```bash
+pipx install git+https://github.com/solomonneas/solo-mise
+solo-mise init --target ~/agent-kitchen --profile workspace
+solo-mise doctor --target ~/agent-kitchen
+```
+
+It lays down sanitized bootstrap files, a memory handoff inbox, a conservative ingester, and a content-guard publish gate. OpenClaw is the tested reference path; Hermes, Claude Code, and Codex use the same handoff contract. Adopt the cookbook patterns piecemeal here, or let `solo-mise` set up the whole shape and read the cookbook to understand why each piece is the way it is.
 
 ## Guides
 
@@ -240,6 +252,7 @@ git config core.hooksPath hooks
 
 ## Related projects
 
+- [solo-mise](https://github.com/solomonneas/solo-mise): the installable starter kit for this cookbook's agent kitchen layout
 - [OpenClaw](https://github.com/openclaw/openclaw): the AI agent framework this stack runs on
 - [content-guard](https://github.com/solomonneas/content-guard): the policy-driven scanner used by the pre-push hook
 - [ops-deck-oss](https://github.com/solomonneas/ops-deck-oss): self-hosted ops dashboard
