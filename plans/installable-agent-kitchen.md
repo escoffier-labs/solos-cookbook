@@ -1,6 +1,28 @@
-# Solomon's Mise en Place Installable Agent Workspace Plan
+# Brigade Installable Agent Workspace Plan
 
 > Goal-mode plan for turning this cookbook into an installable, public-safe starter kit for a harness-agnostic agent memory system, with OpenClaw as the reference implementation.
+
+## Current Status
+
+This plan has shipped as [Brigade](https://github.com/escoffier-labs/brigade). New work should target the `brigade-cli` package, the `brigade` command, and local `.brigade/` state. Use this document as design history, not as the current command reference.
+
+Current install path:
+
+```bash
+pipx install brigade-cli
+brigade init --target ~/agent-kitchen --depth workspace --harnesses claude,codex,openclaw
+brigade doctor --target ~/agent-kitchen
+```
+
+Current daily repo loop:
+
+```bash
+brigade dogfood init --target /path/to/repo
+brigade work bootstrap
+brigade work run --queue-next
+```
+
+Use this document as design history, not as the current command reference. See [`../tools/brigade.md`](../tools/brigade.md) for the cookbook guide.
 
 ## Name
 
@@ -8,19 +30,19 @@ Do not name this `sskill`, `sbrain`, or `sstack`. The name should signal repeata
 
 Working decision:
 
-- **Project/package:** `solo-mise`
-- **Repo name:** `solo-mise`
-- **Public brand/display name:** Solomon's Mise en Place
-- **Tagline:** Mise en place for agent memory.
+- **Project/package:** `brigade-cli`
+- **Repo name:** `brigade`
+- **Public brand/display name:** Brigade
+- **Tagline:** Run your agent brigade.
 - **Plain-language metaphor:** agent kitchen.
-- **CLI:** `solo-mise`
+- **CLI:** `brigade`
 
 Why this works:
 
 - "Mise en place" means everything in its place before service, which maps directly to bootstrap files, memory routing, handoffs, safety rules, and publish guards.
-- `solo-mise` keeps the repo and CLI short, while "Solomon's Mise en Place" gives the public brand the fuller cookbook identity.
-- It is shorter and more package-friendly than `agent-mise-en-place`.
-- `Agent Kitchen` remains useful in explanation, but "Solomon's Mise en Place" is stronger as the public brand.
+- `brigade` keeps the repo and CLI short, while `brigade-cli` keeps the Python package name explicit.
+- It is shorter and more package-friendly than `agent-workspace-kit`.
+- `Agent Kitchen` remains useful in explanation, but Brigade is stronger as the public brand.
 
 Naming alternatives kept for reference:
 
@@ -39,7 +61,7 @@ Naming alternatives kept for reference:
 Public line:
 
 ```text
-Solomon's Mise en Place is the installable starter kit behind Solomon's Guide to Cookin' with Gas: a public-safe agent workspace, memory handoff flow, and bootstrap layout for OpenClaw, Hermes, Codex, Claude Code, and similar harnesses.
+Brigade is the installable starter kit behind Solomon's Guide to Cookin' with Gas: a public-safe agent workspace, memory handoff flow, local work loop, and bootstrap layout for OpenClaw, Hermes, Codex, Claude Code, and similar harnesses.
 ```
 
 ## What This Is
@@ -94,7 +116,7 @@ The public wording should be: **harness-agnostic contract, OpenClaw-tested defau
 The public package should have three entrypoints:
 
 1. **Human install path**
-   - command: `solo-mise init` or final branded equivalent
+   - command: `brigade init` or final branded equivalent
    - outcome: creates a public-safe workspace skeleton and explains what to configure next
 
 2. **Agent install path**
@@ -102,13 +124,13 @@ The public package should have three entrypoints:
    - outcome: any entering agent knows which files to read first and how to write durable findings
 
 3. **OpenClaw integration path**
-   - command: `solo-mise openclaw doctor`
+   - command: `brigade doctor --harness openclaw`
    - outcome: checks that OpenClaw can see the workspace, memory directory, handoff inbox, content guard, and optional model lanes
 
 Add a fourth entrypoint once the base contract is stable:
 
 4. **Hermes integration path**
-   - command: `solo-mise hermes doctor`
+   - command: `brigade doctor --harness hermes`
    - outcome: checks that Hermes can see the workspace, bootstrap files, handoff inbox, and configured memory owner
 
 ## Concise Repo Shape
@@ -116,11 +138,11 @@ Add a fourth entrypoint once the base contract is stable:
 Do not recreate the cookbook's many-category documentation tree. The installable project should have a flat, practical layout:
 
 ```text
-solo-mise/
+brigade/
   README.md
   QUICKSTART.md
   pyproject.toml
-  src/solo_mise/
+  src/brigade/
   templates/
   policies/
   tests/
@@ -141,8 +163,8 @@ Start with a small Python CLI because the cookbook already depends on Python-era
 Proposed internal package layout:
 
 ```text
-solo-mise/
-  src/solo_mise/
+brigade/
+  src/brigade/
     __init__.py
     cli.py
     init.py
@@ -195,21 +217,21 @@ The cookbook repo can keep the plan, but the actual installable project should p
 Minimum useful CLI:
 
 ```bash
-solo-mise init --target ~/.openclaw/workspace
-solo-mise init --target . --profile repo
-solo-mise doctor --target ~/.openclaw/workspace
-solo-mise doctor --target . --harness generic
-solo-mise scrub --target .
-solo-mise handoff-template --target .
+brigade init --target ~/.openclaw/workspace
+brigade init --target . --depth repo
+brigade doctor --target ~/.openclaw/workspace
+brigade doctor --target . --harness generic
+brigade scrub --target .
+brigade handoff doctor --target .
 ```
 
 Later:
 
 ```bash
-solo-mise openclaw-fragments --out ./openclaw-fragments
-solo-mise hermes-fragments --out ./hermes-fragments
-solo-mise install-hooks --repo .
-solo-mise migrate-claude-memory --source ~/.claude/projects --target ~/.openclaw/workspace
+brigade openclaw-fragments --out ./openclaw-fragments
+brigade hermes-fragments --out ./hermes-fragments
+brigade install-hooks --repo .
+brigade migrate-claude-memory --source ~/.claude/projects --target ~/.openclaw/workspace
 ```
 
 Avoid command sprawl. If a command is not part of install, verify, scrub, or handoff, it belongs in the cookbook first and the CLI later.
@@ -334,7 +356,7 @@ Initial Hermes deliverable:
 
 - `templates/hermes/workspace.harness.json` with placeholder paths
 - `templates/hermes/memory-handoff.harness.json` describing the handoff inbox and routing targets
-- `solo-mise hermes doctor` that validates the generated files exist
+- `brigade doctor --harness hermes` that validates the generated files exist
 - docs that say "Hermes support follows the same contract; OpenClaw is just the tested reference path"
 
 Do not add Hermes-specific behavior until verified against a real Hermes install. Keep the first version as adapter fragments plus doctor checks.
@@ -364,7 +386,7 @@ The installer should include:
 - public content policy for blog/social/docs surfaces
 - repo policy that blocks private IPs, secrets, PII, and AI attribution trailers
 - inline allow comment support for intentional examples
-- `solo-mise scrub` wrapper that can run deterministic redaction before publish
+- `brigade scrub` wrapper that can run deterministic redaction before publish
 
 Default blocked classes:
 
@@ -461,7 +483,7 @@ Exit criteria:
 
 Exit criteria:
 
-- `solo-mise init --dry-run --target /tmp/solo-mise-test` prints the files it would create
+- `brigade init --dry-run --target /tmp/brigade-test` prints the files it would create
 - no private details in generated files
 
 ### Milestone 3: CLI Init And Doctor
@@ -530,7 +552,7 @@ Exit criteria:
 
 ## Open Questions
 
-- Repo/package name is currently `solo-mise`; public brand is currently Solomon's Mise en Place. Validate package/repo availability before release.
+- Repo is `escoffier-labs/brigade`, package is `brigade-cli`, and the CLI is `brigade`. Keep future docs aligned with that public surface.
 - Should the installable package live in this repo first, or in a new repo once the CLI starts?
 - Should the first release target OpenClaw only, or also generate Codex and Claude Code user-level files?
 - What exact Hermes files and commands should the adapter validate?
@@ -541,10 +563,10 @@ Exit criteria:
 
 The smallest useful implementation is:
 
-1. standalone `solo-mise/` Python CLI, or temporary `packages/solo-mise/` only until extraction
-2. `solo-mise init --target /tmp/test --profile repo`
+1. standalone `brigade/` Python CLI, or temporary `packages/brigade/` only until extraction
+2. `brigade init --target /tmp/test --depth repo`
 3. generated `AGENTS.md`, `CLAUDE.md`, `.claude/memory-handoffs/TEMPLATE.md`, `hooks/pre-push`
-4. `solo-mise doctor --target /tmp/test`
+4. `brigade doctor --target /tmp/test`
 5. content-guard scan against generated output
 
 That proves the product loop without touching a user's live OpenClaw config.
@@ -552,9 +574,9 @@ That proves the product loop without touching a user's live OpenClaw config.
 The first public release should feel like:
 
 ```bash
-pipx install git+https://github.com/solomonneas/solo-mise
-solo-mise init
-solo-mise doctor
+pipx install git+https://github.com/escoffier-labs/brigade
+brigade init
+brigade doctor
 ```
 
 If a new user has to read the whole cookbook before running those commands, the installable project has failed.

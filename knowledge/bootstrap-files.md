@@ -6,7 +6,7 @@
 
 Most always-on agent stacks end up with a small pile of bootstrap files: `AGENTS.md`, `SOUL.md`, `USER.md`, `TOOLS.md`, `MEMORY.md`, and friends. This guide explains what each file should own, what should never go there, and how to keep the set public-safe when pieces get copied into guides or templates.
 
-The examples assume OpenClaw as the orchestrator, but the split works for Claude Code, Codex, Hermes, and other file-backed agent harnesses.
+The examples assume OpenClaw as the orchestrator, but the split works for Claude Code, Codex, Hermes, and other file-backed agent harnesses. If you want this layout installed rather than copied by hand, use [Brigade](../tools/brigade.md).
 
 ## Why this way
 
