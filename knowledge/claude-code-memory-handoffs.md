@@ -1,9 +1,9 @@
-# Claude Code Memory Handoffs: A Sync Path Into OpenClaw
+# Claude Code and Codex Memory Handoffs: A Sync Path Into OpenClaw
 
-If you run Claude Code locally (in terminal sessions, in an IDE, on a separate machine) alongside an OpenClaw gateway, you end up with two memory systems. In this stack, Codex is wired into the same handoff path too. This guide describes the shared handoff format and ingester that keep OpenClaw as the canonical durable-memory owner while letting Claude Code and Codex sessions produce memory as a first-class output.
+If you run Claude Code or Codex locally alongside an OpenClaw gateway, you end up with multiple session memories. This guide describes the shared handoff format and ingester that keep OpenClaw as the canonical durable-memory owner while letting each writing harness produce durable memory as a first-class output.
 
-**Tested on:** Claude Code 2.1.113, Codex, OpenClaw 2026.4.x, cron ingester every 30 minutes
-**Last updated:** 2026-05-06
+**Tested on:** Claude Code 2.1.113, Codex, Brigade, OpenClaw 2026.4.x, cron ingester every 30 minutes
+**Last updated:** 2026-05-26
 
 ---
 
@@ -15,13 +15,13 @@ Claude Code has its own memory system (`~/.claude/projects/<project>/memory/MEMO
 - It's per-project. A handoff written in `~/repos/foo` doesn't reach sessions working in `~/repos/bar`.
 - It competes with OpenClaw's memory cards as "the place durable knowledge lives".
 
-Two canonical memory systems is one too many. The rule on this setup: **Claude Code and Codex may keep local session memory, but durable knowledge must flow back into OpenClaw.**
+Two canonical memory systems is one too many. The rule on this setup: **Claude Code, Codex, and other side harnesses may keep local session memory, but durable knowledge must flow back into OpenClaw.**
 
 ## Architecture
 
 ```
-┌──────────────────────┐    .claude/memory-handoffs/    ┌─────────────────────┐
-│  Claude Code / Codex │────────────────────────────────►│   Handoff inbox     │
+┌──────────────────────┐    per-writer handoff inbox    ┌─────────────────────┐
+│  Claude Code / Codex │────────────────────────────────►│   Handoff inboxes   │
 │  (any machine,       │       YYYY-MM-DD-HHMM-slug.md   │   memory/           │
 │   any repo)          │                                  │   handoff-inbox/    │
 └──────────────────────┘                                  └──────────┬──────────┘
@@ -94,11 +94,14 @@ Two sections are mutually exclusive: a handoff is either a card promotion (`Targ
 
 ## Where Handoffs Live
 
-On any machine running Claude Code or Codex, handoffs are written to the active repo at:
+On any machine running a side harness, handoffs are written to that harness's inbox under the active repo:
 
 ```
 <repo-root>/.claude/memory-handoffs/YYYY-MM-DD-HHMM-<slug>.md
+<repo-root>/.codex/memory-handoffs/YYYY-MM-DD-HHMM-<slug>.md
 ```
+
+Use `.claude/memory-handoffs/` for Claude Code. Use `.codex/memory-handoffs/` for Codex-driven flows, including Brigade dogfood defaults. If your ingester has not been updated to scan multiple inboxes yet, point all writers at `.claude/memory-handoffs/` until it is.
 
 Examples that look like a correctly named handoff:
 
@@ -107,7 +110,7 @@ Examples that look like a correctly named handoff:
 2026-04-20-1542-openclaw-acp-permission-fix.md
 ```
 
-Once ingested, the handoff is moved to `.claude/memory-handoffs/processed/` so re-runs are idempotent.
+Once ingested, the handoff is moved to that inbox's `processed/` directory so re-runs are idempotent.
 
 ## The Closeout Instruction
 
@@ -122,39 +125,39 @@ anything durable should flow back through a Memory Handoff.
 
 At the end of any substantial task, check whether the session produced
 durable knowledge. If yes, create a Memory Handoff in
-`.claude/memory-handoffs/` using the standard format. Do this without waiting
+the configured handoff inbox using the standard format. Do this without waiting
 to be reminded. Prefer updating shared OpenClaw knowledge over creating
 duplicate memory.
 ```
 
 The rule is what makes handoffs get written *without being asked for every task*. Without the closeout instruction, Claude Code will still produce handoffs when prompted, but the point is self-directed durable-memory capture.
 
-## Codex Uses the Same Inbox
+## Codex Uses the Same Contract
 
-Codex in this stack does not get its own parallel memory bridge. It is pointed at the same handoff destination and the same canonical owner.
+Codex in this stack does not get a parallel memory system. It uses the same handoff format, routing rules, and canonical owner. New Brigade dogfood configs default Codex handoffs to `.codex/memory-handoffs/`; older setups may still route Codex through `.claude/memory-handoffs/`.
 
 The pattern is simple:
 
 1. Codex keeps whatever local session context it wants.
-2. Durable findings that belong to the shared stack get written to `.claude/memory-handoffs/` in the active repo.
-3. The canonical OpenClaw host ingests those handoffs and routes them into cards, `TOOLS.md`, `USER.md`, `rules/*.md`, or `.learnings/*.md`.
+2. Durable findings that belong to the shared stack get written to the configured handoff inbox in the active repo.
+3. The canonical OpenClaw host ingests all configured writer inboxes and routes them into cards, `TOOLS.md`, `USER.md`, `rules/*.md`, or `.learnings/*.md`.
 
 On this setup, the Codex workspace instructions explicitly say:
 
-- follow the canonical memory handoff rule in `~/.claude/CLAUDE.md`
-- write durable findings to `.claude/memory-handoffs/` in the relevant repo
+- follow the canonical memory handoff rule from the repo or user-level instructions
+- write durable findings to `.codex/memory-handoffs/` or the repo's configured handoff inbox
 - do not invent a parallel memory system
 
-That means Claude Code and Codex converge on the same durable-memory path. Different coding harness, same handoff inbox, same ingester, same canonical storage.
+That means Claude Code and Codex converge on the same durable-memory contract. Different coding harness, same handoff schema, same ingester, same canonical storage.
 
 ## The Ingester
 
 A small Python script parses handoffs, validates them, and routes them. The conservative v1 behavior, matching what runs in production:
 
-1. Scan `.claude/memory-handoffs/` for `*.md` files that are not in `processed/`.
+1. Scan configured writer inboxes, typically `.claude/memory-handoffs/` and `.codex/memory-handoffs/`, for `*.md` files that are not in `processed/`.
 2. Parse each file's `##`-delimited sections.
 3. Decide: auto-promote, route to a non-card document, or drop into review inbox.
-4. Move processed files to `.claude/memory-handoffs/processed/`.
+4. Move processed files to the matching inbox's `processed/` directory.
 
 Minimal skeleton:
 
@@ -264,7 +267,7 @@ fi
 
 ## Cross-Machine Sync
 
-If Claude Code runs on more than one machine, only one should be the ingest point. On every other machine, the `.claude/memory-handoffs/` directory gets synced to the canonical host before the ingester fires.
+If Claude Code, Codex, or another side harness runs on more than one machine, only one host should be the ingest point. On every other machine, each writer inbox gets synced to the canonical host before the ingester fires.
 
 Options that work:
 
@@ -280,11 +283,11 @@ What matters is that workstation/laptop/VPS handoffs are **not ingested locally.
 
 On any new Claude Code or Codex install you want in the system:
 
-1. Drop the closeout instruction into `~/.claude/CLAUDE.md` or another instruction file that your local coding harness reliably loads.
-2. Make sure the instruction explicitly routes durable knowledge to `.claude/memory-handoffs/` in the active repo.
-3. Create `.claude/memory-handoffs/` in each repo you work in.
+1. Drop the closeout instruction into `~/.claude/CLAUDE.md`, `AGENTS.md`, or another instruction file that your local coding harness reliably loads.
+2. Make sure the instruction explicitly routes durable knowledge to the configured handoff inbox in the active repo.
+3. Create the relevant inbox in each repo you work in, such as `.claude/memory-handoffs/` for Claude Code or `.codex/memory-handoffs/` for Codex.
 4. If not the canonical host, wire the sync path.
-5. Test end-to-end: do a small task, then `ls .claude/memory-handoffs/` to confirm the harness emitted a handoff.
+5. Test end-to-end: do a small task, then list the configured inbox to confirm the harness emitted a handoff.
 
 The test loop matters. If the closeout rule is not firing, you will not notice for weeks, just slowly accumulating durable knowledge that never reached OpenClaw.
 
@@ -294,7 +297,8 @@ Check that the pipeline is alive end-to-end:
 
 ```bash
 # Handoffs being produced on this machine
-find ~/repos -path "*/.claude/memory-handoffs/*.md" \
+find ~/repos \( -path "*/.claude/memory-handoffs/*.md" \
+    -o -path "*/.codex/memory-handoffs/*.md" \) \
     -not -path "*/processed/*" -mtime -7
 
 # Ingester has been running
