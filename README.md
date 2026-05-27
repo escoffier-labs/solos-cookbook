@@ -17,8 +17,8 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-44-red?style=for-the-badge" alt="44 guides">
-  <img src="https://img.shields.io/badge/updated-2026--05--12-white?style=for-the-badge" alt="Updated 2026-05-12">
+  <img src="https://img.shields.io/badge/guides-45-red?style=for-the-badge" alt="45 guides">
+  <img src="https://img.shields.io/badge/updated-2026--05--26-white?style=for-the-badge" alt="Updated 2026-05-26">
 </p>
 
 <p align="center">
@@ -95,15 +95,15 @@ Read these in order:
 
 ### If you want the installable version
 
-The cookbook is the long-form guide. **[Solomon's Mise en Place (`solo-mise`)](https://github.com/solomonneas/solo-mise)** is the installable starter kit that turns the patterns here into a working agent kitchen in one command:
+The cookbook is the long-form guide. **[Brigade](https://github.com/escoffier-labs/brigade)** is the installable starter kit that turns the patterns here into a working agent kitchen in one command:
 
 ```bash
-pipx install git+https://github.com/solomonneas/solo-mise
-solo-mise init --target ~/agent-kitchen --profile workspace
-solo-mise doctor --target ~/agent-kitchen
+pipx install brigade-cli
+brigade init --target ~/agent-kitchen --depth workspace --harnesses claude,codex,openclaw
+brigade doctor --target ~/agent-kitchen
 ```
 
-It lays down sanitized bootstrap files, a memory handoff inbox, a conservative ingester, and a content-guard publish gate. OpenClaw is the tested reference path; Hermes, Claude Code, and Codex use the same handoff contract. Adopt the cookbook patterns piecemeal here, or let `solo-mise` set up the whole shape and read the cookbook to understand why each piece is the way it is.
+It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a conservative ingester, content-guard publish gates, and a daily `brigade work` loop for dogfooding trusted repos. OpenClaw is the tested reference path; Hermes, Claude Code, and Codex use the same handoff contract. Adopt the cookbook patterns piecemeal here, or let `brigade` set up the whole shape and read the cookbook to understand why each piece is the way it is.
 
 ## Guides
 
@@ -148,7 +148,7 @@ It lays down sanitized bootstrap files, a memory handoff inbox, a conservative i
 | Guide | Description | Platform |
 |-------|-------------|----------|
 | [Memory & Token Optimization](knowledge/memory-token-optimization.md) | Three-tier memory architecture, local embedding search, memory sweep cadence, and 50-100x token reduction | Any |
-| [Claude Code Memory Handoffs](knowledge/claude-code-memory-handoffs.md) | Cross-machine sync format and scheduled ingest path that keeps OpenClaw the canonical memory owner | Any |
+| [Claude Code and Codex Memory Handoffs](knowledge/claude-code-memory-handoffs.md) | Cross-machine sync format and scheduled ingest path that keeps OpenClaw the canonical memory owner | Any |
 | [Memory Architecture](knowledge/memory-architecture.md) | Operating model: memory as point-in-time claims, trust hierarchy, write/verify/decay loops, and stale-card handling | Any |
 | [Bootstrap Files](knowledge/bootstrap-files.md) | What each durable agent file owns: AGENTS, CLAUDE, SOUL, USER, TOOLS, MEMORY, and safety files | Any |
 | [Obsidian Sync Without Conflict Roulette](knowledge/obsidian-sync.md) | One canonical vault, one sync layer, and strict writer rules for bidirectional sync that stays boring | Any |
@@ -183,6 +183,7 @@ It lays down sanitized bootstrap files, a memory handoff inbox, a conservative i
 | Guide | Description | Platform |
 |-------|-------------|----------|
 | [MCP Catalog](tools/mcp-catalog.md) | Every MCP server published from this stack, what each one wraps, who uses it | Any |
+| [Brigade](tools/brigade.md) | Installable agent workspace bootstrap, per-writer handoffs, dogfood loops, and security scans | Any |
 | [OpsDeck](tools/opsdeck.md) | Self-hosted ops dashboard, eight pages over the OpenClaw workspace, with auto-detected sidecar | Any |
 | [Repo Redeploy](tools/repo-redeploy.md) | One cron job that watches your own MCP/CLI repos and redeploys them across hosts | Any |
 | [MCP READMEs: All Five Clients](tools/mcp-readme-five-clients.md) | Every MCP repo ships setup blocks for Claude Desktop, Claude Code, OpenClaw, Hermes, Codex CLI | Any |
@@ -252,7 +253,7 @@ git config core.hooksPath hooks
 
 ## Related projects
 
-- [solo-mise](https://github.com/solomonneas/solo-mise): the installable starter kit for this cookbook's agent kitchen layout
+- [Brigade](https://github.com/escoffier-labs/brigade): the installable starter kit for this cookbook's agent kitchen layout
 - [OpenClaw](https://github.com/openclaw/openclaw): the AI agent framework this stack runs on
 - [content-guard](https://github.com/solomonneas/content-guard): the policy-driven scanner used by the pre-push hook
 - [ops-deck-oss](https://github.com/solomonneas/ops-deck-oss): self-hosted ops dashboard
