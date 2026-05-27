@@ -5,7 +5,7 @@
 <h1 align="center">🦞 Solomon's Guide to Cookin' with Gas</h1>
 
 <p align="center">
-  <strong>How one engineer runs a 24/7 multi-agent AI stack on bare metal.</strong>
+  <strong>Keep your always-on agent aware of the work you do across every coding harness.</strong>
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
   <img src="https://img.shields.io/badge/guides-45-red?style=for-the-badge" alt="45 guides">
-  <img src="https://img.shields.io/badge/updated-2026--05--26-white?style=for-the-badge" alt="Updated 2026-05-26">
+  <img src="https://img.shields.io/badge/updated-2026--05--27-white?style=for-the-badge" alt="Updated 2026-05-27">
 </p>
 
 <p align="center">
@@ -27,32 +27,52 @@
 
 ## What this is
 
-This is a working cookbook for one specific stack: a single-engineer setup that runs an always-on multi-agent AI orchestrator on bare-metal Linux, with a homelab behind it for self-hosting, security tooling, and knowledge management.
+This is a working cookbook for engineers who run a long-lived agent in [OpenClaw](https://github.com/openclaw/openclaw), [Hermes Agent](https://github.com/agnos-ai/hermes), or a similar orchestrator, while also coding every day in tools like Codex CLI, Claude Code, OpenCode, and browser-native model sessions.
+
+The problem it solves is continuity. Your coding harnesses see one repo and one task at a time. Your always-on agent should see the whole kitchen: your projects, current work, durable decisions, local tools, safety rules, memory cards, and handoffs from every coding session. This cookbook documents the patterns that keep `MEMORY.md`, `TOOLS.md`, `AGENTS.md`, `CLAUDE.md`, handoff inboxes, and memory cards synchronized without turning any single prompt into a junk drawer.
+
+In this stack, OpenClaw is the tested reference memory owner. Hermes can play the same role. Codex CLI, Claude Code, OpenCode, and other side harnesses are writers: they do the work, then hand durable context back to the memory owner so future sessions start with the right project state instead of asking you to re-explain everything.
 
 It is **not** a framework, not a product, not a tutorial series. It is a record of what is actually deployed, why each piece is shaped the way it is, and what broke along the way. Lift any single piece. Adopt the whole thing. Or use it as a counterexample. All three are valid.
 
-The agent layer runs on [OpenClaw](https://github.com/openclaw/openclaw), but the patterns generalize. Most of the guides below would apply with light adaptation to [Hermes Agent](https://github.com/agnos-ai/hermes), Claude Code's agent SDK, or any orchestrator that wraps a real LLM with real tools.
+The infrastructure examples come from a single-engineer bare-metal Linux setup with a homelab behind it for self-hosting, security tooling, and knowledge management. The agent-memory pattern generalizes: one canonical memory owner, many coding harnesses, one shared contract for what gets remembered.
+
+## Who this is for
+
+Use this cookbook if you want:
+
+- an OpenClaw or Hermes agent that knows what changed across your repos, not just what happened in its own chat window
+- Codex CLI, Claude Code, OpenCode, and similar tools to write durable handoffs instead of creating isolated session memories
+- `MEMORY.md`, `TOOLS.md`, `AGENTS.md`, safety rules, and project context to stay maintained by the agent workflow, not by manual copy/paste
+- local-first automation, security checks, content scrubbing, backups, and memory care around an agent that can actually touch your systems
+- an installable starter layout via [Brigade](https://github.com/escoffier-labs/brigade), with the cookbook as the explanation layer
 
 ## The stack at a glance
 
 ```
-                    ┌─────────────────────────────────────┐
-                    │   Bare metal Linux (single host)    │
-                    │   Local LLM stack + agents          │
-                    └────────────────┬────────────────────┘
-                                     │
+              ┌───────────────────────────────────────────┐
+              │ OpenClaw / Hermes                         │
+              │ canonical agent + durable memory owner    │
+              └──────────────────────┬────────────────────┘
+                                     │ maintains
+                                     ▼
+              ┌───────────────────────────────────────────┐
+              │ MEMORY.md, TOOLS.md, AGENTS.md, rules,    │
+              │ memory cards, project context, handoffs   │
+              └──────────────────────┬────────────────────┘
+                                     ▲
+              durable handoffs       │       memory ingest
        ┌─────────────────────────────┼─────────────────────────────┐
        │                             │                             │
    ┌───▼──────┐               ┌──────▼──────┐                ┌─────▼─────┐
-   │ Homelab  │               │ Automation  │                │ Knowledge  │
-   │ (LXC/VM) │               │ (cron/n8n)  │                │ systems    │
+   │ Codex CLI│               │ Claude Code │                │ OpenCode   │
+   │ / Codex  │               │ / ACP       │                │ / browser  │
    └──────────┘               └─────────────┘                └────────────┘
        │                             │                             │
-   ┌───▼─────────┐         ┌─────────▼─────────┐         ┌─────────▼─────┐
-   │ Self-host:  │         │ Cron, hooks,      │         │ Memory, docs, │
-   │ media, NAS, │         │ sandbox shims,    │         │ search, sync  │
-   │ security    │         │ scheduled jobs    │         │ workflows     │
-   └─────────────┘         └───────────────────┘         └───────────────┘
+       └──────────────┬──────────────┴──────────────┬──────────────┘
+                      ▼                             ▼
+              repos, terminals, tools       automation, cron, n8n,
+              coding sessions               homelab and security checks
 ```
 
 ## Recommended Provider Stack
@@ -95,7 +115,7 @@ Read these in order:
 
 ### If you want the installable version
 
-The cookbook is the long-form guide. **[Brigade](https://github.com/escoffier-labs/brigade)** is the installable starter kit that turns the patterns here into a working agent kitchen in one command:
+The cookbook is the long-form guide. **[Brigade](https://github.com/escoffier-labs/brigade)** is the installable starter kit that turns the patterns here into a working agent kitchen: shared bootstrap files, per-harness handoff inboxes, memory ownership rules, content guards, and local work loops.
 
 ```bash
 pipx install brigade-cli
@@ -103,7 +123,7 @@ brigade init --target ~/agent-kitchen --depth workspace --harnesses claude,codex
 brigade doctor --target ~/agent-kitchen
 ```
 
-It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a conservative ingester, content-guard publish gates, and a daily `brigade work` loop for dogfooding trusted repos. OpenClaw is the tested reference path; Hermes, Claude Code, and Codex use the same handoff contract. Adopt the cookbook patterns piecemeal here, or let `brigade` set up the whole shape and read the cookbook to understand why each piece is the way it is.
+It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a conservative ingester, content-guard publish gates, and a daily `brigade work` loop for dogfooding trusted repos. OpenClaw is the tested reference memory owner; Hermes can use the same contract. Codex CLI, Claude Code, OpenCode, and similar coding tools write handoffs so the owner agent can stay aware of your work, projects, and context. Adopt the cookbook patterns piecemeal here, or let `brigade` set up the whole shape and read the cookbook to understand why each piece is the way it is.
 
 ## Guides
 
@@ -253,8 +273,8 @@ git config core.hooksPath hooks
 
 ## Related projects
 
-- [Brigade](https://github.com/escoffier-labs/brigade): the installable starter kit for this cookbook's agent kitchen layout
-- [OpenClaw](https://github.com/openclaw/openclaw): the AI agent framework this stack runs on
+- [Brigade](https://github.com/escoffier-labs/brigade): the installable starter kit for synced agent memory, handoffs, and workspace bootstrap files
+- [OpenClaw](https://github.com/openclaw/openclaw): the tested reference agent and memory owner for this stack
 - [content-guard](https://github.com/solomonneas/content-guard): the policy-driven scanner used by the pre-push hook
 - [ops-deck-oss](https://github.com/solomonneas/ops-deck-oss): self-hosted ops dashboard
 - [n8n-ops-mcp](https://github.com/solomonneas/n8n-ops-mcp), [jellyfin-mcp](https://github.com/solomonneas/jellyfin-mcp), [mcporter](https://github.com/solomonneas/mcporter): MCPs from this stack
