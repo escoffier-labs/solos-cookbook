@@ -4,7 +4,7 @@ The homelab. Hypervisor decisions, container layout, network storage, off-host b
 
 ## Guides
 
-- [x] [`backup-recovery.md`](backup-recovery.md) - restic to NAS + Google Drive, twice-daily schedule, snapshot mounts, disaster recovery
+- [x] [`backup-recovery.md`](backup-recovery.md) - restic to NAS (twice daily) + Google Drive (weekly), Drive quota/over-sync gotchas, KeePass canonical sync, snapshot mounts, disaster recovery
 - [x] [`upgrade-hygiene.md`](upgrade-hygiene.md) - surviving `openclaw update`: systemd regeneration, dist patches, OAuth sync, schema drift
 - [x] [`openclaw-host-topology.md`](openclaw-host-topology.md) - services, config surfaces, agents, plugins, cron, memory, browser automation, health checks
 - [ ] `homelab-topology.md` - hypervisor + LXC/VM split, service-per-container discipline
