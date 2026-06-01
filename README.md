@@ -49,30 +49,34 @@ Use this cookbook if you want:
 
 ## The stack at a glance
 
-```
-              ┌───────────────────────────────────────────┐
-              │ OpenClaw / Hermes                         │
-              │ canonical agent + durable memory owner    │
-              └──────────────────────┬────────────────────┘
-                                     │ maintains
-                                     ▼
-              ┌───────────────────────────────────────────┐
-              │ MEMORY.md, TOOLS.md, AGENTS.md, rules,    │
-              │ memory cards, project context, handoffs   │
-              └──────────────────────┬────────────────────┘
-                                     ▲
-              durable handoffs       │       memory ingest
-       ┌─────────────────────────────┼─────────────────────────────┐
-       │                             │                             │
-   ┌───▼──────┐               ┌──────▼──────┐                ┌─────▼─────┐
-   │ Codex CLI│               │ Claude Code │                │ OpenCode   │
-   │ / Codex  │               │ / ACP       │                │ / browser  │
-   └──────────┘               └─────────────┘                └────────────┘
-       │                             │                             │
-       └──────────────┬──────────────┴──────────────┬──────────────┘
-                      ▼                             ▼
-              repos, terminals, tools       automation, cron, n8n,
-              coding sessions               homelab and security checks
+```mermaid
+flowchart TB
+    OWNER["🦞 <b>OpenClaw / Hermes</b><br/><i>canonical agent · durable memory owner</i>"]
+    MEM["<b>MEMORY.md · TOOLS.md · AGENTS.md</b><br/>rules · memory cards · project context · handoffs"]
+    OWNER -->|maintains| MEM
+
+    subgraph WRITERS [" writer harnesses "]
+        CODEX["<b>Codex CLI</b><br/>/ Codex"]
+        CLAUDE["<b>Claude Code</b><br/>/ ACP"]
+        OPEN["<b>OpenCode</b><br/>/ browser"]
+    end
+
+    CODEX & CLAUDE & OPEN == durable handoffs ==> MEM
+    MEM -. memory ingest .-> CODEX & CLAUDE & OPEN
+
+    subgraph SURFACES [" work surfaces "]
+        WORK["repos · terminals · tools<br/>coding sessions"]
+        AUTO["automation · cron · n8n<br/>homelab & security checks"]
+    end
+    CODEX & CLAUDE --> WORK
+    OPEN --> AUTO
+
+    classDef owner fill:#ef4444,stroke:#b91c1c,color:#fff;
+    classDef mem fill:#fff7ed,stroke:#ea580c,color:#7c2d12;
+    classDef surface fill:#f1f5f9,stroke:#94a3b8,color:#334155;
+    class OWNER owner;
+    class MEM mem;
+    class WORK,AUTO surface;
 ```
 
 ## Recommended Provider Stack
