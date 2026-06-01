@@ -101,7 +101,7 @@ There is nothing to install for the cookbook itself - it is a collection of stan
 - **[automation/cron-patterns.md](automation/cron-patterns.md)**: decide which layer (systemd, agent cron, n8n) each scheduled task in your stack actually belongs in
 - **[ai-stack/multi-model-orchestration.md](ai-stack/multi-model-orchestration.md)**: wire one orchestrator across many models with the right model per task
 - **[security/linux-hardening.md](security/linux-hardening.md)**: UFW, SSH hardening, fail2ban, and defense in depth for the host
-- **[infrastructure/backup-recovery.md](infrastructure/backup-recovery.md)**: restic to NAS + cloud, twice daily, with snapshot mounts
+- **[infrastructure/backup-recovery.md](infrastructure/backup-recovery.md)**: restic to NAS (twice daily) + cloud (weekly), Drive quota gotchas, KeePass canonical sync, snapshot mounts
 
 ### If you're here for the memory system
 
@@ -159,7 +159,7 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Backup & Recovery](infrastructure/backup-recovery.md) | Restic to NAS + Google Drive, twice-daily schedule, snapshot mounts, and disaster recovery | Any |
+| [Backup & Recovery](infrastructure/backup-recovery.md) | Restic to NAS (twice daily) + Google Drive (weekly), Drive quota/over-sync gotchas, KeePass canonical sync, snapshot mounts, disaster recovery | Any |
 | [Upgrade Hygiene](infrastructure/upgrade-hygiene.md) | Surviving `openclaw update`: systemd regeneration, dist patches, OAuth sync, schema drift | Any |
 | [OpenClaw Host Topology](infrastructure/openclaw-host-topology.md) | Audit the production host shape: services, config, agents, plugins, cron, memory, browser automation, and health checks | OpenClaw |
 
