@@ -95,7 +95,7 @@ ollama pull qwen3:7b              # triage/screening
 
 ### Tier 1b: Ollama Cloud Pro ($20/mo)
 
-Ollama Cloud is the middle lane between local models and frontier subscriptions. It is useful for bulk summarization, strict-format offload chores, commit and release-note prep, and model bakeoffs where you want cheap cloud inference without moving the main orchestrator.
+Ollama Cloud is the middle lane between local models and frontier subscriptions. It is useful for bulk summarization, strict-format offload chores, commit message and changelog prep, and model bakeoffs where you want cheap cloud inference without moving the main orchestrator.
 
 **Current routing from our April 2026 bakeoffs:**
 - `qwen3-coder-next:cloud`: best default for code-search summaries and strict structured offload.

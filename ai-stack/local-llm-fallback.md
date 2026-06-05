@@ -36,7 +36,7 @@ Before:
 
 - Every small background task spends main-model quota.
 - Memory search depends on a remote embedding API.
-- Commit messages and release-note drafts wait on the main agent.
+- Commit messages and changelog chores wait on the main agent.
 - Cron triage either uses the expensive model or trusts a weak model too much.
 - Fallback chains silently degrade quality when a provider hiccups.
 
