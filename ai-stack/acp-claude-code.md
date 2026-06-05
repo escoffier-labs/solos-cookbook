@@ -4,6 +4,8 @@ In April 2026, Anthropic blocked subscription OAuth from third-party harnesses. 
 
 This is the compatibility setup that works as of April 2026. As of the June 2026 stack notes, the preferred path for code review and second-opinion escalation is the [Claude Code tmux relay](claude-code-tmux-relay.md): OpenClaw drives a normal interactive Claude Code session with `tmux send-keys` and captures output with `tmux capture-pane`. Use ACPX when you explicitly need an ACP endpoint.
 
+> **June 2026 warning:** Do not replace ACPX with `claude -p` automation. Print-mode Claude Code started drawing from Claude's separate **Usage** bucket in the June notes. Use tmux for ordinary OpenClaw/Codex review handoffs.
+
 **Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.113, ACPX plugin 0.4.0
 **Last updated:** 2026-06-05
 
