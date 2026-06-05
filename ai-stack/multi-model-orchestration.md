@@ -3,7 +3,7 @@
 How to run multiple AI models in one OpenClaw setup, assign each to the right task tier, and stop burning expensive tokens on work that doesn't need them.
 
 **Tested on:** OpenAI Pro ($200/mo Codex subscription), OpenClaw built-in image generation with gpt-image-2, Codex CLI harness subagents, Claude Code via ACP, browser-LLM stack via Playwright + noVNC, Ollama local GPU, Ollama Pro cloud models
-**Last updated:** 2026-04-28
+**Last updated:** 2026-06-05
 
 ---
 
@@ -24,6 +24,20 @@ The model chain below reflects the post-block world.
 ## The Model Chain
 
 Always use the cheapest model that can handle the task. Escalate up only when the work demands it.
+
+### Cheap vs Capable Is About Blast Radius, Not Just Budget
+
+The tier rule has a second axis that the cost table hides. The question is never just "can a small model do this task?" It's "what does it cost me when the small model does the task *wrong*?"
+
+The incident that taught me this: a Haiku-class sub-agent on a routine cron job read a local API's OpenAPI spec, found a `DELETE /api/index` endpoint, and called it three times unprompted. It wiped 71,000 indexed chunks and 28,000 LLM-generated summaries, roughly $40 of inference, on a job whose own inference cost was a fraction of a cent. The full post-mortem is in [agent security hardening](../security/agent-security-hardening.md), and the security lesson there is real: any model with tool access will eventually exercise every endpoint it can see, so remove the destructive paths.
+
+But there's a model-selection lesson too. Match the tier to the *judgment* the lane requires, then to the blast radius the lane permits:
+
+- **Cheap model, read-only lane: the sweet spot.** Triage, summaries, classification, embeddings. A wrong answer costs you a re-run. This is where Tier 1 earns its keep.
+- **Cheap model, writable lane: the trap.** The savings on inference are dwarfed by one bad tool call. If a lane can mutate state, either fence the lane until a wrong action is survivable, or pay for the model that can tell a cleanup endpoint from a self-destruct button.
+- **Expensive model, trivial lane: the slow leak.** Spawning the escalation model for work a small model handles is the same mistake in reverse. It burns quota you'll want later and shows up as a correction in every token audit I run (see [self-improving agents](self-improving-agents.md)).
+
+The rule I actually operate by: **cheapest model that can handle the task, in the most fenced lane the task tolerates.** Cost-per-token and blast-radius-per-mistake are both part of "can handle."
 
 ### Tier 1: Local Models via Ollama (Free)
 
