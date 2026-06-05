@@ -5,7 +5,7 @@ How to move Claude Opus off the main-agent slot and onto an ACP escalation path 
 **Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.92+, Claude Max subscription
 **Last updated:** 2026-06-05
 
-> **June 2026 note:** This is now the ACPX compatibility runbook. For normal second-opinion code review, prefer [Claude Code via tmux Relay](claude-code-tmux-relay.md), which keeps Claude Code in its first-party interactive harness and avoids `claude -p`.
+> **June 2026 note:** This is now the ACPX compatibility runbook. For normal second-opinion code review, prefer [Claude Code via tmux Relay](claude-code-tmux-relay.md), which keeps Claude Code in its first-party interactive harness and avoids `claude -p`. The June notes observed print-mode automation drawing from Claude's separate **Usage** bucket, so do not use `claude -p` as the OpenClaw/Codex handoff path.
 
 ---
 

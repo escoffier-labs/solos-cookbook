@@ -141,6 +141,8 @@ Your main agent. This is what receives every message, makes every decision, and 
 - GPT 5.5 is strong enough for orchestration, tool use, and delegation
 - `:cron` and `:high` aliases let you tune thinking depth per task
 
+This is the recommended $200 stack when the agent is active every day or the same subscription is also doing heavy repo work. A $100-ish setup can work for conservative usage, but only if cron work is light, local/Ollama lanes take the boring tasks, and you are not sharing the subscription with constant coding sessions.
+
 **Handles:**
 - Main orchestration (processing incoming messages, deciding actions)
 - Code generation and review (coder role is the same model)
@@ -261,7 +263,7 @@ Two paths:
 1. **Preferred tmux relay:** Start a named Claude Code tmux session in `--permission-mode plan`, send a bounded review prompt, then capture the pane as a local review artifact.
 2. **ACP compatibility:** Use ACPX only when your OpenClaw setup needs an ACP endpoint.
 
-The tmux relay helper lives in [`../templates/ai-stack/claude-tmux-relay.sh`](../templates/ai-stack/claude-tmux-relay.sh). See [Claude Code via tmux Relay](claude-code-tmux-relay.md) for the current review lane and the [ACP migration guide](claude-cli-to-acp-migration.md) for ACPX compatibility.
+The tmux relay helper lives in [`../templates/ai-stack/claude-tmux-relay.sh`](../templates/ai-stack/claude-tmux-relay.sh). See [Claude Code via tmux Relay](claude-code-tmux-relay.md) for OpenClaw and Codex handoff commands. See the [ACP migration guide](claude-cli-to-acp-migration.md) only when you need ACPX compatibility.
 
 **When NOT to escalate:** Code generation, file scanning, bulk edits, and mechanical ops work. Escalation is for judgment, not labor.
 
