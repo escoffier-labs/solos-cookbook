@@ -18,7 +18,7 @@ Sanitize before publishing:
 - **Credentials:** Remove entirely or use `<password>` placeholder.
 - **Combined identifiers:** Room numbers + IPs + domain + account name paint a full network map. Sanitize all of them together, not piecemeal.
 
-The pre-push hook runs content-guard with the `public-repo` policy. For publish-ready artifacts (blog posts, social drafts, docs), use the stricter `public-content` policy: `brigade scrub --policy public-content`.
+The pre-push hook runs content-guard with the `public-repo` policy. For anything destined for a public surface (blog, social, docs), use the stricter `public-content` policy: `brigade scrub --policy public-content`.
 
 ---
 
@@ -157,7 +157,7 @@ If the workspace shares a network with the user's personal daily driver (differe
 - Racist, political, anti-religious, or whiny output.
 - Posting on behalf of the user without approval.
 - Bypassing the content-guard publish gate without explicit acceptance.
-- Disclosing the internal AI drafting workflow for the user's public-facing content unless they explicitly approved.
+- Disclosing the user's private workflows, pipelines, or internal tooling details without their explicit approval.
 
 ---
 
