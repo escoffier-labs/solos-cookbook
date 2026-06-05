@@ -87,20 +87,23 @@ flowchart TB
 
 The guides assume a specific provider mix. You can substitute, but if you want a known-good baseline:
 
-- **Codex Pro ($200/mo) OAuth: main agent + coder.** This is the happy path. One flat subscription covers orchestration, code generation, and most cron work. Codex OAuth slots cleanly into OpenClaw's primary-model path and has been the most stable surface across the 2026.4.x releases. Start here.
+- **The $200 stack is the normal recommendation.** Use Codex Pro as the main agent + coder lane when your OpenClaw agent is active every day, doing cron work, repo work, and second-pass review. One flat subscription covers the hot path, and Codex OAuth slots cleanly into OpenClaw's primary-model path.
+- **A $100-ish stack can work if usage is conservative.** If your agent is not busy, you are not sharing the subscription with heavy coding sessions, and most background work stays on local/Ollama/browser lanes, you can run a smaller setup. Expect to manage rate limits more actively.
 - **Claude Opus via Claude Code: escalation only.** Intel, design, architecture review, and second-opinion code review. Prefer the Claude Code tmux relay for interactive first-party harness work; keep ACPX for setups that explicitly need ACP. Do not call `claude -p` from OpenClaw automation.
 - **Ollama (free): embeddings, commit messages, triage.** Local, fast, no round-trip.
 
-### ⚠️ Do not route Claude Max OAuth directly through OpenClaw
+### Claude Code via tmux: the June 2026 lesson
 
-As of April 2026, pointing an OpenClaw agent at your Claude Max subscription OAuth has two problems that make it a non-starter:
+The Claude lesson has its own guide now: [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md).
 
-1. **Extra usage charges.** Anthropic started metering traffic that arrives through third-party harnesses against your subscription in ways that show up as additional usage on top of normal Max caps. You can burn through quota far faster than the same work would cost through the first-party Claude client.
-2. **System-prompt-level blocking.** Claude detects that it's running inside a non-Anthropic harness and injects guidance that degrades behavior (refusals, hedging, dropping tool calls). Prompt-level workarounds don't stick.
+The short version: keep Claude Code in its first-party interactive harness and let OpenClaw or Codex drive it through tmux. Use `tmux send-keys`, `tmux paste-buffer`, and `tmux capture-pane`; do not automate review with `claude -p`.
 
-**The sensible path to Opus from OpenClaw is through Claude Code's first-party harness.** As of the June 2026 stack notes, the preferred route is a named tmux session that OpenClaw can drive with `tmux send-keys` and inspect with `tmux capture-pane`. ACPX remains a compatibility path when you need an ACP endpoint, but normal code-review escalation should use the tmux relay, not `claude -p` or a direct Claude backend.
+Two things changed the guidance:
 
-See [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) for the current review lane and [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) for the ACPX compatibility runbook.
+1. In April 2026, direct Claude subscription OAuth through third-party harnesses stopped being a reliable OpenClaw backend.
+2. By the June 2026 notes, `claude -p` / print-mode automation was drawing from Claude's separate **Usage** bucket. Print-mode automation is not the same budget surface as an interactive Claude Code session.
+
+ACPX remains documented as a compatibility path when you need an ACP endpoint. For ordinary second-opinion code review, use the tmux relay. See [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) for OpenClaw/Codex commands and [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) for the ACPX compatibility runbook.
 
 ## Quick start
 
