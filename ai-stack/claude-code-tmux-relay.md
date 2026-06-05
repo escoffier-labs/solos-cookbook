@@ -18,6 +18,21 @@ This is the preferred Claude escalation lane for code review and architecture re
 
 ACP still has a place when you explicitly need an ACP endpoint, but the tmux relay is simpler to inspect, easier to recover, and closer to how Claude Code is meant to be used.
 
+## The June 2026 lesson
+
+The lesson is not just "tmux works." The real lesson is that Claude Code should stay in Claude Code.
+
+In April 2026, direct Claude subscription OAuth through third-party harnesses stopped being reliable. ACPX was the first working repair because it launched Claude Code instead of impersonating it.
+
+By the June 2026 notes, `claude -p` / print-mode automation had a second problem: it drew from Claude's separate **Usage** bucket. If OpenClaw or Codex needs Claude, drive an interactive Claude Code session through tmux instead of shelling out to `claude -p`.
+
+That keeps:
+
+- Claude Code's OAuth and entitlement checks inside the first-party harness
+- permission prompts and trust prompts visible in a real terminal
+- review sessions recoverable with `tmux attach`
+- one-shot review possible through prompt files without using print mode
+
 ## Why this way
 
 The old post-April-2026 fix was "run Claude Code through ACPX." That avoided direct third-party OAuth use, but it still turned Claude Code into a subprocess endpoint and often pushed users toward one-shot print-mode habits.
@@ -134,6 +149,66 @@ templates/ai-stack/claude-tmux-relay.sh send \
 
 templates/ai-stack/claude-tmux-relay.sh capture -200
 ```
+
+## OpenClaw agent usage
+
+OpenClaw should treat Claude Code tmux as a tool lane, not as the main model or a fallback model.
+
+Start or reuse the session from an OpenClaw shell-capable tool, cron job, or private skill:
+
+```bash
+CLAUDE_TMUX_SESSION=claude-code-review \
+CLAUDE_WORKSPACE=/path/to/repo \
+CLAUDE_PERMISSION_MODE=plan \
+templates/ai-stack/claude-tmux-relay.sh start
+```
+
+Send a bounded review prompt:
+
+```bash
+templates/ai-stack/claude-tmux-relay.sh send \
+  "Review the current git diff for correctness, security risk, missing tests, and unclear assumptions. Findings first. Do not edit files."
+```
+
+Capture the pane and summarize the actionable findings back into the OpenClaw turn:
+
+```bash
+templates/ai-stack/claude-tmux-relay.sh capture -300
+```
+
+For longer prompts, OpenClaw should write a local prompt file and use `send-file`:
+
+```bash
+templates/ai-stack/claude-tmux-relay.sh send-file /tmp/claude-review-prompt.txt
+```
+
+Do not put Claude Code in `agents.defaults.model.fallbacks`. The fallback chain is for compatible model backends, not an interactive review harness.
+
+## Codex usage
+
+Codex can use the same relay after it implements or reviews a change. The useful loop is:
+
+1. Codex makes the change and runs the normal tests.
+2. Codex writes a review prompt that includes the task, acceptance criteria, and current diff focus.
+3. Codex sends that prompt to Claude Code through tmux.
+4. Codex captures Claude's response, validates each finding, applies only the real fixes, and reruns tests.
+
+Example from a Codex repo session:
+
+```bash
+git diff --stat > /tmp/claude-review-prompt.txt
+printf '\nReview this change. Findings first. Do not edit files.\n' >> /tmp/claude-review-prompt.txt
+
+CLAUDE_TMUX_SESSION=claude-code-review \
+CLAUDE_WORKSPACE="$PWD" \
+CLAUDE_PERMISSION_MODE=plan \
+templates/ai-stack/claude-tmux-relay.sh start
+
+templates/ai-stack/claude-tmux-relay.sh send-file /tmp/claude-review-prompt.txt
+templates/ai-stack/claude-tmux-relay.sh capture -300
+```
+
+If Claude reports a finding, Codex owns the verification. Claude's output is review evidence, not an automatic patch.
 
 ## Codex + Claude cross-review
 
