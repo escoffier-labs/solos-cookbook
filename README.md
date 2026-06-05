@@ -37,6 +37,10 @@ It is **not** a framework, not a product, not a tutorial series. It is a record 
 
 The infrastructure examples come from a single-engineer bare-metal Linux setup with a homelab behind it for self-hosting, security tooling, and knowledge management. The agent-memory pattern generalizes: one canonical memory owner, many coding harnesses, one shared contract for what gets remembered.
 
+> The starter layout documented here was extracted into an installable CLI: [**Brigade**](https://github.com/escoffier-labs/brigade) (`pipx install brigade-cli`). If you want the kitchen without reading every recipe first, start there. The cookbook explains the why, Brigade gives you the setup.
+>
+> [![Star Brigade](https://img.shields.io/github/stars/escoffier-labs/brigade?style=social&label=Star%20brigade)](https://github.com/escoffier-labs/brigade)
+
 ## Who this is for
 
 Use this cookbook if you want:
