@@ -2,10 +2,10 @@
 
 In April 2026, Anthropic blocked subscription OAuth from third-party harnesses. The `anthropic:claude-cli` backend that most OpenClaw users had plugged a Max subscription into stopped working overnight. The replacement: run Claude Code natively via the **Agent Client Protocol** (ACP), with OpenClaw orchestrating over it instead of impersonating the CLI.
 
-This is the setup that works as of April 2026.
+This is the compatibility setup that works as of April 2026. As of the June 2026 stack notes, the preferred path for code review and second-opinion escalation is the [Claude Code tmux relay](claude-code-tmux-relay.md): OpenClaw drives a normal interactive Claude Code session with `tmux send-keys` and captures output with `tmux capture-pane`. Use ACPX when you explicitly need an ACP endpoint.
 
 **Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.113, ACPX plugin 0.4.0
-**Last updated:** 2026-04-20
+**Last updated:** 2026-06-05
 
 ---
 
@@ -16,9 +16,9 @@ Before April 2026, OpenClaw could talk directly to the `claude` CLI as a model b
 Anthropic now rejects those tokens unless the request comes from Claude Code itself. Two practical consequences:
 
 1. **Don't store `anthropic:claude-cli` tokens anymore.** They won't refresh cleanly, and the deprecation warning in `openclaw doctor` is real.
-2. **If you want subscription Claude inside OpenClaw, use ACP.** Claude Code runs as its own process, OpenClaw speaks ACP to it, and the subscription check passes because it really is Claude Code making the call.
+2. **If you want subscription Claude inside OpenClaw, use Claude Code as the first-party harness.** For normal review, use the tmux relay. For ACP integrations, Claude Code runs as its own process, OpenClaw speaks ACP to it, and the subscription check passes because it really is Claude Code making the call.
 
-Direct Anthropic API access (billed per-token) still works through the `anthropic` plugin - but if you have a Max sub you already paid for, ACP is how you get it back.
+Direct Anthropic API access (billed per-token) still works through the `anthropic` plugin. If you have a Max subscription you already paid for, do not route it through a direct third-party backend. Use Claude Code via tmux for review or ACPX for explicit ACP compatibility.
 
 ## Architecture
 

@@ -4,9 +4,10 @@ Multi-model orchestration. One orchestrator, many models, escalation lanes. Most
 
 ## Guides
 
-- [x] [`multi-model-orchestration.md`](multi-model-orchestration.md) - GPT 5.5 + ACP Opus + browser-LLM + Ollama in one setup, right model per task
+- [x] [`multi-model-orchestration.md`](multi-model-orchestration.md) - GPT 5.5 + Claude Code review lane + browser-LLM + Ollama in one setup, right model per task
 - [x] [`claude-cli-to-acp-migration.md`](claude-cli-to-acp-migration.md) - move Opus off main-agent slot after Anthropic's April 2026 OAuth block
-- [x] [`acp-claude-code.md`](acp-claude-code.md) - running Claude Code as an ACP-driven escalation agent
+- [x] [`acp-claude-code.md`](acp-claude-code.md) - running Claude Code as an ACP compatibility lane when ACP is explicitly needed
+- [x] [`claude-code-tmux-relay.md`](claude-code-tmux-relay.md) - driving first-party Claude Code through tmux for review without `claude -p`
 - [x] [`sub-agent-patterns.md`](sub-agent-patterns.md) - spawn patterns, model assignment, ACP escalation, error handling
 - [x] [`gpt-55-orchestration.md`](gpt-55-orchestration.md) - tool-narration guard, strict-agentic gaps, action-verb tuning
 - [x] [`self-improving-agents.md`](self-improving-agents.md) - correction capture, behavioral-guard plugins, daily memory sweeps
