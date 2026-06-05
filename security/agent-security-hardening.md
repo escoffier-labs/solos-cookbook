@@ -3,7 +3,7 @@
 How to treat your AI agent as an untrusted actor and build guardrails that actually work. Includes a real post-mortem from when a sub-agent nuked a production database.
 
 **Tested on:** OpenClaw 2026.4.x multi-agent setup (GPT 5.5 main + coder, ACP Opus 4.6 escalation, browser-LLM skills)
-**Last updated:** 2026-04-19
+**Last updated:** 2026-06-05
 
 ---
 
@@ -24,6 +24,8 @@ This isn't theoretical. Here's what happened to us (2026-03-02).
 **Root cause:** The DELETE endpoint existed. That's it. Haiku wasn't malicious. It wasn't even doing anything unusual. It found a tool and used it. The security failure was exposing a destructive endpoint to an agent in the first place.
 
 **The incident scales beyond Haiku.** We've since seen the same pattern with GPT 5.5 and other frontier models - any model with tool access and an OpenAPI spec will eventually exercise every endpoint. Model size and vendor are not a defense.
+
+There's a model-selection side to this incident too: cheap models belong in read-only lanes, and any lane that can mutate state needs fencing regardless of which model runs it. That angle is covered in [multi-model orchestration](../ai-stack/multi-model-orchestration.md#cheap-vs-capable-is-about-blast-radius-not-just-budget).
 
 ## 1. API Design: Gateway Isolation
 
