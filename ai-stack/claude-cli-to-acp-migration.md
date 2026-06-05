@@ -3,7 +3,9 @@
 How to move Claude Opus off the main-agent slot and onto an ACP escalation path after Anthropic blocked subscription OAuth from third-party harnesses in April 2026.
 
 **Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.92+, Claude Max subscription
-**Last updated:** 2026-04-19
+**Last updated:** 2026-06-05
+
+> **June 2026 note:** This is now the ACPX compatibility runbook. For normal second-opinion code review, prefer [Claude Code via tmux Relay](claude-code-tmux-relay.md), which keeps Claude Code in its first-party interactive harness and avoids `claude -p`.
 
 ---
 
@@ -17,7 +19,9 @@ In April 2026, Anthropic started rejecting Claude Max subscription OAuth tokens 
 - Main-agent routing through `claude-cli/claude-opus-4-6` now returns `Unknown model` or auth errors.
 - Any cron job, hook, or skill that assumed Opus was the primary model silently fails or falls back to another provider.
 
-The path forward is to keep Opus reachable via the **Agent Client Protocol (ACP)** through the ACPX plugin. Claude Code runs natively on your machine as an ACP server; OpenClaw connects to it as a client. Anthropic's own CLI handles the Max OAuth handshake, and OpenClaw treats the resulting session as a sub-agent.
+The April 2026 path forward was to keep Opus reachable via the **Agent Client Protocol (ACP)** through the ACPX plugin. Claude Code runs natively on your machine as an ACP server; OpenClaw connects to it as a client. Anthropic's own CLI handles the Max OAuth handshake, and OpenClaw treats the resulting session as a sub-agent.
+
+The June 2026 default is narrower: use the tmux relay for review and use ACPX only when you explicitly need an ACP endpoint.
 
 Opus becomes an **escalation target**, not a primary orchestrator. Your main agent runs on something else (we use GPT 5.5 via Codex Pro - see [multi-model orchestration](multi-model-orchestration.md)).
 

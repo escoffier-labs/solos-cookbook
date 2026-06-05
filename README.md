@@ -17,8 +17,8 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-51-red?style=for-the-badge" alt="51 guides">
-  <img src="https://img.shields.io/badge/updated-2026--06--04-white?style=for-the-badge" alt="Updated 2026-06-04">
+  <img src="https://img.shields.io/badge/guides-52-red?style=for-the-badge" alt="52 guides">
+  <img src="https://img.shields.io/badge/updated-2026--06--05-white?style=for-the-badge" alt="Updated 2026-06-05">
 </p>
 
 <p align="center">
@@ -61,7 +61,7 @@ flowchart TB
 
     subgraph WRITERS [" writer harnesses "]
         CODEX["<b>Codex CLI</b><br/>/ Codex"]
-        CLAUDE["<b>Claude Code</b><br/>/ ACP"]
+        CLAUDE["<b>Claude Code</b><br/>/ tmux relay · ACP"]
         OPEN["<b>OpenCode</b><br/>/ browser"]
     end
 
@@ -88,7 +88,7 @@ flowchart TB
 The guides assume a specific provider mix. You can substitute, but if you want a known-good baseline:
 
 - **Codex Pro ($200/mo) OAuth: main agent + coder.** This is the happy path. One flat subscription covers orchestration, code generation, and most cron work. Codex OAuth slots cleanly into OpenClaw's primary-model path and has been the most stable surface across the 2026.4.x releases. Start here.
-- **Claude Opus via ACP: escalation only.** Intel, design, architecture review, and academic work. Run it through the ACPX plugin, not as a direct OpenClaw provider.
+- **Claude Opus via Claude Code: escalation only.** Intel, design, architecture review, and second-opinion code review. Prefer the Claude Code tmux relay for interactive first-party harness work; keep ACPX for setups that explicitly need ACP. Do not call `claude -p` from OpenClaw automation.
 - **Ollama (free): embeddings, commit messages, triage.** Local, fast, no round-trip.
 
 ### ⚠️ Do not route Claude Max OAuth directly through OpenClaw
@@ -98,9 +98,9 @@ As of April 2026, pointing an OpenClaw agent at your Claude Max subscription OAu
 1. **Extra usage charges.** Anthropic started metering traffic that arrives through third-party harnesses against your subscription in ways that show up as additional usage on top of normal Max caps. You can burn through quota far faster than the same work would cost through the first-party Claude client.
 2. **System-prompt-level blocking.** Claude detects that it's running inside a non-Anthropic harness and injects guidance that degrades behavior (refusals, hedging, dropping tool calls). Prompt-level workarounds don't stick.
 
-**The only sensible path to Opus from OpenClaw is ACP.** The ACPX plugin launches the official Claude Code CLI as a subprocess. Anthropic's own client handles the OAuth handshake, so the usage accounting and system-prompt behavior stay normal. OpenClaw connects to it over the Agent Client Protocol and treats the session as an escalation sub-agent.
+**The sensible path to Opus from OpenClaw is through Claude Code's first-party harness.** As of the June 2026 stack notes, the preferred route is a named tmux session that OpenClaw can drive with `tmux send-keys` and inspect with `tmux capture-pane`. ACPX remains a compatibility path when you need an ACP endpoint, but normal code-review escalation should use the tmux relay, not `claude -p` or a direct Claude backend.
 
-Full migration runbook in [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md).
+See [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) for the current review lane and [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) for the ACPX compatibility runbook.
 
 ## Quick start
 
@@ -139,9 +139,10 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Multi-Model Orchestration](ai-stack/multi-model-orchestration.md) | Run GPT 5.5, ACP Opus, browser-LLM skills, and Ollama in one setup with the right model per task | Any |
+| [Multi-Model Orchestration](ai-stack/multi-model-orchestration.md) | Run GPT 5.5, Claude Code review, browser-LLM skills, and Ollama in one setup with the right model per task | Any |
 | [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) | Move Opus off the main-agent slot after Anthropic's April 2026 subscription-OAuth block | Anthropic |
-| [Claude Code via ACP](ai-stack/acp-claude-code.md) | Running Claude Code as an ACP-driven escalation agent after Anthropic's April 2026 harness block | Any |
+| [Claude Code via ACP](ai-stack/acp-claude-code.md) | Running Claude Code as an ACP-driven compatibility lane after Anthropic's April 2026 harness block | Any |
+| [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) | Drive first-party Claude Code from OpenClaw through tmux for second-opinion review without `claude -p` | Any |
 | [Sub-Agent Patterns](ai-stack/sub-agent-patterns.md) | Spawn patterns, model assignment, ACP escalation, error handling, and the wrapper script | Any |
 | [GPT 5.5 Orchestration](ai-stack/gpt-55-orchestration.md) | Tool-call narration guard, strict-agentic detection gaps, silent-tool-loop triage, action-verb tuning | Any |
 | [Self-Improving Agents](ai-stack/self-improving-agents.md) | Correction capture, behavioral-guard plugins (tool-narration-guard, tokenjuice), memory sweeps, and promotion rules | Any |
@@ -241,7 +242,7 @@ Drop-in artifacts you can lift without adopting the whole thing. See [`templates
 | [`templates/hooks/`](templates/hooks/) | git pre-push, Claude Code PostToolUse, OpenClaw sync plugin skeletons, paired with [`automation/hooks.md`](automation/hooks.md) |
 | [`templates/bootstrap/`](templates/bootstrap/) | sanitized workspace file skeletons, paired with [`knowledge/bootstrap-files.md`](knowledge/bootstrap-files.md) |
 | [`templates/skills/`](templates/skills/) | public-safe `SKILL.md` skeleton and sanitization checklist, paired with [`ai-stack/skills-development.md`](ai-stack/skills-development.md) |
-| [`templates/ai-stack/`](templates/ai-stack/) | model alias snippets, ACP wrapper shape, plugin smoke check, paired with [`ai-stack/multi-model-orchestration.md`](ai-stack/multi-model-orchestration.md) |
+| [`templates/ai-stack/`](templates/ai-stack/) | model alias snippets, Claude Code tmux relay, ACP wrapper shape, plugin smoke check, paired with [`ai-stack/multi-model-orchestration.md`](ai-stack/multi-model-orchestration.md) |
 | [`templates/n8n/`](templates/n8n/) | workflow and failure-classifier skeletons, paired with [`automation/n8n-patterns.md`](automation/n8n-patterns.md) |
 | [`templates/scrubbers/`](templates/scrubbers/) | deterministic publish-boundary scrubber skeleton and fixtures, paired with [`publishing/publish-time-scrubbing.md`](publishing/publish-time-scrubbing.md) and [`automation/hooks.md`](automation/hooks.md) |
 | [`templates/sandbox/`](templates/sandbox/) | restricted worker command wrappers, paired with [`automation/sandbox-shims.md`](automation/sandbox-shims.md) and [`automation/hooks.md`](automation/hooks.md) |

@@ -2,8 +2,8 @@
 
 How to use OpenClaw sub-agents effectively. Spawn patterns, model assignment, error handling, and the lessons we learned from breaking things.
 
-**Tested on:** OpenClaw with GPT 5.5 (main + coder), Claude Opus 4.6 via ACP (escalation), browser-LLM stack for research/imagegen
-**Last updated:** 2026-04-19
+**Tested on:** OpenClaw with GPT 5.5 (main + coder), Claude Code via tmux relay for review escalation, ACP compatibility, browser-LLM stack for research/imagegen
+**Last updated:** 2026-06-05
 
 ---
 
@@ -15,14 +15,14 @@ Your main agent carries heavy context (memory, personality, conversation history
 - The task is mechanical (scan files, generate boilerplate, run searches)
 - The task doesn't need your main session's context
 - You want parallel execution
-- You want to escalate to a higher-quality model (e.g., ACP Opus) for a specific task
+- You want to escalate to a higher-quality model for a specific review task
 
 **Keep on the main agent when:**
 - The task requires conversation context or memory
 - It involves security decisions or untrusted input
 - It's a quick one-liner that doesn't justify the spawn overhead
 
-**Post-April-2026 note:** The main agent no longer has to be your "strongest" model. GPT 5.5 on Codex Pro is a fine orchestrator, and Opus-quality work happens via [ACP escalation](claude-cli-to-acp-migration.md) when needed.
+**Post-April-2026 note:** The main agent no longer has to be your "strongest" model. GPT 5.5 on Codex Pro is a fine orchestrator, and Opus-quality work happens through Claude Code's first-party harness when needed. Prefer the [tmux relay](claude-code-tmux-relay.md) for review escalation; keep [ACP escalation](claude-cli-to-acp-migration.md) for setups that explicitly need ACP.
 
 ## Spawn Patterns
 
@@ -64,7 +64,7 @@ sessions_send(
 
 ### Pattern 3: Background Agent with Wrapper
 
-For long-running coding agents (Claude Code, Codex CLI) that might crash silently, use a wrapper script that guarantees notification on completion or failure.
+For long-running coding agents or relay commands that might crash silently, use a wrapper script that guarantees notification on completion or failure.
 
 ```bash
 #!/bin/bash
@@ -84,12 +84,13 @@ else
 fi
 ```
 
-Usage:
+Usage with the Claude Code tmux relay:
 ```bash
-agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Build the dashboard according to spec.md"
+agent-wrapper.sh "claude review" \
+  templates/ai-stack/claude-tmux-relay.sh send-file /tmp/claude-review-prompt.txt
 ```
 
-**Why this exists:** Background coding agents crash silently. The "I'll run an openclaw system event when done" trick fails because the agent dies before executing it. The wrapper captures the exit code and ALWAYS fires the notification, whether the agent succeeds or crashes.
+**Why this exists:** Background coding agents and relay scripts can fail silently. The "I'll run an openclaw system event when done" trick fails because the agent dies before executing it. The wrapper captures the exit code and ALWAYS fires the notification, whether the command succeeds or crashes.
 
 **Rule:** Never spawn a background coding agent without the wrapper. No exceptions.
 
@@ -102,18 +103,15 @@ agent-wrapper.sh "dashboard build" claude --dangerously-skip-permissions -p "Bui
   "agents": {
     "list": [
       { "id": "main",  "model": "openai-codex/gpt-5.5" },
-      { "id": "coder", "model": "gpt55" },
-      {
-        "id": "acp-claude",
-        "model": "acpx/claude-opus-4-6",
-        "description": "Escalation target - intel, design, review, security analysis, academic work"
-      }
+      { "id": "coder", "model": "gpt55" }
     ]
   }
 }
 ```
 
 `gpt55` is an alias defined in `agents.defaults.models` that resolves to `openai-codex/gpt-5.5`. See [multi-model orchestration](multi-model-orchestration.md) for the full alias setup.
+
+Claude Code review is not modeled as a fake OpenClaw agent in the current setup. Launch it through the tmux relay script so Claude stays inside the first-party harness.
 
 Research and imagegen are not separate agents in this setup - they're skills the main/coder invoke against the [browser-LLM stack](multi-model-orchestration.md#tier-3-browser-llm-stack--playwright--novnc).
 
@@ -126,10 +124,10 @@ Research and imagegen are not separate agents in this setup - they're skills the
 | Code reviews | coder | Structured analysis |
 | Research, web analysis | browser skill (not an agent) | Perplexity Pro / Gemini web UI via Playwright |
 | Imagegen | browser skill | Web UI against existing subscriptions |
-| Design critique | acp-claude | Stronger judgment on UX and system tradeoffs |
-| PR review requiring taste | acp-claude | Beyond mechanical correctness |
-| Security review | acp-claude | Better failure-mode analysis |
-| Long-form academic work | acp-claude | Reasoning depth |
+| Design critique | Claude Code tmux relay | Stronger judgment on UX and system tradeoffs |
+| PR review requiring taste | Claude Code tmux relay | Independent second opinion |
+| Security review | Claude Code tmux relay | Better failure-mode analysis |
+| Long-form academic work | Claude Code tmux relay or browser research lane | Reasoning depth and source review |
 | Security evaluation | main | Orchestrator handles untrusted input |
 | Quick one-liners | main | Not worth spawn overhead |
 
@@ -220,31 +218,36 @@ Multiple sub-agents working simultaneously:
 
 ### Triage Escalation (Three Tiers)
 
-Local model screens, main handles most work, ACP Opus gets the quality-critical tasks:
+Local model screens, main handles most work, Claude Code gets the quality-critical review tasks:
 
 ```
 1. Ollama (7B): Screen incoming email - SKIP or ESCALATE
 2. If ESCALATE: Main (GPT 5.5) reads and processes
 3. If action needed:
    - Mechanical/code work → main spawns coder
-   - Design/review/security analysis → main spawns acp-claude
+   - Design/review/security analysis → main sends a bounded prompt to Claude Code via tmux
    - Research or imagegen → main calls the browser skill (not a sub-agent)
 ```
 
-### ACP Escalation Pattern
+### Claude Code tmux Escalation Pattern
 
-Claude Opus now lives behind the ACP boundary. To reach it:
+Claude Opus now lives behind Claude Code's first-party harness. To reach it for review, start or reuse a tmux session and send a bounded prompt:
 
+```bash
+CLAUDE_TMUX_SESSION=claude-code-review \
+CLAUDE_WORKSPACE=/path/to/repo \
+CLAUDE_PERMISSION_MODE=plan \
+templates/ai-stack/claude-tmux-relay.sh start
+
+templates/ai-stack/claude-tmux-relay.sh send \
+  "Review this architecture for hidden failure modes, unclear ownership boundaries, and risky assumptions. Return structured notes with priorities. Do not edit files."
+
+templates/ai-stack/claude-tmux-relay.sh capture -200
 ```
-sessions_spawn(
-  agentId: "acp-claude",
-  task: "Review this architecture for hidden failure modes, unclear ownership boundaries, \
-         and risky assumptions. Return structured notes with priorities.",
-  mode: "run"
-)
-```
 
-Or open a dedicated Discord thread routed to `acp-claude` (see [multi-channel setup](../automation/multi-channel-setup.md)) and work with Opus directly. The ACP session has no access to your main agent's conversation history - pass all necessary context in the task itself.
+For one-shot reviews, put the prompt in a file and use `send-file`. Do not call `claude -p`.
+
+ACP remains a compatibility path when OpenClaw needs a formal ACP endpoint. The tmux relay has no access to your main agent's conversation history - pass all necessary context in the prompt itself.
 
 **When to escalate:** Intel, design, PR review that needs taste, security analysis, academic work.
 **When NOT to escalate:** Code generation, file scanning, bulk ops, anything mechanical. The coder agent (GPT 5.5) handles those faster and without burning Max-subscription quota.
@@ -262,11 +265,17 @@ echo ""
 echo "=== Fallback Chain ==="
 jq '.agents.defaults.model' ~/.openclaw/openclaw.json
 
-# Check ACP plugin is loaded
+# Check Claude Code tmux relay
 echo ""
-echo "=== ACPX ==="
-jq '.plugins.allow | contains(["acpx"])' ~/.openclaw/openclaw.json
-test -x ~/.openclaw/vendor/acpx/node_modules/.bin/acpx && echo "✓ acpx binary present"
+echo "=== Claude Code tmux ==="
+tmux has-session -t claude-code-review && echo "tmux review session present" || echo "tmux review session not running"
+test -x templates/ai-stack/claude-tmux-relay.sh && echo "relay template present"
+
+# Check ACP plugin only if you still use ACP compatibility
+echo ""
+echo "=== ACPX compatibility ==="
+jq '.plugins.allow | contains(["acpx"])' ~/.openclaw/openclaw.json 2>/dev/null || true
+test -x ~/.openclaw/vendor/acpx/node_modules/.bin/acpx && echo "acpx binary present" || true
 
 # Check for wrapper script
 echo ""

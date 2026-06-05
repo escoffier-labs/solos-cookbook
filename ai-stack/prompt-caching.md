@@ -2,8 +2,8 @@
 
 How OpenClaw's prompt caching works across providers, how to keep your cache hit rate high, and the anti-patterns that silently cost you money every turn.
 
-**Tested on:** OpenClaw with OpenAI Codex (GPT 5.5) as main, ACP Opus 4.6 as escalation, cache-ttl context pruning
-**Last updated:** 2026-04-19
+**Tested on:** OpenClaw with OpenAI Codex (GPT 5.5) as main, Claude Code tmux relay for review escalation, ACP compatibility, cache-ttl context pruning
+**Last updated:** 2026-06-05
 
 ---
 
@@ -11,11 +11,11 @@ How OpenClaw's prompt caching works across providers, how to keep your cache hit
 
 The advice in this guide applies across providers, but the mechanics differ. OpenClaw handles the translation automatically - you only need to know the shape so you can debug cache misses.
 
-### Anthropic (Direct API and ACP Opus)
+### Anthropic (Direct API, Claude Code, and ACP compatibility)
 
 Anthropic caches the system prompt prefix server-side with explicit `cache_control` markers. OpenClaw maps `cacheControlTtl: "1h"` to `cacheRetention: "long"` on direct calls and injects `cache_control: { type: "ephemeral" }` via OpenRouter. Cache reads run ~90% cheaper than uncached input.
 
-Since the April 2026 [claude-cli → ACP migration](claude-cli-to-acp-migration.md), Opus is no longer the main agent in most OpenClaw setups. Caching still matters on the ACP escalation path - each Opus call pays the cache penalty if the prefix shifts - but the cost surface is smaller.
+Since the April 2026 [claude-cli → ACP migration](claude-cli-to-acp-migration.md), Opus is no longer the main agent in most OpenClaw setups. In the current stack, Claude Code is a first-party review lane driven through tmux, with ACPX kept for explicit ACP compatibility. Cache hygiene still matters for direct Anthropic or ACP calls, but the normal review lane is bounded enough that the main quota risk is still the OpenAI/Codex prefix.
 
 ### OpenAI Codex (Main Agent Path)
 
@@ -156,7 +156,7 @@ For a typical Opus session with a ~10K token prefix:
 
 One mid-session bootstrap edit at turn 25 costs an extra $3.51 over the remaining session. Over a month of daily sessions, that's $100+ in unnecessary spend.
 
-### Subscription Path (Codex Pro, Claude Max via ACP)
+### Subscription Path (Codex Pro, Claude Max via Claude Code)
 
 On a flat-rate subscription, a cache miss doesn't show up on your bill - it shows up as earlier rate-limit throttling. A session that used to last 4 hours might hit the hourly cap at 2.5 hours if you're invalidating the prefix every turn. Same effect on your workflow, different failure mode.
 
