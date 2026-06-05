@@ -151,8 +151,7 @@ Minimum viable config for GPT 5.5 as main with the guards active:
       "model": {
         "primary": "openai-codex/gpt-5.5",
         "fallbacks": [
-          "openai-codex/gpt-5.3-codex",
-          "acp:claude-opus-4-7"
+          "openai-codex/gpt-5.3-codex"
         ]
       }
     },
@@ -177,7 +176,7 @@ Minimum viable config for GPT 5.5 as main with the guards active:
 
 Two notes on that config:
 
-- **Thinking level is `medium`, not `xhigh`.** On Codex Pro, high thinking burns rate limit faster than it returns value for orchestration. Save high for escalation lanes via ACP.
+- **Thinking level is `medium`, not `xhigh`.** On Codex Pro, high thinking burns rate limit faster than it returns value for orchestration. Save deeper review for bounded Claude Code tmux relay passes.
 - **Codex first in the fallbacks.** Gemini fallback silently lands requests on a different model without notifying the user. If you must include Gemini, put it last and only if you actually want that behavior - which these days, you probably don't (see [Multi-Model Orchestration](multi-model-orchestration.md)).
 
 ## Verification
@@ -209,6 +208,6 @@ If the plugin never fires in a week of real usage, either GPT 5.5 isn't narratin
 
 3. **Concurrent subagents on the same OAuth.** Main and coder both on the same Codex token will sometimes 500 under load. If you run concurrent subagents, give coder its own profile or a different provider.
 
-4. **Don't dual-route the orchestrator through ACP.** Putting `acp:claude-opus-4-7` as the main agent's primary adds 20+ seconds of startup per cold turn. Keep ACP for escalation lanes only. See [ACP for Claude Code](acp-claude-code.md).
+4. **Don't dual-route the orchestrator through Claude.** Putting a Claude escalation lane in the main agent's primary chain adds startup latency and confuses ownership. Keep Claude Code for bounded review escalation through the [tmux relay](claude-code-tmux-relay.md), with [ACP](acp-claude-code.md) only where you explicitly need ACP compatibility.
 
 5. **The guards are belt-and-braces, not one or the other.** `strict-agentic` retry > local regex patch > narration plugin. Each catches failures the others miss. Running only one will leak violations.
