@@ -247,7 +247,7 @@ This runs on the main `gpt-5.5` (medium thinking), not `gpt-5.5:cron`. Memory sw
 
 ### Model Selection
 
-Use your main orchestration model (GPT 5.5 medium) for the sweep. The task is structured extraction with some judgment - memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through ACP Opus: the escalation lane is for high-judgment review work, not back-office housekeeping.
+Use your main orchestration model (GPT 5.5 medium) for the sweep. The task is structured extraction with some judgment - memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through Claude Code: the escalation lane is for high-judgment review work, not back-office housekeeping.
 
 ## Real Corrections We've Captured
 
@@ -257,7 +257,7 @@ These are actual correction cards from production use, showing what the system c
 
 **Trigger:** User noticed agent was hand-coding React components instead of writing specs and spawning Codex sub-agents.
 
-**Card created:** Documents the correct workflow (Opus writes specs, Codex builds) and explicit rules against hand-coding when a code-specialized model is available.
+**Card created:** Documents the correct workflow (main writes specs, Codex builds, Claude reviews when needed) and explicit rules against hand-coding when a code-specialized model is available.
 
 **Promoted to:** AGENTS.md and SOUL.md core rules.
 

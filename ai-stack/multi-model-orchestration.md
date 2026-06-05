@@ -2,7 +2,7 @@
 
 How to run multiple AI models in one OpenClaw setup, assign each to the right task tier, and stop burning expensive tokens on work that doesn't need them.
 
-**Tested on:** OpenAI Pro ($200/mo Codex subscription), OpenClaw built-in image generation with gpt-image-2, Codex CLI harness subagents, Claude Code via ACP, browser-LLM stack via Playwright + noVNC, Ollama local GPU, Ollama Pro cloud models
+**Tested on:** OpenAI Pro ($200/mo Codex subscription), OpenClaw built-in image generation with gpt-image-2, Codex CLI harness subagents, Claude Code via tmux relay and ACP compatibility, browser-LLM stack via Playwright + noVNC, Ollama local GPU, Ollama Pro cloud models
 **Last updated:** 2026-06-05
 
 ---
@@ -15,7 +15,7 @@ This isn't about saving money. It's about using the right tool for each job. A l
 
 ## What Changed in April 2026
 
-If you're coming from an older multi-model guide: **Anthropic blocked subscription OAuth (Claude Max) from third-party harnesses** in April 2026. The `claude-cli` backend no longer works as a main-agent backend. Opus 4.7 is still available through Claude Code over ACP, but only as an escalation target, not the primary orchestrator.
+If you're coming from an older multi-model guide: **Anthropic blocked subscription OAuth (Claude Max) from third-party harnesses** in April 2026. The `claude-cli` backend no longer works as a main-agent backend. Opus remains available through Claude Code's first-party harness, but only as an escalation target, not the primary orchestrator. As of the June 2026 stack notes, prefer the Claude Code tmux relay for review and keep ACPX for explicit ACP compatibility.
 
 See [claude-cli → ACP migration](claude-cli-to-acp-migration.md) for the full migration runbook.
 
@@ -190,13 +190,13 @@ For serious work, do not treat every sub-agent as the same OpenClaw session with
 
 Use a focused `codex-coder` lane for builds and refactors. That lane should run GPT 5.5 through the Codex CLI harness rather than the default OpenClaw Pi runtime. Codex CLI gives you the right repo workflow: file edits, terminal feedback, test loops, and persistent coding context.
 
-Use a focused `opus-review` lane for specialized review. That lane should run Opus 4.7 through Claude Code over ACP. Claude Code keeps the review lane inside Anthropic's first-party harness while OpenClaw treats it as an escalation target.
+Use a focused `opus-review` lane for specialized review. That lane should run Opus through Claude Code in a named tmux session by default. Claude Code keeps the review lane inside Anthropic's first-party harness while OpenClaw treats tmux as the controllable relay.
 
 | Focused agent | Harness | Use it for |
 |---|---|---|
 | `main` | OpenClaw default runtime | Conversation handling, routing, tool orchestration, safety decisions |
 | `codex-coder` | Codex CLI with GPT 5.5 | Multi-file builds, refactors, test-driven fixes, repository work |
-| `opus-review` | Claude Code over ACP with Opus 4.7 | Architecture review, security review, design critique, high-context analysis |
+| `opus-review` | Claude Code tmux relay with Opus | Architecture review, security review, design critique, high-context analysis |
 
 The model is only part of the system. The harness decides how file edits, approvals, terminal commands, session persistence, and repository context behave.
 
@@ -243,7 +243,7 @@ image_generate({
 
 Use the browser path when the job needs a web-only product feature, a logged-in UI workflow, or manual visual review. Otherwise, `image_generate` is cleaner, repeatable, and easier to wire into automation.
 
-### Tier 4: Escalation: Opus 4.7 via Claude Code over ACP
+### Tier 4: Escalation: Opus via Claude Code tmux relay
 
 Opus is no longer the main agent. It is now an escalation target for specific review and reasoning tasks where the quality difference matters.
 
@@ -258,10 +258,10 @@ Opus is no longer the main agent. It is now an escalation target for specific re
 
 Two paths:
 
-1. **Dedicated ACP session:** Open a Claude Code ACP session. Opus 4.7 runs there, isolated from the main GPT 5.5 session.
-2. **Orchestrator escalation:** Main agent calls `sessions_spawn(runtime: "acp", agentId: "claude", task: "...")` when the task matches the escalation criteria.
+1. **Preferred tmux relay:** Start a named Claude Code tmux session in `--permission-mode plan`, send a bounded review prompt, then capture the pane as a local review artifact.
+2. **ACP compatibility:** Use ACPX only when your OpenClaw setup needs an ACP endpoint.
 
-The ACPX plugin ships as a user-local binary. See the [ACP migration guide](claude-cli-to-acp-migration.md) for setup.
+The tmux relay helper lives in [`../templates/ai-stack/claude-tmux-relay.sh`](../templates/ai-stack/claude-tmux-relay.sh). See [Claude Code via tmux Relay](claude-code-tmux-relay.md) for the current review lane and the [ACP migration guide](claude-cli-to-acp-migration.md) for ACPX compatibility.
 
 **When NOT to escalate:** Code generation, file scanning, bulk edits, and mechanical ops work. Escalation is for judgment, not labor.
 
@@ -284,8 +284,8 @@ The ACPX plugin ships as a user-local binary. See the [ACP migration guide](clau
    → Skill returns structured findings, orchestrator synthesizes
 
 5. "Review this PR for architectural soundness"
-   → GPT 5.5 recognizes escalation criteria, spawns `opus-review` through Claude Code over ACP
-   → Opus 4.7 reviews and returns structured findings
+   → GPT 5.5 recognizes escalation criteria, sends the diff to Claude Code through tmux
+   → Opus reviews in plan mode and returns structured findings
 
 6. Git commit
    → Ollama generates commit message locally. Zero API cost.
@@ -321,8 +321,9 @@ Spawn focused sub-agents by harness, not just by model:
 # Serious repo work through Codex CLI
 sessions_spawn(runtime: "acp", agentId: "codex", task: "Build CRUD routes for this schema: ...")
 
-# Review lane through Claude Code over ACP
-sessions_spawn(runtime: "acp", agentId: "claude", task: "Review this architecture for failure modes: ...")
+# Review lane through Claude Code's tmux relay
+templates/ai-stack/claude-tmux-relay.sh send \
+  "Review this architecture for failure modes. Findings first. Do not edit files."
 ```
 
 ## Token Optimization Patterns
@@ -352,9 +353,9 @@ The `gpt-5.5:cron` alias with `thinking: low` saves real tokens on scheduled wor
 | Built-in image generation | provider-backed | gpt-image-2 generation and edits | usage-based |
 | Browser-LLM stack | reuse existing web subs | Research, web-only workflows, second opinions | ~10% |
 | Codex Pro | $200 | Orchestration + Codex CLI build lane | ~45% |
-| Opus 4.7 via Claude Code ACP | bundled | Escalation only | ~5% |
+| Opus via Claude Code tmux relay | bundled | Escalation only | ~5% |
 
-The heavy lifter is Codex Pro. Opus 4.7 through Claude Code over ACP is a quality escalation, not a workhorse, so it stays within the Max subscription's usage envelope. Built-in image generation follows the configured provider billing. The browser-LLM stack costs whatever your existing Perplexity, Gemini, ChatGPT, or Claude.ai subscriptions already cost. There is no additional per-request billing layered on top.
+The heavy lifter is Codex Pro. Opus through Claude Code is a quality escalation, not a workhorse, so it stays within the Max subscription's usage envelope. Built-in image generation follows the configured provider billing. The browser-LLM stack costs whatever your existing Perplexity, Gemini, ChatGPT, or Claude.ai subscriptions already cost. There is no additional per-request billing layered on top.
 
 ## Verification
 
@@ -370,7 +371,10 @@ jq '.agents.defaults.model' ~/.openclaw/openclaw.json
 # Verify Ollama is running with the embedding model
 curl -s http://127.0.0.1:11434/api/tags | jq '.models[] | select(.name | contains("embed")) | .name'
 
-# Verify ACPX plugin is loaded
+# Verify a Claude Code tmux review session is reachable
+tmux has-session -t claude-code-review
+
+# If you use ACP compatibility, verify ACPX plugin is loaded
 jq '.plugins.allow | contains(["acpx"])' ~/.openclaw/openclaw.json
 ```
 
@@ -388,7 +392,7 @@ jq '.plugins.allow | contains(["acpx"])' ~/.openclaw/openclaw.json
 
 6. **`openclaw models auth login` doesn't see openai-codex.** It only surfaces plugin providers. Codex OAuth is baked into the onboard wizard. Use `openclaw onboard --auth-choice openai-codex` or the documented auth refresh path.
 
-7. **ACPX binary is user-local.** It is installed under OpenClaw user-local vendor storage, not in a global location. After OpenClaw upgrades, verify the `plugins.entries.acpx` block is still present. Upgrades have been observed to reset plugin config.
+7. **ACPX binary is user-local.** If you still use ACP compatibility, it is installed under OpenClaw user-local vendor storage, not in a global location. After OpenClaw upgrades, verify the `plugins.entries.acpx` block is still present. Upgrades have been observed to reset plugin config.
 
 8. **Xvfb starts black.** The headless X display Playwright runs against is black until Chromium actually loads a page. If you VNC in and see a black screen, that's normal. Trigger a skill run and the browser will appear. Don't restart Xvfb in a panic.
 
