@@ -247,7 +247,7 @@ Profiles keep the installer from pretending every user wants the full live setup
 | `openclaw` | workspace profile plus OpenClaw config fragments and doctor checks | A user is actively running OpenClaw. |
 | `hermes` | workspace profile plus Hermes adapter fragments and doctor checks | A user wants the same memory contract in Hermes. |
 | `generic` | contract docs, templates, and no orchestrator-specific config | A user wants the file layout without committing to a harness. |
-| `publisher` | content-guard policies, scrub commands, PR/publish gates | A user publishes blog posts, docs, or social drafts from agent output. |
+| `publisher` | content-guard policies, scrub commands, PR/publish gates | A user wants strict scrub and publish gates before anything reaches a blog, docs, or social surface. |
 
 Default should be `repo`, because it is the least invasive.
 
@@ -396,7 +396,7 @@ Default blocked classes:
 - secrets, tokens, API keys, OAuth material
 - personal contact details and account IDs
 - private business strategy or unreleased project identifiers
-- AI attribution in commits or public release text
+- AI attribution trailers in commits
 
 Verification gate:
 
