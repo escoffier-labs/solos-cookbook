@@ -85,6 +85,27 @@ brigade run "review this repo" --handoff        # write a Memory Handoff for a s
 
 Roster adapters are `codex`, `claude`, and `ollama:<model>`. Brigade shells out to those tools and keeps no provider keys.
 
+### Plan-first and cross-review loop
+
+Brigade fits the current stack best as the local plan, receipt, and review layer around the harnesses you already use. For work bigger than a one-line fix, start with an explicit task and plan artifact:
+
+```bash
+brigade work task add "Review the auth refactor" --type review --acceptance "Find correctness, security, and test gaps"
+brigade work task plan <task-id>
+brigade work run <task-id>
+brigade work acceptance
+```
+
+For second-opinion code review, keep the lanes separate:
+
+1. Codex builds or produces the first review in its normal repo harness.
+2. Brigade records the task, plan, run receipt, and acceptance criteria.
+3. OpenClaw sends the diff or review prompt to Claude Code through the tmux relay, using `--permission-mode plan`.
+4. Codex reviews Claude's findings, applies only validated fixes, and runs tests.
+5. Brigade closeout records what was accepted, rejected, verified, and handed off.
+
+Use [`../ai-stack/claude-code-tmux-relay.md`](../ai-stack/claude-code-tmux-relay.md) for the Claude lane. Do not document Brigade workflows that call `claude -p`; when a one-shot review is useful, paste a prompt file into the existing tmux session and capture the pane.
+
 ### Daily dogfooding
 
 Initialize a single repo for local dogfooding, then run the loop:
