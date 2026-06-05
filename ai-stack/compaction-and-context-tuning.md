@@ -2,8 +2,8 @@
 
 How to configure OpenClaw's compaction, memory flush, context pruning, and session search so your agent doesn't lose its mind (or personality) during long sessions.
 
-**Tested on:** OpenClaw 2026.4.x with GPT 5.5 (main) and ACP Opus 4.6 (escalation); applies to any main model
-**Last updated:** 2026-04-19
+**Tested on:** OpenClaw 2026.4.x with GPT 5.5 (main), Claude Code tmux relay for review escalation, and ACP compatibility; applies to any main model
+**Last updated:** 2026-06-05
 
 ---
 
