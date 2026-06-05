@@ -228,7 +228,7 @@ Error Trigger -> Classify + Dedup -> Post to Chat
 
 The state persists in `staticData`, which is fine but resets on each `import:workflow` of the error workflow itself. Trends rebuild within 24h.
 
-A standalone deep-dive on this pattern is planned at `automation/failure-classifier.md`.
+A standalone deep-dive on this pattern lives at [`automation/failure-classifier.md`](failure-classifier.md).
 
 ## Verification
 
@@ -275,11 +275,11 @@ If a workflow is active but its `errorWorkflow` is null, a recent `PUT /workflow
 
 - `n8n-ops-mcp` install + wire snippet - see Layer 1 above; full schema documentation at the [`n8n-ops-mcp`](https://github.com/solomonneas/n8n-ops-mcp) README
 - Direct-sqlite dual-table UPDATE pattern - see Layer 3 above; lift the Python snippet directly
-- Classifier + dedup node - exhaustive recipe in Layer 5 above; standalone deep-dive planned at [`automation/failure-classifier.md`](README.md)
+- Classifier + dedup node - exhaustive recipe in Layer 5 above; standalone deep-dive at [`automation/failure-classifier.md`](failure-classifier.md)
 
 ## Related
 
 - [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model; n8n is layer 3
 - [`automation/hooks.md`](hooks.md) - three-layer hook model; the failure classifier is the pattern that pairs with `errorWorkflow` wiring
-- [`automation/failure-classifier.md`](README.md) (planned) - full deep-dive on the classifier topology, taxonomy tuning, and escalation rules
+- [`automation/failure-classifier.md`](failure-classifier.md) - full deep-dive on the classifier topology, taxonomy tuning, and escalation rules
 - [n8n-ops-mcp](https://github.com/solomonneas/n8n-ops-mcp) - the MCP server this guide recommends

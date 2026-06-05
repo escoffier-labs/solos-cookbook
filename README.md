@@ -17,8 +17,8 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-45-red?style=for-the-badge" alt="45 guides">
-  <img src="https://img.shields.io/badge/updated-2026--05--27-white?style=for-the-badge" alt="Updated 2026-05-27">
+  <img src="https://img.shields.io/badge/guides-51-red?style=for-the-badge" alt="51 guides">
+  <img src="https://img.shields.io/badge/updated-2026--06--04-white?style=for-the-badge" alt="Updated 2026-06-04">
 </p>
 
 <p align="center">
@@ -158,6 +158,7 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 | [Hooks](automation/hooks.md) | Three-layer hook model: boundary (git pre-push, outbound-scrub CLIs), tool-call (PreToolUse/PostToolUse, OpenClaw `before_tool_call`/`tool_result_persist`), lifecycle (SessionStart, `before_prompt_build`, `message_sending`) | Any |
 | [n8n Patterns](automation/n8n-patterns.md) | Three interfaces (n8n-ops-mcp, REST API, direct sqlite), Code node sandbox + task-runner constant-folding trap, failure-classifier topology | n8n |
 | [Sandbox Shims](automation/sandbox-shims.md) | PATH wrappers for read-only git, denied network tools, package-manager controls, and restricted worker lanes | Any |
+| [Failure Classifier](automation/failure-classifier.md) | One n8n error workflow for the whole fleet: bucket taxonomy, fingerprint dedup, escalation routing, taxonomy tuning | n8n |
 
 ### Infrastructure
 
@@ -166,6 +167,10 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 | [Backup & Recovery](infrastructure/backup-recovery.md) | Restic to NAS (twice daily) + Google Drive (weekly), Drive quota/over-sync gotchas, KeePass canonical sync, snapshot mounts, disaster recovery | Any |
 | [Upgrade Hygiene](infrastructure/upgrade-hygiene.md) | Surviving `openclaw update`: systemd regeneration, dist patches, OAuth sync, schema drift | Any |
 | [OpenClaw Host Topology](infrastructure/openclaw-host-topology.md) | Audit the production host shape: services, config, agents, plugins, cron, memory, browser automation, and health checks | OpenClaw |
+| [Homelab Topology](infrastructure/homelab-topology.md) | The hypervisor map: LXC vs VM split, container inventory, resource allocation on a small box, backup wiring | Proxmox |
+| [Service Isolation](infrastructure/service-isolation.md) | One service per unprivileged container: blast-radius thinking, resource caps, ephemeral build containers, when a VM is justified | Proxmox |
+| [NAS & Network Mounts](infrastructure/nas-and-backups.md) | CIFS automount that never hangs boot, soft mounts, guest vs credential auth, bind-mount traps, PBS-on-NAS resilience | Any |
+| [Desktop Integration](infrastructure/desktop-integration.md) | The daily-driver desktop as a peer: SSH into Windows, SMB shares both ways, an SCP inbox, remote OBS control | Windows 11 + Linux |
 
 ### Knowledge management
 
@@ -187,6 +192,7 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 | [Agent Security](security/agent-security-hardening.md) | API gateway isolation, RBAC, sandboxing, circuit breakers, and a real post-mortem from a sub-agent nuking a database | Any |
 | [Secret Management](security/secret-management.md) | Env files, systemd `EnvironmentFile`, browser profiles, rotation, and keeping secrets out of repos and memory | Any |
 | [Agent Incident Runbook](security/incident-runbook.md) | Freeze automation, preserve evidence, rotate or restore, and turn agent failures into durable controls | Any |
+| [Wazuh Triage](security/wazuh-triage.md) | RCA first, fix second, narrowest suppression last: keeping a self-hosted SIEM high-signal on an agent host | Wazuh |
 
 ### Publishing
 
