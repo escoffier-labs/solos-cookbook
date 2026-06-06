@@ -1,0 +1,5 @@
+.claude
+.git
+site/node_modules
+site/dist
+site/.astro
