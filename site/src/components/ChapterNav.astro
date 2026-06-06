@@ -1,0 +1,22 @@
+---
+import { toRoman } from '../lib/cookbook.ts';
+
+interface Props {
+  chapters: {
+    data: { title: string; category: string; intro: string; number: number };
+  }[];
+  counts: Record<string, number>;
+}
+const { chapters, counts } = Astro.props;
+const sorted = [...chapters].sort((a, b) => a.data.number - b.data.number);
+---
+<div class="card-grid">
+  {sorted.map((c) => (
+    <a class="recipe-card" href={`/${c.data.category}/`}>
+      <span class="recipe-number">Chapter {toRoman(c.data.number)}</span>
+      <h3>{c.data.title}</h3>
+      <p>{c.data.intro}</p>
+      <span class="font-mono text-xs" style="color: var(--accent);">{counts[c.data.category] ?? 0} {(counts[c.data.category] ?? 0) === 1 ? 'recipe' : 'recipes'}</span>
+    </a>
+  ))}
+</div>

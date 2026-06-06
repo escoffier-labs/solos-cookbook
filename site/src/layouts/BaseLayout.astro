@@ -1,0 +1,73 @@
+---
+import '../styles/global.css';
+import Analytics from '@vercel/analytics/astro';
+import SiteNav from '../components/SiteNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { SITE, EXTERNAL } from '../lib/site.ts';
+
+const {
+  title = `${SITE.name} - production-tested recipes for AI agent stacks`,
+  description = SITE.description,
+} = Astro.props;
+
+const siteUrl = Astro.site ?? new URL(SITE.url);
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
+const imageUrl = new URL(SITE.image, siteUrl).toString();
+const keywords = [
+  'AI agent cookbook',
+  'OpenClaw recipes',
+  'agent memory',
+  'multi-agent stack',
+  'Codex CLI',
+  'Claude Code',
+  'agent security hardening',
+  'self-hosted AI agents',
+  'bare metal AI stack',
+  'AGENTS.md',
+].join(', ');
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE.name,
+  description,
+  url: SITE.url,
+  author: { '@type': 'Person', name: 'Solomon Neas', url: 'https://solomonneas.dev' },
+  license: EXTERNAL.contentLicense,
+  keywords,
+};
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="Solomon Neas" />
+    <meta name="keywords" content={keywords} />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:image" content={imageUrl} />
+    <meta property="og:image:alt" content="Solomon's Cookbook - recipes for AI agent stacks" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+    <link rel="icon" href="/favicon.svg" />
+    <Analytics />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+    <script is:inline>
+      (() => { try { const t = localStorage.getItem('cookbook-theme'); if (t) document.documentElement.dataset.theme = t; } catch {} })();
+    </script>
+  </head>
+  <body>
+    <SiteNav />
+    <slot />
+    <SiteFooter />
+  </body>
+</html>

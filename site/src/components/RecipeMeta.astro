@@ -1,0 +1,23 @@
+---
+interface Props {
+  testedOn?: string | undefined;
+  lastUpdated?: string | undefined;
+}
+const { testedOn, lastUpdated } = Astro.props;
+---
+{(testedOn || lastUpdated) && (
+  <dl class="recipe-meta">
+    {testedOn && (
+      <div>
+        <dt>Tested on</dt>
+        <dd>{testedOn}</dd>
+      </div>
+    )}
+    {lastUpdated && (
+      <div>
+        <dt>Last updated</dt>
+        <dd>{lastUpdated}</dd>
+      </div>
+    )}
+  </dl>
+)}

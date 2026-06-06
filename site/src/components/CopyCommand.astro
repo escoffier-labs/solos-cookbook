@@ -1,0 +1,18 @@
+---
+const { command } = Astro.props;
+---
+<button class="copy-cmd font-mono text-sm inline-flex items-center gap-2 px-4 py-2 rounded-lg border"
+  style="border-color: var(--hairline); background: var(--term-bg);" data-command={command} type="button">
+  <span style="color: var(--accent);">$</span>
+  <span>{command}</span>
+  <span data-copied style="color: var(--text-muted); display:none;">copied</span>
+</button>
+<script>
+  document.querySelectorAll('.copy-cmd').forEach((b) => {
+    b.addEventListener('click', async () => {
+      const cmd = b.getAttribute('data-command') || '';
+      try { await navigator.clipboard.writeText(cmd); } catch {}
+      const c = b.querySelector('[data-copied]') as HTMLElement | null; if (c) { c.style.display = 'inline'; setTimeout(() => (c.style.display = 'none'), 1200); }
+    });
+  });
+</script>

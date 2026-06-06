@@ -1,0 +1,26 @@
+---
+import { toRoman } from '../lib/cookbook.ts';
+
+interface Props {
+  guide: {
+    data: {
+      title: string;
+      description: string;
+      category: string;
+      slug: string;
+      chapter: string;
+      chapterNumber: number;
+      lastUpdated?: string | undefined;
+    };
+  };
+  showChapter?: boolean;
+}
+const { guide, showChapter = true } = Astro.props;
+const { title, description, category, slug, chapter, chapterNumber, lastUpdated } = guide.data;
+---
+<a class="recipe-card" href={`/${category}/${slug}/`}>
+  {showChapter && <span class="recipe-number">{toRoman(chapterNumber)} · {chapter}</span>}
+  <h3>{title}</h3>
+  <p>{description}</p>
+  {lastUpdated && <span class="font-mono text-xs" style="color: var(--text-muted);">Updated {lastUpdated}</span>}
+</a>

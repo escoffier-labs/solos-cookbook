@@ -1,0 +1,59 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RecipeCard from '../../components/RecipeCard.astro';
+import { toRoman } from '../../lib/cookbook.ts';
+
+const guides = await getCollection('guides');
+const chapters = (await getCollection('chapters')).sort((a, b) => a.data.number - b.data.number);
+
+const byChapter = chapters.map((c) => ({
+  chapter: c,
+  guides: guides
+    .filter((g) => g.data.category === c.data.category)
+    .sort((a, b) => a.data.title.localeCompare(b.data.title)),
+}));
+---
+<BaseLayout title="All recipes - Solomon's Cookbook" description="Every production-tested recipe in the cookbook, by chapter.">
+  <main class="px-6 md:px-10 py-12 max-w-6xl mx-auto">
+    <span class="kicker">The full index</span>
+    <h1 class="font-display text-4xl md:text-5xl mt-3 mb-6">All {guides.length} recipes</h1>
+
+    <input id="recipe-filter" type="search" placeholder="Filter recipes…" autocomplete="off"
+      class="w-full max-w-md px-4 py-2.5 rounded-lg border mb-10 font-mono text-sm"
+      style="border-color: var(--hairline); background: var(--bg-panel); color: var(--text);" />
+
+    {byChapter.map(({ chapter, guides: list }) => list.length > 0 && (
+      <section class="mb-12" data-chapter-section>
+        <div class="chapter-rule mb-5">
+          <span class="chapter-kicker">Chapter {toRoman(chapter.data.number)} · {chapter.data.title}</span>
+        </div>
+        <div class="card-grid">
+          {list.map((g) => <RecipeCard guide={g} showChapter={false} />)}
+        </div>
+      </section>
+    ))}
+    <p id="no-results" class="hidden" style="color: var(--text-muted);">No recipes match that filter.</p>
+  </main>
+</BaseLayout>
+
+<script>
+  const input = document.getElementById('recipe-filter') as HTMLInputElement | null;
+  const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-chapter-section]'));
+  const empty = document.getElementById('no-results');
+  input?.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    let any = false;
+    for (const section of sections) {
+      let visible = 0;
+      for (const card of section.querySelectorAll<HTMLElement>('.recipe-card')) {
+        const hit = !q || (card.textContent ?? '').toLowerCase().includes(q);
+        card.style.display = hit ? '' : 'none';
+        if (hit) visible++;
+      }
+      section.style.display = visible ? '' : 'none';
+      if (visible) any = true;
+    }
+    empty?.classList.toggle('hidden', any);
+  });
+</script>
