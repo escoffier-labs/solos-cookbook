@@ -23,26 +23,30 @@ const featured = FEATURED
 ---
 <BaseLayout>
   <main>
-    <section class="px-6 md:px-10 pt-16 pb-12 max-w-6xl mx-auto">
-      <span class="kicker">Solomon's guide to</span>
-      <h1 class="font-display font-semibold text-5xl md:text-7xl mt-3 mb-5" style="line-height: 1.05;">
-        Cookin' with Gas
-      </h1>
-      <p class="text-lg max-w-2xl mb-3" style="color: var(--text-muted);">
-        {SITE.subtitle}
-      </p>
-      <p class="max-w-2xl mb-8" style="color: var(--text-muted);">
-        {guides.length} production-tested recipes for running long-lived AI agents in tandem with
-        daily coding harnesses. Not a framework. A record of what is actually deployed, what broke,
-        and how it was fixed.
-      </p>
-      <div class="flex flex-wrap gap-3">
-        <a href="/recipes" class="px-5 py-2.5 rounded-lg font-semibold"
-          style="background: var(--accent); color: var(--bg);">Browse the recipes</a>
-        <a href={EXTERNAL.github} class="px-5 py-2.5 rounded-lg border"
-          style="border-color: var(--hairline); background: var(--bg-panel);">Read it on GitHub</a>
-      </div>
-    </section>
+    <header class="hero relative overflow-hidden">
+      <div class="hero-bg absolute inset-0"></div>
+      <div class="hero-scrim absolute inset-0"></div>
+      <section class="relative px-6 md:px-10 pt-16 pb-12 max-w-6xl mx-auto">
+        <span class="kicker">Solomon's guide to</span>
+        <h1 class="font-display font-semibold text-5xl md:text-7xl mt-3 mb-5" style="line-height: 1.05;">
+          Cookin' with Gas
+        </h1>
+        <p class="text-lg max-w-2xl mb-3" style="color: var(--text-muted);">
+          {SITE.subtitle}
+        </p>
+        <p class="max-w-2xl mb-8" style="color: var(--text-muted);">
+          {guides.length} production-tested recipes for running long-lived AI agents in tandem with
+          daily coding harnesses. Not a framework. A record of what is actually deployed, what broke,
+          and how it was fixed.
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <a href="/recipes" class="px-5 py-2.5 rounded-lg font-semibold"
+            style="background: var(--accent); color: var(--bg);">Browse the recipes</a>
+          <a href={EXTERNAL.github} class="px-5 py-2.5 rounded-lg border"
+            style="border-color: var(--hairline); background: var(--bg-panel);">Read it on GitHub</a>
+        </div>
+      </section>
+    </header>
 
     <section class="px-6 md:px-10 py-12 max-w-6xl mx-auto">
       <div class="chapter-rule mb-6">
@@ -61,3 +65,10 @@ const featured = FEATURED
     </section>
   </main>
 </BaseLayout>
+
+<style>
+  .hero-bg { background-image: url('/cookbook-hero.jpg'); background-size: cover; background-position: center 35%; opacity: 0.30; }
+  .hero-scrim { background: linear-gradient(110deg, var(--bg) 28%, color-mix(in srgb, var(--bg) 55%, transparent) 72%, transparent); }
+  /* Light mode keeps the same kitchen image; the scrim retints to parchment via var(--bg). */
+  :global([data-theme="light"]) .hero-bg { opacity: 0.26; }
+</style>
