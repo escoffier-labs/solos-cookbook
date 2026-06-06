@@ -1,0 +1,36 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RecipeCard from '../../components/RecipeCard.astro';
+import { toRoman } from '../../lib/cookbook.ts';
+
+export async function getStaticPaths() {
+  const chapters = await getCollection('chapters');
+  return chapters.map((entry) => ({
+    params: { category: entry.data.category },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const guides = (await getCollection('guides', (g) => g.data.category === entry.data.category))
+  .sort((a, b) => a.data.title.localeCompare(b.data.title));
+---
+<BaseLayout title={`${entry.data.title} - Solomon's Cookbook`} description={entry.data.intro}>
+  <main class="px-6 md:px-10 py-12 max-w-6xl mx-auto">
+    <div class="chapter-rule">
+      <span class="chapter-kicker">Chapter {toRoman(entry.data.number)}</span>
+    </div>
+    <h1 class="font-display text-4xl md:text-5xl mt-3 mb-8">{entry.data.title}</h1>
+
+    <div class="prose-docs max-w-3xl mb-12">
+      <Content />
+    </div>
+
+    <h2 class="kicker mb-4">Recipes in this chapter</h2>
+    <div class="card-grid">
+      {guides.map((g) => <RecipeCard guide={g} showChapter={false} />)}
+    </div>
+  </main>
+</BaseLayout>

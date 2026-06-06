@@ -1,0 +1,22 @@
+---
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+interface Props {
+  headings: Heading[];
+}
+const { headings } = Astro.props;
+const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+{items.length > 1 && (
+  <aside class="mise-toc">
+    <span class="kicker">Mise en place</span>
+    <nav class="mt-3">
+      {items.map((h) => (
+        <a href={`#${h.slug}`} class={h.depth === 3 ? 'toc-h3' : ''}>{h.text}</a>
+      ))}
+    </nav>
+  </aside>
+)}

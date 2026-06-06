@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#15110d"/>
+  <!-- open cookbook -->
+  <path d="M32 18 C26 14 18 14 14 16 L14 46 C18 44 26 44 32 48 C38 44 46 44 50 46 L50 16 C46 14 38 14 32 18 Z"
+    fill="none" stroke="#e0a45c" stroke-width="3" stroke-linejoin="round"/>
+  <line x1="32" y1="18" x2="32" y2="48" stroke="#e0a45c" stroke-width="3"/>
+  <!-- recipe lines -->
+  <line x1="19" y1="24" x2="27" y2="22.5" stroke="#cbbfac" stroke-width="2" stroke-linecap="round"/>
+  <line x1="19" y1="30" x2="27" y2="28.5" stroke="#cbbfac" stroke-width="2" stroke-linecap="round"/>
+  <line x1="37" y1="22.5" x2="45" y2="24" stroke="#cbbfac" stroke-width="2" stroke-linecap="round"/>
+  <line x1="37" y1="28.5" x2="45" y2="30" stroke="#cbbfac" stroke-width="2" stroke-linecap="round"/>
+</svg>
