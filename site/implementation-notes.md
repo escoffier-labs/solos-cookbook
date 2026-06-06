@@ -27,8 +27,10 @@ Decisions and deviations made while building the site, beyond what the plan spec
 - dist/ greps clean: no surviving internal `.md` hrefs, no private hostnames, no RFC 1918 IPs; every internal href maps to a built page.
 - Visual spot-checks (dark + light): homepage chapter grid, guide page with meta block + mise-en-place TOC, skill page.
 
-## Deploy (manual, one-time)
+## Deploy (done 2026-06-05)
 
-- Vercel project with **Root Directory = `site`**, same account as brigade-site.
-- Add domain `cookbook.solomonneas.dev` (CNAME to Vercel per project settings).
+- Vercel project `cookbook-site` on the solomons-projects team, linked at the **repo root** (NOT Root Directory = site). A CLI deploy from `site/` only uploads `site/`, so `../<category>` content is missing and the scrub gate ENOENTs. Root-level `vercel.json` instead: `npm --prefix site install` / `npm --prefix site run build` / output `site/dist`. `.vercelignore` keeps `.claude/` off the build container.
+- GitHub repo connected (`vercel git connect`), so pushes to main auto-deploy.
+- DNS: Cloudflare A record `cookbook` → `76.76.21.21`, DNS-only (proxied off), mirroring brigade's record. Zone solomonneas.dev, added via API with the `CLOUDFLARE_API_TOKEN` from `.bashrc`.
+- The 401 on the `*.vercel.app` URL is Vercel deployment protection; the custom domain is public.
 - The Vercel Analytics 404 in local preview is expected; it resolves on the Vercel deployment.
