@@ -6,7 +6,7 @@ export const SITE = {
   description:
     "Solomon's Guide to Cookin' with Gas: production-tested recipes for running long-lived AI agents alongside daily coding harnesses. Tested in service.",
   url: 'https://cookbook.solomonneas.dev',
-  image: '/og-cookbook.png',
+  image: '/cookbook-hero.jpg',
 };
 
 export const NAV_LINKS = [
