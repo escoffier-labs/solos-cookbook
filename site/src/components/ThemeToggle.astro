@@ -1,0 +1,20 @@
+---
+---
+<button id="theme-toggle" type="button" aria-label="Toggle color theme"
+  class="font-mono text-sm px-3 py-1 rounded-full border" style="border-color: var(--hairline);">
+  <span data-theme-icon>☾</span>
+</button>
+<script is:inline>
+  (() => {
+    const btn = document.getElementById('theme-toggle');
+    const icon = btn?.querySelector('[data-theme-icon]');
+    const sync = () => { if (icon) icon.textContent = document.documentElement.dataset.theme === 'light' ? '☀' : '☾'; };
+    sync();
+    btn?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('cookbook-theme', next); } catch {}
+      sync();
+    });
+  })();
+</script>

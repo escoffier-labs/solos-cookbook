@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { EXTERNAL } from '../lib/site.ts';
+---
+<BaseLayout title="About - Solomon's Cookbook" description="What this cookbook is, who it's for, and how it's licensed.">
+  <main class="px-6 md:px-10 py-12 max-w-3xl mx-auto">
+    <span class="kicker">About</span>
+    <h1 class="font-display text-4xl md:text-5xl mt-3 mb-8">What this is</h1>
+    <div class="prose-docs">
+      <p>
+        This is a record of how one engineer runs a 24/7 multi-agent AI stack on bare metal:
+        long-lived agents (OpenClaw, Hermes) working in tandem with daily coding harnesses
+        (Codex CLI, Claude Code, OpenCode). It is not a framework and not a tutorial series.
+        Every recipe is deployed in production on real hardware, and the failures are documented
+        next to the fixes.
+      </p>
+      <p>
+        The core idea: keep agents aware of work happening across every harness by maintaining
+        synchronized durable context instead of isolated session memories. Memory files, tool
+        catalogs, and agent instructions are treated as operational infrastructure, with the same
+        hygiene as backups and secrets.
+      </p>
+      <h2>Who it's for</h2>
+      <p>
+        Engineers who run agents as long-lived services rather than chat sessions, who prefer
+        owning their stack over renting it, and who want the post-mortems as much as the recipes.
+        Everything here assumes a single operator, a Linux host, and a healthy distrust of letting
+        any model touch production unsupervised.
+      </p>
+      <h2>License</h2>
+      <p>
+        The written guides are licensed
+        <a href={EXTERNAL.contentLicense}>CC BY-NC-ND 4.0</a>. The drop-in
+        <a href="/templates">templates</a> are MIT. If you want to suggest a fix or a new recipe,
+        see <a href={EXTERNAL.contributing}>CONTRIBUTING</a> on GitHub.
+      </p>
+      <h2>Related</h2>
+      <ul>
+        <li><a href={EXTERNAL.brigade}>Brigade</a> - the companion CLI for agent memory, handoffs, and guardrails.</li>
+        <li><a href={EXTERNAL.contentGuard}>content-guard</a> - the publish-boundary scanner used by this repo's pre-push hook.</li>
+        <li><a href={EXTERNAL.openclaw}>OpenClaw</a> - the long-lived agent gateway most of these recipes orbit.</li>
+      </ul>
+    </div>
+  </main>
+</BaseLayout>

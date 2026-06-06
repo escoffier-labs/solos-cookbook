@@ -1,0 +1,39 @@
+---
+import { getCollection, render } from 'astro:content';
+import GuideLayout from '../../layouts/GuideLayout.astro';
+
+export async function getStaticPaths() {
+  const guides = await getCollection('guides');
+  const sorted = [...guides].sort((a, b) =>
+    a.data.chapterNumber - b.data.chapterNumber || a.data.slug.localeCompare(b.data.slug));
+  return sorted.map((entry, i) => {
+    const prev = sorted[i - 1];
+    const next = sorted[i + 1];
+    return {
+      params: { category: entry.data.category, slug: entry.data.slug },
+      props: {
+        entry,
+        prev: prev && prev.data.category === entry.data.category ? prev : undefined,
+        next: next && next.data.category === entry.data.category ? next : undefined,
+      },
+    };
+  });
+}
+
+const { entry, prev, next } = Astro.props;
+const { Content, headings } = await render(entry);
+---
+<GuideLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  chapter={entry.data.chapter}
+  chapterNumber={entry.data.chapterNumber}
+  category={entry.data.category}
+  testedOn={entry.data.testedOn}
+  lastUpdated={entry.data.lastUpdated}
+  headings={headings}
+  prev={prev}
+  next={next}
+>
+  <Content />
+</GuideLayout>
