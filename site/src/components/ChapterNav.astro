@@ -1,5 +1,6 @@
 ---
 import { toRoman } from '../lib/cookbook.ts';
+import { sitePath } from '../lib/site.ts';
 
 interface Props {
   chapters: {
@@ -12,7 +13,7 @@ const sorted = [...chapters].sort((a, b) => a.data.number - b.data.number);
 ---
 <div class="card-grid">
   {sorted.map((c) => (
-    <a class="recipe-card" href={`/${c.data.category}/`}>
+    <a class="recipe-card" href={sitePath(`/${c.data.category}/`)}>
       <span class="recipe-number">Chapter {toRoman(c.data.number)}</span>
       <h3>{c.data.title}</h3>
       <p>{c.data.intro}</p>

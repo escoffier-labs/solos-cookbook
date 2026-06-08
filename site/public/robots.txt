@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cookbook.solomonneas.dev/sitemap.xml
+Sitemap: https://escoffierlabs.dev/cookbook/sitemap.xml
