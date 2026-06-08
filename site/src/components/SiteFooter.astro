@@ -1,12 +1,12 @@
 ---
-import { SITE, EXTERNAL } from '../lib/site.ts';
+import { SITE, EXTERNAL, sitePath } from '../lib/site.ts';
 ---
 <footer class="px-6 md:px-10 py-10 border-t mt-20 text-sm" style="border-color: var(--hairline); color: var(--text-muted);">
   <div class="flex flex-wrap gap-6 items-center">
     <span class="font-display font-semibold" style="color: var(--text);">{SITE.name}</span>
     <a href={EXTERNAL.github}>GitHub</a>
-    <a href="/recipes">Recipes</a>
-    <a href="/templates">Templates</a>
+    <a href={sitePath('/recipes')}>Recipes</a>
+    <a href={sitePath('/templates')}>Templates</a>
     <a href={EXTERNAL.brigade}>Brigade</a>
     <a href={EXTERNAL.contentGuard}>content-guard</a>
     <a href={EXTERNAL.contributing}>Contributing</a>

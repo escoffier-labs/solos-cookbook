@@ -138,30 +138,30 @@ describe('resolveMdLink', () => {
   });
 
   it('resolves same-directory links', () => {
-    expect(resolveMdLink('linux-hardening.md', 'security')).toBe('/security/linux-hardening/');
-    expect(resolveMdLink('./linux-hardening.md', 'security')).toBe('/security/linux-hardening/');
+    expect(resolveMdLink('linux-hardening.md', 'security')).toBe('/cookbook/security/linux-hardening/');
+    expect(resolveMdLink('./linux-hardening.md', 'security')).toBe('/cookbook/security/linux-hardening/');
   });
 
   it('keeps anchors on rewritten links', () => {
-    expect(resolveMdLink('linux-hardening.md#ufw', 'security')).toBe('/security/linux-hardening/#ufw');
+    expect(resolveMdLink('linux-hardening.md#ufw', 'security')).toBe('/cookbook/security/linux-hardening/#ufw');
   });
 
   it('resolves cross-category links', () => {
-    expect(resolveMdLink('../infrastructure/upgrade-hygiene.md', 'security')).toBe('/infrastructure/upgrade-hygiene/');
+    expect(resolveMdLink('../infrastructure/upgrade-hygiene.md', 'security')).toBe('/cookbook/infrastructure/upgrade-hygiene/');
   });
 
   it('resolves category README and dir links to chapter pages', () => {
-    expect(resolveMdLink('../automation/README.md', 'security')).toBe('/automation/');
-    expect(resolveMdLink('../automation/', 'security')).toBe('/automation/');
+    expect(resolveMdLink('../automation/README.md', 'security')).toBe('/cookbook/automation/');
+    expect(resolveMdLink('../automation/', 'security')).toBe('/cookbook/automation/');
   });
 
   it('routes skills SKILL.md links to skill pages', () => {
-    expect(resolveMdLink('../skills/content-scrubber/SKILL.md', 'publishing')).toBe('/skills/content-scrubber/');
+    expect(resolveMdLink('../skills/content-scrubber/SKILL.md', 'publishing')).toBe('/cookbook/skills/content-scrubber/');
   });
 
   it('sends templates deep links to GitHub and the dir to /templates/', () => {
     expect(resolveMdLink('../templates/cron/job.sh', 'automation')).toBe(`${GITHUB_BLOB}/templates/cron/job.sh`);
-    expect(resolveMdLink('../templates/', 'automation')).toBe('/templates/');
+    expect(resolveMdLink('../templates/', 'automation')).toBe('/cookbook/templates/');
   });
 
   it('sends unknown root files to GitHub', () => {
@@ -179,9 +179,9 @@ describe('rewriteMdLinks', () => {
       'And [cross](../tools/brigade.md).',
     ].join('\n');
     const out = rewriteMdLinks(md, 'security');
-    expect(out).toContain('[guide](/security/other-guide/)');
+    expect(out).toContain('[guide](/cookbook/security/other-guide/)');
     expect(out).toContain('[not a link](fake.md)');
-    expect(out).toContain('[cross](/tools/brigade/)');
+    expect(out).toContain('[cross](/cookbook/tools/brigade/)');
   });
 });
 

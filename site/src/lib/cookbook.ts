@@ -9,6 +9,8 @@
  * No Astro imports: this module is unit-tested directly with Vitest.
  */
 
+import { sitePath } from './site.ts';
+
 export interface Category {
   dir: string;
   chapter: string;
@@ -242,7 +244,7 @@ export function resolveMdLink(href: string, category: string): string | null {
 
   // templates/ is not rendered on-site: deep links go to GitHub.
   if (first === 'templates') {
-    if (rest.length === 0) return '/templates/';
+    if (rest.length === 0) return sitePath('/templates/');
     return `${GITHUB_BLOB}/${parts.join('/')}`;
   }
 
@@ -252,17 +254,17 @@ export function resolveMdLink(href: string, category: string): string | null {
     return parts.length ? `${GITHUB_BLOB}/${parts.join('/')}` : null;
   }
 
-  if (rest.length === 0) return `/${first}/`;
+  if (rest.length === 0) return sitePath(`/${first}/`);
 
   // skills/<name>/SKILL.md → /skills/<name>/
   if (first === 'skills' && rest.length === 2 && rest[1] === 'SKILL.md') {
-    return `/skills/${rest[0]}/${anchor}`;
+    return sitePath(`/skills/${rest[0]}/${anchor}`);
   }
 
   const file = rest.join('/');
-  if (file === 'README.md') return `/${first}/${anchor}`;
+  if (file === 'README.md') return sitePath(`/${first}/${anchor}`);
   if (file.endsWith('.md') && rest.length === 1) {
-    return `/${first}/${file.replace(/\.md$/, '')}/${anchor}`;
+    return sitePath(`/${first}/${file.replace(/\.md$/, '')}/${anchor}`);
   }
 
   // Non-markdown or nested file inside a category: GitHub.

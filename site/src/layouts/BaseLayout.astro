@@ -3,14 +3,14 @@ import '../styles/global.css';
 import Analytics from '@vercel/analytics/astro';
 import SiteNav from '../components/SiteNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import { SITE, EXTERNAL } from '../lib/site.ts';
+import { SITE, EXTERNAL, sitePath } from '../lib/site.ts';
 
 const {
   title = `${SITE.name} - production-tested recipes for AI agent stacks`,
   description = SITE.description,
 } = Astro.props;
 
-const siteUrl = Astro.site ?? new URL(SITE.url);
+const siteUrl = Astro.site ?? new URL('https://escoffierlabs.dev');
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
 const imageUrl = new URL(SITE.image, siteUrl).toString();
 const keywords = [
@@ -58,7 +58,7 @@ const structuredData = {
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
-    <link rel="icon" href="/favicon.svg" />
+    <link rel="icon" href={sitePath('/favicon.svg')} />
     <Analytics />
     <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
     <script is:inline>

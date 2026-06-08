@@ -1,8 +1,8 @@
 import { getCollection } from 'astro:content';
-import { SITE } from '../lib/site.ts';
+import { sitePath } from '../lib/site.ts';
 
 export async function GET({ site }: { site?: URL }) {
-  const base = site ?? new URL(SITE.url);
+  const base = site ?? new URL('https://escoffierlabs.dev');
   const guides = await getCollection('guides');
   const chapters = await getCollection('chapters');
   const paths = [
@@ -16,7 +16,7 @@ export async function GET({ site }: { site?: URL }) {
   const urls = paths
     .sort()
     .map((path) => {
-      const loc = new URL(path, base).toString();
+      const loc = new URL(sitePath(path), base).toString();
       return [
         '  <url>',
         `    <loc>${loc}</loc>`,

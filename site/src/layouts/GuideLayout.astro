@@ -3,6 +3,7 @@ import BaseLayout from './BaseLayout.astro';
 import RecipeMeta from '../components/RecipeMeta.astro';
 import RecipeTOC from '../components/RecipeTOC.astro';
 import { toRoman } from '../lib/cookbook.ts';
+import { sitePath } from '../lib/site.ts';
 
 interface Heading {
   depth: number;
@@ -29,7 +30,7 @@ const { title, description, chapter, chapterNumber, category, testedOn, lastUpda
 <BaseLayout title={`${title} - Solomon's Cookbook`} description={description}>
   <main class="px-6 md:px-10 py-10 flex gap-10 max-w-6xl mx-auto">
     <article class="prose-docs min-w-0 flex-1">
-      <a href={`/${category}/`} class="chapter-kicker" style="text-decoration: none;">
+      <a href={sitePath(`/${category}/`)} class="chapter-kicker" style="text-decoration: none;">
         Chapter {toRoman(chapterNumber)} · {chapter}
       </a>
       <h1 class="font-display text-4xl mt-2 mb-4" style="color: var(--text);">{title}</h1>
@@ -38,13 +39,13 @@ const { title, description, chapter, chapterNumber, category, testedOn, lastUpda
       {(prev || next) && (
         <nav class="recipe-pager">
           {prev ? (
-            <a href={`/${prev.data.category}/${prev.data.slug}/`}>
+            <a href={sitePath(`/${prev.data.category}/${prev.data.slug}/`)}>
               <span class="pager-label">← Previous</span>
               <div class="pager-title">{prev.data.title}</div>
             </a>
           ) : <span class="flex-1"></span>}
           {next ? (
-            <a href={`/${next.data.category}/${next.data.slug}/`} class="text-right">
+            <a href={sitePath(`/${next.data.category}/${next.data.slug}/`)} class="text-right">
               <span class="pager-label">Next →</span>
               <div class="pager-title">{next.data.title}</div>
             </a>
