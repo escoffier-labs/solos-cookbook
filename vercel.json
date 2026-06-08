@@ -16,6 +16,28 @@
       "permanent": true
     },
     {
+      "source": "/:section/",
+      "has": [
+        {
+          "type": "host",
+          "value": "cookbook.solomonneas.dev"
+        }
+      ],
+      "destination": "https://escoffierlabs.dev/cookbook/:section",
+      "permanent": true
+    },
+    {
+      "source": "/:section/:slug/",
+      "has": [
+        {
+          "type": "host",
+          "value": "cookbook.solomonneas.dev"
+        }
+      ],
+      "destination": "https://escoffierlabs.dev/cookbook/:section/:slug",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
