@@ -2,8 +2,13 @@ export const BASE_PATH = '/cookbook';
 
 export function sitePath(path = '/'): string {
   const normalized = `/${path.replace(/^\/+/, '')}`;
-  if (normalized === '/') return `${BASE_PATH}/`;
-  return `${BASE_PATH}${normalized}`;
+  const match = normalized.match(/^([^?#]*)([?#].*)?$/);
+  const pathname = match?.[1] ?? normalized;
+  const suffix = match?.[2] ?? '';
+
+  if (pathname === '/') return `${BASE_PATH}/${suffix}`;
+  const withoutTrailingSlash = pathname.replace(/\/+$/, '');
+  return `${BASE_PATH}${withoutTrailingSlash}${suffix}`;
 }
 
 export const SITE = {
