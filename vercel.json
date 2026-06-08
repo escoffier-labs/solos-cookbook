@@ -2,5 +2,18 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm --prefix site install",
   "buildCommand": "npm --prefix site run build",
-  "outputDirectory": "site/dist"
+  "outputDirectory": "site/dist",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "cookbook.solomonneas.dev"
+        }
+      ],
+      "destination": "https://escoffierlabs.dev/cookbook/:path*",
+      "permanent": true
+    }
+  ]
 }
