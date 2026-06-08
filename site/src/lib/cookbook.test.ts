@@ -197,6 +197,12 @@ describe('sitePath', () => {
     expect(sitePath('/#chapters')).toBe('/cookbook/#chapters');
     expect(sitePath('/security/linux-hardening/#ufw')).toBe('/cookbook/security/linux-hardening#ufw');
   });
+
+  it('does not double-prefix paths Astro already reports under the base', () => {
+    expect(sitePath('/cookbook/')).toBe('/cookbook/');
+    expect(sitePath('/cookbook/recipes/')).toBe('/cookbook/recipes');
+    expect(sitePath('/cookbook/security/linux-hardening/')).toBe('/cookbook/security/linux-hardening');
+  });
 });
 
 describe('toRoman', () => {
