@@ -5,33 +5,83 @@
 @import "@fontsource-variable/jetbrains-mono";
 
 :root, [data-theme="dark"] {
-  --bg: #15110d;
-  --bg-panel: #1d170f;
-  --bg-panel-2: #0f0c09;
-  --text: #f4ede1;
-  --text-muted: #cbbfac;
+  --bg: #0d1014;
+  --bg-panel: #11161c;
+  --bg-panel-2: #0a0d11;
+  --text: #dde3ea;
+  --text-muted: #9aa4b2;
+  --text-dim: #7d8590;
   --accent: #e0a45c;
-  --hairline: #2c2419;
-  --term-bg: rgba(8,6,4,0.72);
+  --accent-deep: #9c6f3a;
+  --hairline: #1e242c;
+  --on-accent: #0d1014;
+  --term-bg: rgba(7,9,12,0.74);
 }
 
 [data-theme="light"] {
-  --bg: #f3ece0;
-  --bg-panel: #ffffff;
-  --bg-panel-2: #faf6ee;
-  --text: #26201a;
-  --text-muted: #5c5043;
+  --bg: #f5f2ea;
+  --bg-panel: #fffdf8;
+  --bg-panel-2: #fbf7ed;
+  --text: #1d1a14;
+  --text-muted: #5c5448;
+  --text-dim: #857b6c;
   --accent: #a8703a;
-  --hairline: #e6dccb;
-  --term-bg: #ffffff;
+  --accent-deep: #c89858;
+  --hairline: #ddd5c4;
+  --on-accent: #f5f2ea;
+  --term-bg: #fffdf8;
 }
 
 html { background: var(--bg); color: var(--text); }
-body { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; margin: 0; }
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  background:
+    radial-gradient(ellipse 70% 34% at 50% -8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%),
+    var(--bg);
+}
 .font-display { font-family: "Fraunces Variable", Georgia, serif; }
 .font-mono { font-family: "JetBrains Mono Variable", ui-monospace, monospace; }
 .kicker { font-weight: 600; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
 a { color: inherit; }
+::selection { background: var(--accent); color: var(--on-accent); }
+
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(18px);
+}
+.brand-lockup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  text-decoration: none;
+}
+.brand-mark {
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-size: 1.12rem;
+  font-weight: 650;
+  line-height: 1;
+  color: var(--text);
+}
+.brand-subtitle {
+  font-family: "JetBrains Mono Variable", ui-monospace, monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.github-link {
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.hero {
+  border-bottom: 1px solid var(--hairline);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-panel) 62%, transparent), transparent);
+}
 
 /* ============================================================
    Docs prose: restore typography that Tailwind preflight strips
@@ -142,14 +192,17 @@ a { color: inherit; }
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  background: var(--bg-panel);
+  background: color-mix(in srgb, var(--bg-panel) 92%, transparent);
   border: 1px solid var(--hairline);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1.1rem 1.2rem 1rem;
   text-decoration: none;
   transition: border-color 120ms ease, transform 120ms ease;
 }
-.recipe-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.recipe-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  transform: translateY(-2px);
+}
 .recipe-card h3 {
   font-family: "Fraunces Variable", Georgia, serif;
   font-size: 1.12rem;
@@ -237,7 +290,7 @@ a { color: inherit; }
   display: block;
   border: 1px solid var(--hairline);
   background: var(--bg-panel);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 0.8rem 1rem;
   text-decoration: none;
   transition: border-color 120ms ease;

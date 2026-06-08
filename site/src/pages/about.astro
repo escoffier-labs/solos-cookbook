@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { EXTERNAL } from '../lib/site.ts';
+import { EXTERNAL, sitePath } from '../lib/site.ts';
 ---
 <BaseLayout title="About - Solomon's Cookbook" description="What this cookbook is, who it's for, and how it's licensed.">
   <main class="px-6 md:px-10 py-12 max-w-3xl mx-auto">
@@ -31,7 +31,7 @@ import { EXTERNAL } from '../lib/site.ts';
       <p>
         The written guides are licensed
         <a href={EXTERNAL.contentLicense}>CC BY-NC-ND 4.0</a>. The drop-in
-        <a href="/templates">templates</a> are MIT. If you want to suggest a fix or a new recipe,
+        <a href={sitePath('/templates')}>templates</a> are MIT. If you want to suggest a fix or a new recipe,
         see <a href={EXTERNAL.contributing}>CONTRIBUTING</a> on GitHub.
       </p>
       <h2>Related</h2>

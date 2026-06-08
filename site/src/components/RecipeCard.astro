@@ -1,5 +1,6 @@
 ---
 import { toRoman } from '../lib/cookbook.ts';
+import { sitePath } from '../lib/site.ts';
 
 interface Props {
   guide: {
@@ -18,7 +19,7 @@ interface Props {
 const { guide, showChapter = true } = Astro.props;
 const { title, description, category, slug, chapter, chapterNumber, lastUpdated } = guide.data;
 ---
-<a class="recipe-card" href={`/${category}/${slug}/`}>
+<a class="recipe-card" href={sitePath(`/${category}/${slug}/`)}>
   {showChapter && <span class="recipe-number">{toRoman(chapterNumber)} · {chapter}</span>}
   <h3>{title}</h3>
   <p>{description}</p>
