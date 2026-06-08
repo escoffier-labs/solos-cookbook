@@ -5,6 +5,17 @@
   "outputDirectory": "site/dist",
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "cookbook.solomonneas.dev"
+        }
+      ],
+      "destination": "https://escoffierlabs.dev/cookbook/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
