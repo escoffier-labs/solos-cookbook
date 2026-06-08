@@ -11,7 +11,7 @@ const {
 } = Astro.props;
 
 const siteUrl = Astro.site ?? new URL('https://escoffierlabs.dev');
-const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
+const canonicalUrl = new URL(sitePath(Astro.url.pathname), siteUrl).toString();
 const imageUrl = new URL(SITE.image, siteUrl).toString();
 const keywords = [
   'AI agent cookbook',
