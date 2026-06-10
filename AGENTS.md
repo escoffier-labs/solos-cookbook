@@ -1,13 +1,15 @@
 # Repository Guidance
 
 ## Definition of Done
-Before reporting any change complete, run from the repo root and confirm ALL pass:
+Before reporting any change complete, run from the repo root and confirm it passes:
 ```bash
-npm --prefix site run check:content   # scrub gate only, fastest for content edits
-npm --prefix site test                # vitest suite
-npm --prefix site run check           # astro type check
-npm --prefix site run build           # full build, prebuild runs the scrub gate
+./scripts/verify
 ```
+It runs, in order: `npm --prefix site run check:content` (scrub gate),
+`npm --prefix site test` (vitest), `npm --prefix site run check` (astro type
+check), and `npm --prefix site run build` (full build, prebuild reruns the
+scrub gate).
+
 Report actual results. If any command fails, report the failure output verbatim
 and do not claim success. Node >= 22.12.0 is required (`site/package.json` engines).
 
