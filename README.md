@@ -27,7 +27,7 @@
 
 ## What this is
 
-This is a working cookbook for engineers who run a long-lived agent in [OpenClaw](https://github.com/openclaw/openclaw), [Hermes Agent](https://github.com/agnos-ai/hermes), or a similar orchestrator, while also coding every day in tools like Codex CLI, Claude Code, OpenCode, and browser-native model sessions.
+This is a working cookbook for engineers who run a long-lived agent in [OpenClaw](https://github.com/openclaw/openclaw), [Hermes Agent](https://github.com/NousResearch/hermes-agent), or a similar orchestrator, while also coding every day in tools like Codex CLI, Claude Code, OpenCode, and browser-native model sessions.
 
 The cookbook is the documentation home of [Escoffier Labs](https://github.com/escoffier-labs), the org behind [Brigade](https://github.com/escoffier-labs/brigade) and its companion tools. The stack documented here is where those tools were extracted from.
 

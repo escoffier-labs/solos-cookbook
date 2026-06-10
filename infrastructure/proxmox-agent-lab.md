@@ -217,5 +217,5 @@ Confirm the agent is gated, not just trusted: with `PROXMOX_ENABLE_DESTRUCTIVE` 
 - [`homelab-topology.md`](homelab-topology.md) - the map: what runs in which container, the LXC/VM split, the storage and network layout
 - [`service-isolation.md`](service-isolation.md) - the why: one service per container, per-container caps, and the ephemeral build-container pattern
 - [`backup-recovery.md`](backup-recovery.md) - off-host restore mechanics and the three-copy backup design
-- [`adguard.md`](adguard.md) - the DNS sinkhole that is one of the always-on service CTs
+- [`adguard-dns-sinkhole.md`](adguard-dns-sinkhole.md) - the DNS sinkhole that is one of the always-on service CTs
 - [`../security/mcp-incident-response.md`](../security/mcp-incident-response.md) - driving incident response through MCP tools, the same boundary pattern applied to the SIEM
