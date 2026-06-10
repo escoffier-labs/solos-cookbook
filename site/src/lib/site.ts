@@ -34,11 +34,11 @@ export const NAV_LINKS = [
 ];
 
 export const EXTERNAL = {
-  github: 'https://github.com/solomonneas/solos-cookbook',
-  repoBlob: 'https://github.com/solomonneas/solos-cookbook/blob/main',
-  repoTree: 'https://github.com/solomonneas/solos-cookbook/tree/main',
-  contributing: 'https://github.com/solomonneas/solos-cookbook/blob/main/CONTRIBUTING.md',
-  contentLicense: 'https://github.com/solomonneas/solos-cookbook/blob/main/CONTENT-LICENSE',
+  github: 'https://github.com/escoffier-labs/solos-cookbook',
+  repoBlob: 'https://github.com/escoffier-labs/solos-cookbook/blob/main',
+  repoTree: 'https://github.com/escoffier-labs/solos-cookbook/tree/main',
+  contributing: 'https://github.com/escoffier-labs/solos-cookbook/blob/main/CONTRIBUTING.md',
+  contentLicense: 'https://github.com/escoffier-labs/solos-cookbook/blob/main/CONTENT-LICENSE',
   brigade: 'https://brigade.tools',
   brigadeRepo: 'https://github.com/escoffier-labs/brigade',
   contentGuard: 'https://github.com/solomonneas/content-guard',
