@@ -13,6 +13,8 @@ category: design
 
 # Frontend Design
 
+> Attribution: inspired by Anthropic's `frontend-design` skill for Claude Code. This is a rewritten, trimmed-down variant, not the original.
+
 Do not ship default-looking UI.
 
 ## Goal
