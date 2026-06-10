@@ -62,7 +62,7 @@ No personal infrastructure names, IPs, or domains in committed text. Use generic
 | Don't | Do |
 |-------|-----|
 | `solo@my-desktop` | `user@desktop` |
-| `192.0.2.10` | `192.0.2.10` (RFC 5737 reserved) | <!-- content-guard: allow private-ipv4 -->
+| A real LAN IP like `192.168.x.x` | `192.0.2.10` (RFC 5737 reserved) |
 | `mybox.local` | `your-host.local` or `the host` |
 | Real container names | `the LXC container`, `ct-100` |
 
