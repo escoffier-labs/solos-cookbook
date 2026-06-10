@@ -307,7 +307,7 @@ Key decisions:
 
 ---
 
-## Full Verification Checklist
+## Verification
 
 ### Windows Side (PowerShell as Admin)
 
@@ -365,7 +365,7 @@ See the [Linux hardening guide](linux-hardening.md) for additional patterns that
 
 ---
 
-## Implementation Notes
+## Gotchas
 
 1. **Two layers, two audits.** WSL hardening is incomplete without Windows hardening. Audit both. A locked-down WSL instance behind a wide-open Windows Firewall is theater.
 

@@ -168,6 +168,26 @@ I default to LXC, but the discipline includes knowing when LXC is the wrong tool
 
 What does *not* justify a VM: "it's a big service," "it has a database," "it runs Docker." LXC handles all of those fine. Heavy and isolated are different axes. My SIEM is 8GB and 4 cores in an LXC and it's still isolated from everything else.
 
+## Verification
+
+Run these on the Proxmox node to confirm the isolation posture matches what this guide promises:
+
+```bash
+# One service per container: the list should read like a service inventory
+pct list
+qm list
+
+# Every service container is unprivileged and capped
+pct config <CTID> | grep -E 'memory|cores|unprivileged'
+# expected: memory: <cap>, cores: <cap>, unprivileged: 1
+
+# The snapshot habit is real: a pre-maint snapshot exists from the last window
+pct listsnapshot <CTID>
+# expected: at least one pre-maint-<timestamp> entry above "current"
+```
+
+If `pct config` shows no `unprivileged: 1` on a service container, or `pct listsnapshot` comes back empty on a box you upgraded last week, the discipline has drifted from the design.
+
 ## Gotchas
 
 1. **CTID and VMID share one numbering pool.** On Proxmox, `pct list` shows only LXC, `qm list` shows only VMs, and they draw from the same ID space. ID 110 can be a VM while 111 and 112 are containers. Always check *both* before assuming an ID is free or "doesn't exist."

@@ -303,7 +303,7 @@ Add this to your AGENTS.md for your agent to reference before every task:
 6. Check if a similar task was done recently (avoid duplicate work)
 ```
 
-## Implementation Checklist
+## Verification
 
 ```bash
 # Check that correction capture is working
