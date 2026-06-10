@@ -6,9 +6,12 @@ Before reporting any change complete, run from the repo root and confirm it pass
 ./scripts/verify
 ```
 It runs, in order: `npm --prefix site run check:content` (scrub gate),
-`npm --prefix site test` (vitest), `npm --prefix site run check` (astro type
-check), and `npm --prefix site run build` (full build, prebuild reruns the
-scrub gate).
+`npm --prefix site run check:structure` (guide skeleton lint: every guide
+needs `## Verification` and `## Gotchas`), `npm --prefix site run check:links`
+(internal link check; the external probe `check:links:external` runs only in a
+non-blocking CI lane), `npm --prefix site test` (vitest), `npm --prefix site
+run check` (astro type check), and `npm --prefix site run build` (full build,
+prebuild reruns the scrub gate).
 
 Report actual results. If any command fails, report the failure output verbatim
 and do not claim success. Node >= 22.12.0 is required (`site/package.json` engines).
