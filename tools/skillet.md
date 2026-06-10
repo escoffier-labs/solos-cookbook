@@ -51,7 +51,23 @@ git clone https://github.com/escoffier-labs/skillet
 cp -r skillet/skillet/skills/line-check <your-skills-dir>/
 ```
 
-## What broke along the way
+## Verification
+
+Confirm the clone has all eight skills and every skill ships its `SKILL.md`:
+
+```bash
+git clone https://github.com/escoffier-labs/skillet
+ls skillet/skillet/skills
+# bug-hunt  line-check  memory-handoff  pressure-test
+# publish-readiness  release-cut  security-sweep  skillify
+
+ls skillet/skillet/skills/*/SKILL.md | wc -l
+# 8
+```
+
+In Claude Code, after the marketplace install, run `/plugin` and confirm `skillet` appears in the installed list; its skills then show up as `skillet:line-check` and friends.
+
+## Gotchas
 
 - The first draft of memory-handoff documented a base format that failed `brigade handoff lint`: lint hard-requires the routing sections (`Recommended memory action` and friends) and YAML frontmatter inside suggested card content. The skill now documents the lintable format up front. Lesson: if a skill tells the agent to run a validator, the skill's own template has to pass that validator.
 - A vanilla agent asked to "audit this repo" produced genuinely good findings but no scorecard, no effort estimates, no prioritization, and it never ran the brigade health checks sitting right there in the repo. The skill's value is not making the model smarter; it is making the output composable and the procedure complete.

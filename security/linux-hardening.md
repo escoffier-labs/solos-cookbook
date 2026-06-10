@@ -233,7 +233,7 @@ This costs nothing and protects against configuration drift.
 
 ---
 
-## Full Verification Script
+## Verification
 
 Run this after applying all changes to confirm everything is locked down:
 
@@ -283,7 +283,7 @@ These are all good next steps depending on your threat model. This guide focuses
 
 ---
 
-## Implementation Notes
+## Gotchas
 
 1. **Drop-in configs over main configs.** Using `/etc/ssh/sshd_config.d/hardening.conf` instead of editing `/etc/ssh/sshd_config` makes auditing and rollback trivial. You can `ls` the `.d` directory and see exactly what changed and when.
 

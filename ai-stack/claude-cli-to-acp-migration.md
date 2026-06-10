@@ -282,7 +282,7 @@ Without explicit criteria, GPT 5.5 either over-escalates (burns Opus quota) or n
 
 ---
 
-## Step 5: Restart and Verify
+## Step 5: Restart
 
 ```bash
 systemctl --user restart openclaw-gateway
@@ -291,7 +291,7 @@ journalctl --user -u openclaw-gateway -n 50 --no-pager | grep -iE "acpx|claude|p
 
 You should see ACPX loading cleanly and no `Unknown model: claude-cli/...` errors.
 
-### Verification Commands
+## Verification
 
 ```bash
 # ACPX plugin is allowed + loaded
