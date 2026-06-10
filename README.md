@@ -265,12 +265,6 @@ Drop-in artifacts you can lift without adopting the whole thing. See [`templates
 
 Public, sanitized skills copied from the real stack live in [`skills/`](skills/). These are reusable patterns, not private machine dumps.
 
-## Who This Is For
-
-Engineers running an always-on AI agent on real infrastructure: bare metal, VPS, homelab, or enterprise. If you have an agent that has access to your systems, you need to lock it down properly. These guides assume you're comfortable with Linux administration and want actionable steps, not vague overviews.
-
-> 🦞 *Built by an engineer who runs this stack 24/7 on bare metal and broke everything at least once so you don't have to.*
-
 ## Guide format
 
 Every guide follows the same skeleton. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full template:
@@ -313,3 +307,5 @@ git config core.hooksPath hooks
 
 - Code, scripts, and templates: [MIT](LICENSE)
 - Narrative content (guides, manifestos, prose): [CC BY-NC-ND 4.0](CONTENT-LICENSE) 🦞
+
+> 🦞 *Built by an engineer who runs this stack 24/7 on bare metal and broke everything at least once so you don't have to.*
