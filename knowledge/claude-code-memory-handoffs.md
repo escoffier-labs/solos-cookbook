@@ -2,7 +2,7 @@
 
 If you run Claude Code or Codex locally alongside an OpenClaw gateway, you end up with multiple session memories. This guide describes the shared handoff format and ingester that keep OpenClaw as the canonical durable-memory owner while letting each writing harness produce durable memory as a first-class output.
 
-**Tested on:** Claude Code 2.1.113, Codex, Brigade, OpenClaw 2026.4.x, cron ingester every 30 minutes
+**Tested on:** Claude Code 2.1.113, Codex, Brigade, OpenClaw 2026.6.2, cron ingester every 30 minutes
 **Last updated:** 2026-05-26
 
 ---

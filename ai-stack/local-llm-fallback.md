@@ -2,7 +2,7 @@
 
 > Use local models for boring, bounded work so your paid models stay available for judgment.
 
-**Tested on:** OpenClaw 2026.4.x with Ollama local models, local embeddings, and cloud-model offload lanes
+**Tested on:** OpenClaw 2026.6.2 with Ollama local models, local embeddings, and cloud-model offload lanes
 **Last updated:** 2026-05-11
 
 ## What this is
