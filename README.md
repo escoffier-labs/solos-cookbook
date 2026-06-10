@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-52-red?style=for-the-badge" alt="52 guides">
+  <img src="https://img.shields.io/badge/guides-53-red?style=for-the-badge" alt="53 guides">
   <img src="https://img.shields.io/badge/updated-2026--06--10-white?style=for-the-badge" alt="Updated 2026-06-10">
 </p>
 
@@ -192,6 +192,7 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 | [Bootstrap Files](knowledge/bootstrap-files.md) | What each durable agent file owns: AGENTS, CLAUDE, SOUL, USER, TOOLS, MEMORY, and safety files | Any |
 | [Obsidian Sync Without Conflict Roulette](knowledge/obsidian-sync.md) | One canonical vault, one sync layer, and strict writer rules for bidirectional sync that stays boring | Any |
 | [Session JSONL as Memory Source, Not Noise](knowledge/session-jsonl.md) | Search transcript logs for evidence, then promote only durable facts into memory | OpenClaw |
+| [The MiseLedger Evidence Pipeline](knowledge/evidence-pipeline.md) | StationTrail and SourceHarvest export local history into one adapter contract; MiseLedger imports it into a searchable SQLite evidence archive with FTS and untrusted-context evidence bundles | Any |
 
 ### Security
 

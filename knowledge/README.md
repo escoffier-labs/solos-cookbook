@@ -20,5 +20,6 @@ If you want the full memory operating model this repo uses, read in this order:
 - [x] [`bootstrap-files.md`](bootstrap-files.md) - what AGENTS, CLAUDE, SOUL, USER, TOOLS, MEMORY, and safety files each own
 - [x] [`obsidian-sync.md`](obsidian-sync.md) - bidirectional cloud sync without conflict roulette
 - [x] [`session-jsonl.md`](session-jsonl.md) - using transcript logs as a memory source, not noise
+- [x] [`evidence-pipeline.md`](evidence-pipeline.md) - StationTrail + SourceHarvest export local history into one adapter contract; MiseLedger imports it into a searchable SQLite evidence archive with FTS and untrusted-context evidence bundles
 
 > 🦞 Per-guide format lives in [`../automation/cron-patterns.md`](../automation/cron-patterns.md).
