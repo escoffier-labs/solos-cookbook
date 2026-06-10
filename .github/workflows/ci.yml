@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly external link sweep (Mondays 06:17 UTC).
+    - cron: '17 6 * * 1'
+
+jobs:
+  verify:
+    # The full Definition of Done: scrub gate, structure lint, internal
+    # link check, vitest, astro check, full build.
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm --prefix site ci
+      - run: ./scripts/verify
+
+  external-links:
+    # Non-blocking by design: a flaky third-party site must never fail
+    # the gate. Failures show up as a yellow check to investigate.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Pure-node script, no site dependencies needed.
+      - run: npm --prefix site run check:links:external
