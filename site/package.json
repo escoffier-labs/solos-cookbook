@@ -13,7 +13,10 @@
     "astro": "astro",
     "test": "vitest run",
     "check": "astro check",
-    "check:content": "node scripts/scrub-check.mjs"
+    "check:content": "node scripts/scrub-check.mjs",
+    "check:structure": "node scripts/structure-check.mjs",
+    "check:links": "node scripts/link-check.mjs",
+    "check:links:external": "node scripts/link-check.mjs --external"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.2.9",
