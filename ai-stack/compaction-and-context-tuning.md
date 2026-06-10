@@ -238,7 +238,7 @@ The result: your agent maintains personality across multi-hour sessions, preserv
 
 ---
 
-## Common Mistakes
+## Gotchas
 
 - **Setting `keepRecentTokens` too high** on small-context models. If your model only has 32K tokens, keeping 20K recent means compaction has almost no room to work. Scale proportionally.
 - **Forgetting to customize `postCompactionSections`** for your AGENTS.md structure. The default example `["Every Session", "Memory", "Safety"]` only works if those exact section names exist in your file.

@@ -243,6 +243,30 @@ From our experience running both simultaneously:
 | Context compaction frequency | High (mixed topics fill window) | Low (topics stay in their lane) |
 | Time lost to "what was I working on" | 10-15 min/day | ~0 |
 
+## Verification
+
+Confirm the isolation is actually happening. Each Discord channel and each cron job should hold its own session:
+
+```bash
+openclaw sessions list
+```
+
+Expected shape (keys truncated):
+
+```
+Kind     Key                         Age     Tokens (ctx %)
+group    agent:main:discord:...      7m ago  117k/272k (43%)
+group    agent:main:discord:...      3h ago  39k/272k (14%)
+cron     agent:main:cron:...         8m ago  41k/200k (20%)
+direct   agent:main:main             9m ago  136k/272k (50%)
+```
+
+Three things to check:
+
+- every active Discord channel appears as its own `group` session key, so topics are not sharing context
+- cron jobs run in their own `cron` sessions, not in your working channel
+- context percentages differ per session: one busy channel filling its window does not push another channel toward compaction
+
 ## Gotchas
 
 1. **Discord sessions reset daily too.** Channel isolation helps with topic separation, but everything still resets at your configured hour (default 4am). Important context must be in memory files.
