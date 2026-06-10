@@ -70,7 +70,7 @@ Run `git grep` for your hostnames before opening a PR.
 
 ## Pre-push hook
 
-This repo ships a tracked pre-push hook at `hooks/pre-push` that runs [content-guard](https://github.com/solomonneas/content-guard) over the working tree against `policies/public-repo.json`. It blocks pushes that contain RFC 1918 IPs, secrets, internal hostnames, etc.
+This repo ships a tracked pre-push hook at `hooks/pre-push` that runs [content-guard](https://github.com/escoffier-labs/content-guard) over the working tree against `policies/public-repo.json`. It blocks pushes that contain RFC 1918 IPs, secrets, internal hostnames, etc.
 
 To activate after cloning:
 

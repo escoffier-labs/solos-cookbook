@@ -32,7 +32,7 @@ The model can reason about secret names and placeholders. It should not handle r
 - Linux host with systemd user services or comparable service manager
 - A password manager, secrets manager, or encrypted vault for durable source-of-truth secrets
 - `chmod`, `install`, `systemctl`, `jq`, and `rg`
-- A content scanner such as [content-guard](https://github.com/solomonneas/content-guard)
+- A content scanner such as [content-guard](https://github.com/escoffier-labs/content-guard)
 - A clear distinction between private workspace files and public repo files
 
 ## Before / After
