@@ -17,6 +17,8 @@ Multi-model orchestration. One orchestrator, many models, escalation lanes. Most
 - [x] [`compaction-and-context-tuning.md`](compaction-and-context-tuning.md) - compaction, memory flush, context pruning, session search
 - [x] [`browser-llm-stack.md`](browser-llm-stack.md) - Chromium + persistent login profiles + flock-locked concurrency for browser-native LLM work
 - [x] [`local-llm-fallback.md`](local-llm-fallback.md) - Ollama for embeddings, commits, triage; when to reach for it
+- [x] [`oauth-token-lifecycle.md`](oauth-token-lifecycle.md) - subscription OAuth traps: rotating-token reuse, multi-file sync, api-key fallback, the 402 red herring
+- [x] [`model-retirement-and-fallbacks.md`](model-retirement-and-fallbacks.md) - where model ids hide, the retirement sweep, fallback chain ordering
 
 ## Browser Chromium lane
 
