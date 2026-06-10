@@ -34,7 +34,7 @@ export const CATEGORIES: Category[] = [
   { dir: 'skills', chapter: 'Skills', number: 11 },
 ];
 
-export const GITHUB_BLOB = 'https://github.com/solomonneas/solos-cookbook/blob/main';
+export const GITHUB_BLOB = 'https://github.com/escoffier-labs/solos-cookbook/blob/main';
 
 const CATEGORY_DIRS = new Set(CATEGORIES.map((c) => c.dir));
 
