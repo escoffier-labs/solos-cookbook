@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-59-red?style=for-the-badge" alt="59 guides">
+  <img src="https://img.shields.io/badge/guides-60-red?style=for-the-badge" alt="60 guides">
   <img src="https://img.shields.io/badge/updated-2026--06--10-white?style=for-the-badge" alt="Updated 2026-06-10">
 </p>
 
@@ -231,6 +231,7 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 |-------|-------------|----------|
 | [MCP Catalog](tools/mcp-catalog.md) | Every MCP server published from this stack, what each one wraps, who uses it | Any |
 | [Brigade](tools/brigade.md) | Installable agent workspace bootstrap, a multi-agent orchestrator, per-writer handoffs, an agent-facing daily driver, scanners, and local publish gates | Any |
+| [Skillet](tools/skillet.md) | Installable agent skills: line-check repo audits with leverage-sorted backlogs, bug-hunt, security-sweep, publish gates, releases, handoffs | Any |
 | [OpsDeck](tools/opsdeck.md) | Self-hosted ops dashboard, eight pages over the OpenClaw workspace, with auto-detected sidecar | Any |
 | [Repo Redeploy](tools/repo-redeploy.md) | One cron job that watches your own MCP/CLI repos and redeploys them across hosts | Any |
 | [MCP READMEs: All Five Clients](tools/mcp-readme-five-clients.md) | Every MCP repo ships setup blocks for Claude Desktop, Claude Code, OpenClaw, Hermes, Codex CLI | Any |
