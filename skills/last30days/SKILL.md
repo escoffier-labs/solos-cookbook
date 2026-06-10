@@ -13,6 +13,8 @@ category: research
 
 # last30days
 
+> Attribution: this is an independent, from-scratch implementation of the recency-research concept popularized by [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill) (MIT). No text or code is shared with that project. For the full-featured original, install mvanhorn's skill.
+
 Research what people are saying about a topic right now, not what ranked well six months ago.
 
 ## Goal

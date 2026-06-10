@@ -16,10 +16,10 @@ A deterministic redaction layer for outbound agent messages. Useful when your ag
 A lightweight local productivity stack: semantic code search plus a reusable prompt library.
 
 ### `last30days`
-A repeatable research workflow for surveying recent discussion across Reddit, X, and the broader web.
+A repeatable research workflow for surveying recent discussion across Reddit, X, and the broader web. Independent from-scratch take on the concept popularized by [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill); if you want the full-featured original, install that one.
 
 ### `frontend-design`
-An opinionated design-direction skill for avoiding generic AI-looking frontend work.
+An opinionated design-direction skill for avoiding generic AI-looking frontend work. Inspired by Anthropic's `frontend-design` skill; this is a rewritten, trimmed-down variant, not the original.
 
 ## Structure
 
