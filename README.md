@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-58-red?style=for-the-badge" alt="53 guides">
+  <img src="https://img.shields.io/badge/guides-59-red?style=for-the-badge" alt="59 guides">
   <img src="https://img.shields.io/badge/updated-2026--06--10-white?style=for-the-badge" alt="Updated 2026-06-10">
 </p>
 
@@ -169,6 +169,7 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 | [Multi-Channel Setup](automation/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, ACP threads, and access control | Any |
 | [Hooks](automation/hooks.md) | Three-layer hook model: boundary (git pre-push, outbound-scrub CLIs), tool-call (PreToolUse/PostToolUse, OpenClaw `before_tool_call`/`tool_result_persist`), lifecycle (SessionStart, `before_prompt_build`, `message_sending`) | Any |
 | [n8n Patterns](automation/n8n-patterns.md) | Three interfaces (n8n-ops-mcp, REST API, direct sqlite), Code node sandbox + task-runner constant-folding trap, failure-classifier topology | n8n |
+| [Social Publishing Stack](automation/social-publishing-stack.md) | Self-hosted Postiz + n8n publishing plumbing in one container, agent-driven over MCP with env-gated writes, the rate-limit guard, per-network token expiry. The pipes, not the content | n8n |
 | [Sandbox Shims](automation/sandbox-shims.md) | PATH wrappers for read-only git, denied network tools, package-manager controls, and restricted worker lanes | Any |
 | [Failure Classifier](automation/failure-classifier.md) | One n8n error workflow for the whole fleet: bucket taxonomy, fingerprint dedup, escalation routing, taxonomy tuning | n8n |
 
