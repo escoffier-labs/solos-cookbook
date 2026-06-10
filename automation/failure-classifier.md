@@ -341,7 +341,7 @@ To smoke-test the cascade end to end, remember the rule from [`n8n-patterns.md`]
 
 **`staticData` resets on `import:workflow` of the classifier.** Trends rebuild within 24h because `count24h` is a rolling window, but all-time `count` zeroes. If you iterate on the classifier code frequently, expect the long-term counters to be unreliable. The rolling window is the number that matters for escalation, and it is fine.
 
-**Do not paste raw error payloads anywhere public.** n8n error items can carry webhook URLs, tokens, and credential ids in the surrounding execution metadata. The classifier deliberately emits only `message.slice(0, 500)` and structured fields, not the whole item. Keep it that way, and if you wire a public-facing publish step downstream, run the [content-guard](https://github.com/solomonneas/content-guard) n8n advisory node on the text first.
+**Do not paste raw error payloads anywhere public.** n8n error items can carry webhook URLs, tokens, and credential ids in the surrounding execution metadata. The classifier deliberately emits only `message.slice(0, 500)` and structured fields, not the whole item. Keep it that way, and if you wire a public-facing publish step downstream, run the [content-guard](https://github.com/escoffier-labs/content-guard) n8n advisory node on the text first.
 
 ## Templates
 

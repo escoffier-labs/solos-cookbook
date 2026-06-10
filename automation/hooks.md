@@ -42,7 +42,7 @@ The universal rule: the further from the LLM turn the hook runs, the more reliab
 - A Linux host with git (any modern distro)
 - An orchestrator with at least a tool-call hook surface, or a willingness to live with boundary + lifecycle only
 - Comfort with editing JSON config and writing small scripts
-- A scanner like [content-guard](https://github.com/solomonneas/content-guard) for the boundary layer (or roll your own - the pattern is regex + policy file)
+- A scanner like [content-guard](https://github.com/escoffier-labs/content-guard) for the boundary layer (or roll your own - the pattern is regex + policy file)
 
 ## Before / After
 
@@ -84,7 +84,7 @@ The two boundary hooks worth running on a stack like this:
 git config core.hooksPath hooks
 ```
 
-The hook in this repo runs [content-guard](https://github.com/solomonneas/content-guard) against `policies/public-repo.json`. It blocks pushes that contain RFC 1918 IPs, secrets, or internal hostnames. Bypass with `git push --no-verify` only when you understand exactly what you're allowing through.
+The hook in this repo runs [content-guard](https://github.com/escoffier-labs/content-guard) against `policies/public-repo.json`. It blocks pushes that contain RFC 1918 IPs, secrets, or internal hostnames. Bypass with `git push --no-verify` only when you understand exactly what you're allowing through.
 
 **Stage-boundary CLI** that scrubs staged artifacts before they move downstream. The shape that works on this stack is a sed-rules script with a preview mode and an apply mode:
 
@@ -209,5 +209,5 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 - [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model that the hook layering here mirrors
 - [`automation/sandbox-shims.md`](README.md) (planned) - wrapping git/network/exec for sub-agents that should not have free access; pairs with tool-call hooks
 - [`security/outbound-scrubbing.md`](../security/) (planned) - deep dive on the outbound-boundary CLI pattern, including the rule set and false-positive handling
-- [content-guard](https://github.com/solomonneas/content-guard) - the policy-driven scanner the pre-push template depends on
+- [content-guard](https://github.com/escoffier-labs/content-guard) - the policy-driven scanner the pre-push template depends on
 - [tokenjuice](https://github.com/vincentkoc/tokenjuice) - Claude Code `PostToolUse` reducer; useful prior art for the `additionalContext`-only constraint

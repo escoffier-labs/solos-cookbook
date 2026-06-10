@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
   <img src="https://img.shields.io/badge/guides-52-red?style=for-the-badge" alt="52 guides">
-  <img src="https://img.shields.io/badge/updated-2026--06--05-white?style=for-the-badge" alt="Updated 2026-06-05">
+  <img src="https://img.shields.io/badge/updated-2026--06--10-white?style=for-the-badge" alt="Updated 2026-06-10">
 </p>
 
 <p align="center">
@@ -28,6 +28,8 @@
 ## What this is
 
 This is a working cookbook for engineers who run a long-lived agent in [OpenClaw](https://github.com/openclaw/openclaw), [Hermes Agent](https://github.com/agnos-ai/hermes), or a similar orchestrator, while also coding every day in tools like Codex CLI, Claude Code, OpenCode, and browser-native model sessions.
+
+The cookbook is the documentation home of [Escoffier Labs](https://github.com/escoffier-labs), the org behind [Brigade](https://github.com/escoffier-labs/brigade) and its companion tools. The stack documented here is where those tools were extracted from.
 
 The problem it solves is continuity. Your coding harnesses see one repo and one task at a time. Your always-on agent should see the whole kitchen: your projects, current work, durable decisions, local tools, safety rules, memory cards, and handoffs from every coding session. This cookbook documents the patterns that keep `MEMORY.md`, `TOOLS.md`, `AGENTS.md`, `CLAUDE.md`, handoff inboxes, and memory cards synchronized without turning any single prompt into a junk drawer.
 
@@ -283,7 +285,7 @@ PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). Two non-obvious rules:
 1. **No personal hostnames or IPs in committed text.** Use generic terms.
 2. **Every guide ends with a Gotchas section.** If nothing broke, the guide is incomplete.
 
-A pre-push hook ships at [`hooks/pre-push`](hooks/pre-push) that runs [content-guard](https://github.com/solomonneas/content-guard) over the working tree to catch leaks before they hit the remote. Activate after cloning:
+A pre-push hook ships at [`hooks/pre-push`](hooks/pre-push) that runs [content-guard](https://github.com/escoffier-labs/content-guard) over the working tree to catch leaks before they hit the remote. Activate after cloning:
 
 ```bash
 git config core.hooksPath hooks
@@ -293,11 +295,11 @@ git config core.hooksPath hooks
 
 - [Brigade](https://github.com/escoffier-labs/brigade): the installable starter kit for synced agent memory, handoffs, and workspace bootstrap files
 - [OpenClaw](https://github.com/openclaw/openclaw): the tested reference agent and memory owner for this stack
-- [content-guard](https://github.com/solomonneas/content-guard): the policy-driven scanner used by the pre-push hook
+- [content-guard](https://github.com/escoffier-labs/content-guard): the policy-driven scanner used by the pre-push hook
 - [ops-deck-oss](https://github.com/solomonneas/ops-deck-oss): self-hosted ops dashboard
 - [n8n-ops-mcp](https://github.com/solomonneas/n8n-ops-mcp), [jellyfin-mcp](https://github.com/solomonneas/jellyfin-mcp), [mcporter](https://github.com/solomonneas/mcporter): MCPs from this stack
 - [openclaw-overlay](https://github.com/solomonneas/openclaw-overlay): HUD overlay for session monitoring
-- [usage-tracker](https://github.com/solomonneas/usage-tracker): token usage and cost analytics
+- [usage-tracker](https://github.com/escoffier-labs/usage-tracker): token usage and cost analytics
 
 ## License
 

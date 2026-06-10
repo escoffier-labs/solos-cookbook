@@ -159,6 +159,5 @@ If a scheduled task doesn't show up in exactly one of these, it's in the wrong p
 
 ## Related
 
-- [openclaw-best-practices: workflows/cron-patterns.md](https://github.com/solomonneas/openclaw-best-practices/blob/main/workflows/cron-patterns.md) - OpenClaw-specific deep dive on heartbeat batching, model aliases, delivery routing
 - [`n8n-patterns.md`](n8n-patterns.md) - n8n Code node pitfalls, workflow_history gotcha, failure classifier in detail
 - [`hooks.md`](hooks.md) - pre/post hooks and sandbox shims that limit what cron jobs can do
