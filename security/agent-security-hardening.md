@@ -256,7 +256,7 @@ If your agent reads email, scrapes websites, processes documents, or participate
 
 4. **Never route untrusted content through budget models.** Your orchestrator (frontier model) should be the one processing email, web scrapes, and group chat messages. Sub-agents should only receive sanitized, task-specific prompts from the orchestrator.
 
-## Verification Checklist
+## Verification
 
 ```bash
 echo "=== Tool Permissions ==="

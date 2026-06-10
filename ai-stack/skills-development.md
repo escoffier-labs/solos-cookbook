@@ -302,6 +302,25 @@ For each skill, check:
 - Are there verification steps?
 - Has it been tested with real requests?
 
+## Verification
+
+Confirm every skill in the workspace is structurally loadable - a `SKILL.md` exists and carries the `description:` field discovery depends on:
+
+```bash
+for d in $HOME/.openclaw/workspace/skills/*/; do
+  n=$(basename "$d")
+  if [ -f "${d}SKILL.md" ] && grep -q "description:" "${d}SKILL.md"; then
+    echo "ok      $n"
+  else
+    echo "MISSING $n"
+  fi
+done
+```
+
+Expected: `ok` for every skill directory. Any `MISSING` line is a skill the agent can never discover.
+
+Then test discovery live: send the agent a message containing one of the skill's trigger phrases and confirm it loads that skill (the response should follow the skill's steps, not generic behavior). Follow with a message that should *not* trigger it and confirm it doesn't.
+
 ## Gotchas
 
 1. **Skills are loaded on-demand, not preloaded.** The skill list (names and descriptions) is in the system prompt, but SKILL.md content is only loaded when triggered. This means skill descriptions affect prompt cache size, but skill content doesn't.
