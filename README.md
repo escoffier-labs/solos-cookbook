@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-53-red?style=for-the-badge" alt="53 guides">
+  <img src="https://img.shields.io/badge/guides-58-red?style=for-the-badge" alt="53 guides">
   <img src="https://img.shields.io/badge/updated-2026--06--10-white?style=for-the-badge" alt="Updated 2026-06-10">
 </p>
 
@@ -157,6 +157,8 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 | [Compaction & Context Tuning](ai-stack/compaction-and-context-tuning.md) | Compaction, memory flush, context pruning, and session search for long-running agents | Any |
 | [Browser LLM Stack](ai-stack/browser-llm-stack.md) | Chromium lanes, persistent login profiles, noVNC inspection, and flock-locked browser-native model workflows | Any |
 | [Local LLM Fallback](ai-stack/local-llm-fallback.md) | Ollama lanes for embeddings, commit drafts, cron triage, and bounded utility work without degrading the main chain | Any |
+| [OAuth & Token Lifecycle](ai-stack/oauth-token-lifecycle.md) | Subscription OAuth across providers: rotating-token reuse, multi-file sync, api-key fallback shadowing, and the 402 red herring | Any |
+| [Model Retirement & Fallbacks](ai-stack/model-retirement-and-fallbacks.md) | Where model ids hide, the cron-and-agent sweep to run on every retirement, and fallback chains that fail somewhere sane | Any |
 
 ### Automation
 
@@ -179,6 +181,8 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 | [OpenClaw Host Topology](infrastructure/openclaw-host-topology.md) | Audit the production host shape: services, config, agents, plugins, cron, memory, browser automation, and health checks | OpenClaw |
 | [Homelab Topology](infrastructure/homelab-topology.md) | The hypervisor map: LXC vs VM split, container inventory, resource allocation on a small box, backup wiring | Proxmox |
 | [Service Isolation](infrastructure/service-isolation.md) | One service per unprivileged container: blast-radius thinking, resource caps, ephemeral build containers, when a VM is justified | Proxmox |
+| [Proxmox Agent Lab](infrastructure/proxmox-agent-lab.md) | Proxmox as the agent-stack substrate: service vs ephemeral CTs, the RAM budget, PBS backups, safe agent control via proxmox-mcp, proxguard CIS audits | Proxmox |
+| [AdGuard DNS Sinkhole](infrastructure/adguard-dns-sinkhole.md) | Network DNS sinkhole on a home lab with a synced standby, managed by an agent through adguard-mcp tiers | Any |
 | [NAS & Network Mounts](infrastructure/nas-and-backups.md) | CIFS automount that never hangs boot, soft mounts, guest vs credential auth, bind-mount traps, PBS-on-NAS resilience | Any |
 | [Desktop Integration](infrastructure/desktop-integration.md) | The daily-driver desktop as a peer: SSH into Windows, SMB shares both ways, an SCP inbox, remote OBS control | Windows 11 + Linux |
 
@@ -204,6 +208,7 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a con
 | [Secret Management](security/secret-management.md) | Env files, systemd `EnvironmentFile`, browser profiles, rotation, and keeping secrets out of repos and memory | Any |
 | [Agent Incident Runbook](security/incident-runbook.md) | Freeze automation, preserve evidence, rotate or restore, and turn agent failures into durable controls | Any |
 | [Wazuh Triage](security/wazuh-triage.md) | RCA first, fix second, narrowest suppression last: keeping a self-hosted SIEM high-signal on an agent host | Wazuh |
+| [MCP Incident Response](security/mcp-incident-response.md) | The agent-driven SOC loop: Wazuh alert to TheHive case to Cortex analysis to MISP enrichment to ATT&CK mapping, all over your own MCP servers | Any |
 
 ### Publishing
 

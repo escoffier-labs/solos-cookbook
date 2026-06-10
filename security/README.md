@@ -8,6 +8,7 @@ Defense in depth across host, agents, network, and outbound boundary. Plus what 
 - [x] [`wsl-hardening.md`](wsl-hardening.md) - Windows Firewall, RDP/SSH/SMB lockdown, port-proxy hygiene, dual-OS defense (Windows 11 + WSL2)
 - [x] [`agent-security-hardening.md`](agent-security-hardening.md) - API gateway isolation, RBAC, sandboxing, circuit breakers, post-mortem from a sub-agent nuking a database
 - [x] [`wazuh-triage.md`](wazuh-triage.md) - RCA → fix → narrow suppress in one pass
+- [x] [`mcp-incident-response.md`](mcp-incident-response.md) - agent-driven SOC loop: Wazuh → TheHive → Cortex → MISP → ATT&CK over your own MCP servers
 - [x] `outbound-scrubbing.md` - covered by [`../publishing/publish-time-scrubbing.md`](../publishing/publish-time-scrubbing.md): scrubbers and scanner gates as preflight, not afterthought
 - [x] [`incident-runbook.md`](incident-runbook.md) - agent did a destructive thing, secret leaked, or automation ran away, here's what you do
 - [x] [`secret-management.md`](secret-management.md) - env files, systemd EnvironmentFile, browser profiles, rotation, never in config
