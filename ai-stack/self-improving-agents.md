@@ -210,6 +210,10 @@ On Ubuntu 24.04+, SSH is socket-activated by default.
 - **Workflow improvement**: promote to AGENTS.md
 - Update original entry status to "promoted" when promoting
 
+### Productized Tooling: Brigade
+
+The hand-rolled correction-capture loop described above now ships as first-class tooling in [Brigade](https://github.com/escoffier-labs/brigade). `brigade learn import-learnings` pulls structured ERR/LRN/FEAT entries into a reviewable store, and `brigade learn skill-candidates` clusters recurring corrections into proposed skills or rules. The key design choice: proposals are never auto-applied. Brigade surfaces candidates and you decide what gets promoted, which keeps a bad pattern from silently rewriting your AGENTS.md. If you would rather not maintain the scripts in this guide by hand, lean on Brigade for the import-and-cluster half and keep the promotion decision human.
+
 ## Daily Memory Sweep
 
 Set up an automated cron job that reviews recent sessions across all channels and distills important information into the memory system.
