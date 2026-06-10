@@ -13,6 +13,8 @@ category: agent
 
 # Self-Learning Agent
 
+> Attribution: the capture-and-promote learning loop is inspired by [pskoett/self-improving-agent](https://github.com/pskoett/self-improving-agent), rebuilt from scratch around a card-based memory architecture.
+
 Use a three-layer memory system instead of one giant memory file.
 
 ## Goal
