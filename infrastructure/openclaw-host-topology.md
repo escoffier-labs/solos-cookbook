@@ -18,7 +18,7 @@ The tempting documentation style is a static architecture diagram. That goes sta
 | OpenClaw config | `~/.openclaw/openclaw.json` | Agents, models, plugins, memory, channels |
 | Workspace files | `~/.openclaw/workspace/` | Bootstrap prompt, memory, tools, rules |
 | Agent sessions | `~/.openclaw/agents/*/sessions/` | Ground truth for what happened |
-| Cron jobs | `~/.openclaw/cron/jobs.json` | Scheduled agent work and delivery routing |
+| Cron jobs | `openclaw cron` CLI (gateway-owned store) | Scheduled agent work and delivery routing |
 | Templates | cookbook `templates/` | Public-safe artifacts other people can lift |
 
 ## Prerequisites
@@ -119,8 +119,8 @@ Then link each group to the guide or template that explains it. If no guide exis
 OpenClaw cron is real production work, not a toy reminders list.
 
 ```bash
-jq '[.jobs[]? | {name, enabled, schedule, delivery}] | {count:length, jobs:.}' \
-  ~/.openclaw/cron/jobs.json
+openclaw cron list --json | \
+  jq '{count: .total, jobs: [.jobs[] | {name, enabled, schedule, delivery}]}'
 ```
 
 Classify jobs:
@@ -168,7 +168,7 @@ systemctl --user is-active openclaw-gateway.service
 systemctl --user --failed --no-pager
 jq '.agents.list | length' ~/.openclaw/openclaw.json
 jq '.plugins.entries | keys' ~/.openclaw/openclaw.json
-jq '.jobs | length' ~/.openclaw/cron/jobs.json
+openclaw cron list --json | jq .total
 find ~/.openclaw/workspace -maxdepth 1 -type f -name '*.md' -printf '%f\n' | sort
 ```
 

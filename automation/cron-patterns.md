@@ -28,7 +28,7 @@ This guide uses OpenClaw as the canonical agent-cron orchestrator because that's
 
 | You run | Layer-2 swap |
 |---------|--------------|
-| OpenClaw | `~/.openclaw/cron/jobs.json` (this guide's default) |
+| OpenClaw | `openclaw cron` CLI, gateway-owned store (this guide's default) |
 | Hermes Agent | Hermes' scheduled-task config - same principles: low-thinking model, explicit delivery, scripts not heredocs |
 | Another orchestrator | Whatever cron-config surface it ships with. The three rules in Layer 2 below are general. |
 | No agent orchestrator | You don't have a layer 2. Push agent jobs into n8n with HTTP-to-LLM nodes, or skip them. |
@@ -49,7 +49,7 @@ Layers 1 and 3 (systemd timers, n8n) are identical regardless.
 **After:** Three layers, each visible in the right place:
 
 - `systemctl --user list-timers` shows OS plumbing
-- `~/.openclaw/cron/jobs.json` shows agent jobs
+- `openclaw cron list` shows agent jobs
 - n8n UI shows multi-step workflows
 
 Failures route to a single error channel via n8n's failure classifier (see [Related](#related)).
@@ -87,7 +87,7 @@ systemctl --user enable --now my-task.timer
 
 Use for: scheduled research, daily summaries, posting to chat channels, any task that's "agent does X, returns text, send it somewhere."
 
-OpenClaw skeleton lives in [`../templates/cron/openclaw-cron-job.json`](../templates/cron/openclaw-cron-job.json). Append entries to `~/.openclaw/cron/jobs.json`. Hermes and other orchestrators have their own cron-config surface - the three rules below are general; the file format isn't.
+OpenClaw skeleton lives in [`../templates/cron/openclaw-cron-job.json`](../templates/cron/openclaw-cron-job.json). Add jobs with `openclaw cron add`; on 2026.6.x the gateway owns job storage, so do not hand-edit the legacy `~/.openclaw/cron/jobs.json`. Hermes and other orchestrators have their own cron-config surface - the three rules below are general; the file format isn't.
 
 Three things to get right (orchestrator-agnostic):
 
@@ -99,13 +99,13 @@ Three things to get right (orchestrator-agnostic):
 
 #### OpenClaw specifics
 
-- Job entries live in `~/.openclaw/cron/jobs.json` as a JSON array. Validate with `jq` before restarting the gateway.
+- Manage jobs with `openclaw cron add | edit | get | list | rm` (patches go through the gateway, no restart needed). Pre-2026.6 releases stored jobs in `~/.openclaw/cron/jobs.json` as a JSON array you edited by hand; `openclaw doctor --fix` migrates that legacy storage.
 - Define the cron model alias once in `openclaw.json` under `agents.defaults.models`, then reference it as `<provider>/<base-model>:cron` in each job.
 - Set `tools.elevated.enabled: true` globally and rely on per-job sandbox shims for restriction. Agent-level overrides for elevated tools have had regressions across minor releases.
 
 #### Hermes notes
 
-If you're running Hermes Agent instead, layer 2 maps to Hermes' scheduled-task config (whatever your version exposes - the API is younger and changes between releases). The three rules above still hold. The OpenClaw-specific gotchas in the Gotchas section that mention `~/.openclaw/cron/jobs.json` won't apply verbatim, but the underlying failure modes (heredoc detection, thinking-budget inheritance, silent delivery routing) are universal - most agent orchestrators land on the same traps.
+If you're running Hermes Agent instead, layer 2 maps to Hermes' scheduled-task config (whatever your version exposes - the API is younger and changes between releases). The three rules above still hold. The OpenClaw-specific gotchas in the Gotchas section that mention OpenClaw cron storage won't apply verbatim, but the underlying failure modes (heredoc detection, thinking-budget inheritance, silent delivery routing) are universal - most agent orchestrators land on the same traps.
 
 ### Layer 3 - n8n schedule trigger (multi-step workflows)
 
@@ -128,7 +128,7 @@ After routing your scheduled tasks, you should be able to enumerate them all in 
 systemctl --user list-timers --all
 
 # Layer 2 - OpenClaw cron
-jq '.[] | {name, schedule, model}' ~/.openclaw/cron/jobs.json
+openclaw cron list --json | jq '.jobs[] | {name, schedule, model}'
 
 # Layer 3 - n8n schedule triggers (via the n8n CLI or REST API)
 n8n list:workflow --active=true | grep -i schedule
