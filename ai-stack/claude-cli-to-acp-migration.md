@@ -2,8 +2,8 @@
 
 How to move Claude Opus off the main-agent slot and onto an ACP escalation path after Anthropic blocked subscription OAuth from third-party harnesses in April 2026.
 
-**Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.92+, Claude Max subscription
-**Last updated:** 2026-06-05
+**Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.92+, Claude Max subscription. Current stack: OpenClaw 2026.6.2 with Opus 4.8 via ACPX (4.7 wrapper still wired as fallback).
+**Last updated:** 2026-06-10
 
 > **June 2026 note:** This is now the ACPX compatibility runbook. For normal second-opinion code review, prefer [Claude Code via tmux Relay](claude-code-tmux-relay.md), which keeps Claude Code in its first-party interactive harness and avoids `claude -p`. The June notes observed print-mode automation drawing from Claude's separate **Usage** bucket, so do not use `claude -p` as the OpenClaw/Codex handoff path.
 
@@ -16,7 +16,7 @@ In April 2026, Anthropic started rejecting Claude Max subscription OAuth tokens 
 **The concrete impact on an OpenClaw host:**
 
 - The bundled `anthropic` plugin's `claude-cli` backend stopped authenticating.
-- Main-agent routing through `claude-cli/claude-opus-4-6` now returns `Unknown model` or auth errors.
+- Main-agent routing through `claude-cli/claude-opus-4-6` (the Opus model current at the time) now returns `Unknown model` or auth errors.
 - Any cron job, hook, or skill that assumed Opus was the primary model silently fails or falls back to another provider.
 
 The April 2026 path forward was to keep Opus reachable via the **Agent Client Protocol (ACP)** through the ACPX plugin. Claude Code runs natively on your machine as an ACP server; OpenClaw connects to it as a client. Anthropic's own CLI handles the Max OAuth handshake, and OpenClaw treats the resulting session as a sub-agent.
@@ -232,7 +232,7 @@ If you're not using *any* Anthropic-provided model path, drop it from the whitel
       { "id": "coder",      "model": "gpt55" },
       {
         "id": "acp-claude",
-        "model": "acpx/claude-opus-4-6",
+        "model": "acpx/claude-opus-4-8",
         "description": "Escalation target for intel, design, review, and academic work"
       }
     ]

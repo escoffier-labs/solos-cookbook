@@ -2,8 +2,8 @@
 
 Running GPT 5.5 (via OpenAI Codex Pro) as your main orchestrator is cheap and fast compared to frontier API billing, but it has specific failure modes that will quietly eat hours of your time until you know to guard against them. This guide documents the real ones: tool-call narration, planning-only stalls, strict-agentic detection gaps, and the silent-tool-loop false alarm.
 
-**Tested on:** GPT 5.5 (Codex OAuth), OpenClaw 2026.4.x, `executionContract: strict-agentic`
-**Last updated:** 2026-04-20
+**Tested on:** GPT 5.5 (Codex OAuth), OpenClaw 2026.4.x, `executionContract: strict-agentic`; still accurate on OpenClaw 2026.6.2
+**Last updated:** 2026-06-10
 
 ---
 

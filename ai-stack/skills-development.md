@@ -2,8 +2,8 @@
 
 How to write custom OpenClaw skills, structure them for discoverability, and extend your agent's capabilities with reusable task-specific instructions.
 
-**Tested on:** OpenClaw 2026.4.x with 20+ custom skills across security, content, and development
-**Last updated:** 2026-04-19
+**Tested on:** OpenClaw 2026.4.x with 20+ custom skills across security, content, and development; still accurate on OpenClaw 2026.6.2
+**Last updated:** 2026-06-10
 
 ---
 

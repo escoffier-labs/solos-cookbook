@@ -2,8 +2,8 @@
 
 How to manage OpenClaw sessions effectively using Discord (or similar channel-based platforms) instead of single-thread messaging apps. The difference between productive multi-project orchestration and fighting your own agent for context.
 
-**Tested on:** OpenClaw 2026.4.x running Discord + Telegram + Signal concurrently for 4+ months
-**Last updated:** 2026-04-19
+**Tested on:** OpenClaw 2026.4.x running Discord + Telegram + Signal concurrently for 4+ months; still accurate on OpenClaw 2026.6.2
+**Last updated:** 2026-06-10
 
 ---
 
