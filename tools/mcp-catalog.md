@@ -34,6 +34,7 @@ Grouped by what the underlying service does. Versions move; see each repo for cu
 | MCP | Wraps | What the agent does with it |
 |-----|-------|----------------------------|
 | [`postiz-mcp`](https://github.com/solomonneas/postiz-mcp) | Postiz scheduled-posting platform | Create/schedule/delete posts and post groups, list integrations, check integration health, get post + platform analytics, find next scheduling slot, upload media, invoke per-provider integration tools |
+| [`n8n-ops-mcp`](https://github.com/solomonneas/n8n-ops-mcp) | n8n workflow automation | List/inspect workflows and executions, trigger and toggle workflows, read execution status and errors, manage credentials metadata, with confirmation gates on activate/deactivate |
 
 ### Security operations
 
@@ -75,6 +76,9 @@ These are not MCPs - they ship as standalone tools the orchestrator or other age
 |------|-----------|
 | [`content-guard`](https://github.com/escoffier-labs/content-guard) | Policy-driven scanner for outbound content. Runs on `pre-push`, in publish pipelines, and in agent message hooks. Catches RFC 1918 IPs, secrets, internal hostnames before they leave the workspace |
 | [`usage-tracker`](https://github.com/escoffier-labs/usage-tracker) | Token usage and cost analytics across providers. Tails session JSONLs, attributes spend per agent/channel/model |
+| [`agentpantry`](https://github.com/escoffier-labs/agentpantry) | Encrypted browser session, cookie, and secret sync between agent machines so a logged-in host stays authenticated. Go binary, dual-key PSK rotation |
+| [`agent-notify`](https://github.com/escoffier-labs/agent-notify) | Private operator notifications for agent events - long-running run completions, approvals, blockers. Go binary, ships SBOM |
+| [`cloche`](https://github.com/escoffier-labs/cloche) | Agent-neutral screenshot capture CLI (renamed from appshots). Rust, on crates.io (`cargo install cloche`) |
 | [`openclaw-overlay`](https://github.com/solomonneas/openclaw-overlay) | HUD for session monitoring - which agent is talking to which channel, what tools fired, what cron job is in flight |
 | [`ops-deck-oss`](https://github.com/solomonneas/ops-deck-oss) | Self-hosted ops dashboard - service health, cron freshness, backup status, agent activity. See [`opsdeck.md`](opsdeck.md) |
 
