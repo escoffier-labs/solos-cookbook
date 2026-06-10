@@ -2,8 +2,8 @@
 
 How to treat your AI agent as an untrusted actor and build guardrails that actually work. Includes a real post-mortem from when a sub-agent nuked a production database.
 
-**Tested on:** OpenClaw 2026.4.x multi-agent setup (GPT 5.5 main + coder, ACP Opus 4.6 escalation, browser-LLM skills)
-**Last updated:** 2026-06-05
+**Tested on:** OpenClaw 2026.4.x multi-agent setup (GPT 5.5 main + coder, ACP Opus escalation, browser-LLM skills); current stack OpenClaw 2026.6.2 with Opus 4.8 via ACPX
+**Last updated:** 2026-06-10
 
 ---
 

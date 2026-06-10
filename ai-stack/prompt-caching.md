@@ -3,7 +3,7 @@
 How OpenClaw's prompt caching works across providers, how to keep your cache hit rate high, and the anti-patterns that silently cost you money every turn.
 
 **Tested on:** OpenClaw with OpenAI Codex (GPT 5.5) as main, Claude Code tmux relay for review escalation, ACP compatibility, cache-ttl context pruning
-**Last updated:** 2026-06-05
+**Last updated:** 2026-06-10
 
 ---
 
@@ -36,7 +36,7 @@ OpenClaw handles caching automatically. The relevant config:
   "agents": {
     "defaults": {
       "models": {
-        "anthropic/claude-opus-4-6": {
+        "anthropic/claude-opus-4-8": {
           "params": {
             "cacheControlTtl": "1h"
           }

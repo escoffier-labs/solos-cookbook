@@ -2,8 +2,8 @@
 
 How OpenClaw handles multiple messaging platforms simultaneously, session isolation between channels, and practical patterns for Discord, Telegram, and Signal.
 
-**Tested on:** OpenClaw 2026.4.x with Discord + Telegram + Signal running concurrently
-**Last updated:** 2026-04-19
+**Tested on:** OpenClaw 2026.4.x with Discord + Telegram + Signal running concurrently; still accurate on OpenClaw 2026.6.2
+**Last updated:** 2026-06-10
 
 ---
 
