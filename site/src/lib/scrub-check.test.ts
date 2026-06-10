@@ -21,7 +21,7 @@ describe('scrub scan', () => {
   });
 
   it('flags RFC 1918 IPs but allows RFC 5737 doc IPs', () => {
-    expect(rules('the NAS lives at 192.168.4.70')).toContain('private-ipv4');
+    expect(rules('the NAS lives at 192.168.1.20')).toContain('private-ipv4');
     expect(rules('use 192.0.2.10 as a placeholder')).toEqual([]);
     expect(rules('or 203.0.113.7 in examples')).toEqual([]);
   });
@@ -48,7 +48,7 @@ describe('scrub scan', () => {
   });
 
   it('honors inline allow tags on the same line', () => {
-    expect(rules('the NAS lives at 192.168.4.70 <!-- content-guard: allow private-ipv4 -->')).toEqual([]);
+    expect(rules('the NAS lives at 192.168.1.20 <!-- content-guard: allow private-ipv4 -->')).toEqual([]);
   });
 
   it('honors inline allow tags on the previous line', () => {
@@ -57,7 +57,7 @@ describe('scrub scan', () => {
   });
 
   it('does not let an allow tag suppress other rules', () => {
-    const text = 'gandalf at 192.168.4.61 <!-- content-guard: allow private-ipv4 -->';
+    const text = 'gandalf at 192.168.1.21 <!-- content-guard: allow private-ipv4 -->';
     expect(rules(text)).toEqual(['private-hostname']);
   });
 
