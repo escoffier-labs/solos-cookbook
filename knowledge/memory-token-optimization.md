@@ -2,8 +2,8 @@
 
 How to build an AI agent memory system that doesn't eat your context window alive. From raw conversation history to semantic search with local embeddings.
 
-**Tested on:** OpenClaw 2026.4.x with Ollama (qwen3-embedding:8b), 64GB RAM host
-**Last updated:** 2026-04-19
+**Tested on:** OpenClaw 2026.4.x with Ollama (qwen3-embedding:8b), 64GB RAM host; still accurate on OpenClaw 2026.6.2
+**Last updated:** 2026-06-10
 
 ---
 

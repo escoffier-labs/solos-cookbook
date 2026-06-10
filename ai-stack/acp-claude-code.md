@@ -6,8 +6,8 @@ This is the compatibility setup that works as of April 2026. As of the June 2026
 
 > **June 2026 warning:** Do not replace ACPX with `claude -p` automation. Print-mode Claude Code started drawing from Claude's separate **Usage** bucket in the June notes. Use tmux for ordinary OpenClaw/Codex review handoffs.
 
-**Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.113, ACPX plugin 0.4.0
-**Last updated:** 2026-06-05
+**Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.113, ACPX plugin 0.4.0. Current stack: OpenClaw 2026.6.2 with Opus 4.8 via ACPX as primary (4.7 wrapper still wired as fallback).
+**Last updated:** 2026-06-10
 
 ---
 
@@ -91,9 +91,9 @@ Add the plugin and a model alias to `~/.openclaw/openclaw.json`:
     }
   },
   "models": {
-    "acp:claude-opus-4-7": {
+    "acp:claude-opus-4-8": {
       "backend": "acpx",
-      "model": "claude-opus-4-7"
+      "model": "claude-opus-4-8"
     }
   }
 }
@@ -109,7 +109,7 @@ systemctl --user restart openclaw-gateway
 
 ## Assign It to an Agent
 
-ACP is best used for **escalation**, not as the default orchestrator. GPT-5.4 or another subscription model handles the hot path (tool loops, routing, cron); Claude Code-via-ACP handles the work that genuinely benefits from deeper reasoning - architecture review, security review, dense research, and design critique.
+ACP is best used for **escalation**, not as the default orchestrator. GPT 5.5 or another subscription model handles the hot path (tool loops, routing, cron); Claude Code-via-ACP handles the work that genuinely benefits from deeper reasoning - architecture review, security review, dense research, and design critique.
 
 ```json
 {
@@ -120,7 +120,7 @@ ACP is best used for **escalation**, not as the default orchestrator. GPT-5.4 or
         "fallbacks": ["openai:gpt-5.3-codex"]
       },
       "reviewer": {
-        "model": "acp:claude-opus-4-7",
+        "model": "acp:claude-opus-4-8",
         "tools": ["read", "grep", "glob"]
       }
     }
@@ -179,7 +179,7 @@ Use it for:
 
 Don't use it for:
 
-- **Tool loops with many iterations.** ACP startup and round-trip latency adds up. GPT-5.4 on Codex cycles faster.
+- **Tool loops with many iterations.** ACP startup and round-trip latency adds up. GPT 5.5 on Codex cycles faster.
 - **Cron jobs.** The subprocess model is heavier than needed for scheduled triage work. Use a cheaper model with a short thinking budget.
 - **Anything that needs the `edit` tool at high cadence.** ACP applies edits through Claude Code's own tool, which is fine but slower than OpenClaw's direct edit backend.
 

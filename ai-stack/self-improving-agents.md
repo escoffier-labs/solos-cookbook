@@ -2,8 +2,8 @@
 
 How to build an AI agent that learns from corrections, captures mistakes as institutional knowledge, runs automated memory sweeps, and gets better over time instead of repeating the same errors.
 
-**Tested on:** OpenClaw 2026.4.x with GPT 5.5 (main + memory sweep), tokenjuice + tool-narration-guard plugins
-**Last updated:** 2026-04-19
+**Tested on:** OpenClaw 2026.4.x with GPT 5.5 (main + memory sweep), tokenjuice + tool-narration-guard plugins; still accurate on OpenClaw 2026.6.2
+**Last updated:** 2026-06-10
 
 ---
 
