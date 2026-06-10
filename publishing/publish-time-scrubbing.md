@@ -30,7 +30,7 @@ This is a workflow, not a prompt. The model may help write, but deterministic to
 ## Prerequisites
 
 - A deterministic scrubber such as [`../templates/scrubbers/scrub-content.sh`](../templates/scrubbers/scrub-content.sh)
-- A scanner such as [content-guard](https://github.com/solomonneas/content-guard)
+- A scanner such as [content-guard](https://github.com/escoffier-labs/content-guard)
 - A staging directory, git branch, draft folder, or export bundle that represents the outbound artifact
 - A replacement policy for each leak class
 - Someone willing to review the scrubbed diff before publishing

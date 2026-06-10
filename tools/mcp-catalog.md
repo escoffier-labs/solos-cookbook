@@ -73,8 +73,8 @@ These are not MCPs - they ship as standalone tools the orchestrator or other age
 
 | Tool | What it is |
 |------|-----------|
-| [`content-guard`](https://github.com/solomonneas/content-guard) | Policy-driven scanner for outbound content. Runs on `pre-push`, in publish pipelines, and in agent message hooks. Catches RFC 1918 IPs, secrets, internal hostnames before they leave the workspace |
-| [`usage-tracker`](https://github.com/solomonneas/usage-tracker) | Token usage and cost analytics across providers. Tails session JSONLs, attributes spend per agent/channel/model |
+| [`content-guard`](https://github.com/escoffier-labs/content-guard) | Policy-driven scanner for outbound content. Runs on `pre-push`, in publish pipelines, and in agent message hooks. Catches RFC 1918 IPs, secrets, internal hostnames before they leave the workspace |
+| [`usage-tracker`](https://github.com/escoffier-labs/usage-tracker) | Token usage and cost analytics across providers. Tails session JSONLs, attributes spend per agent/channel/model |
 | [`openclaw-overlay`](https://github.com/solomonneas/openclaw-overlay) | HUD for session monitoring - which agent is talking to which channel, what tools fired, what cron job is in flight |
 | [`ops-deck-oss`](https://github.com/solomonneas/ops-deck-oss) | Self-hosted ops dashboard - service health, cron freshness, backup status, agent activity. See [`opsdeck.md`](opsdeck.md) |
 
