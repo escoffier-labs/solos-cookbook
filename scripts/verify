@@ -1,0 +1,10 @@
+#!/bin/bash
+# Single verification entrypoint. AGENTS.md's Definition of Done defers to
+# this file, so the gate lives in exactly one place.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+npm --prefix site run check:content   # scrub gate only, fastest for content edits
+npm --prefix site test                # vitest suite
+npm --prefix site run check           # astro type check
+npm --prefix site run build           # full build, prebuild runs the scrub gate
