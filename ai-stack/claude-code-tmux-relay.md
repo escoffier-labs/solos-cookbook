@@ -1,9 +1,16 @@
 # Claude Code via tmux Relay
 
-How to let OpenClaw drive Claude Code through an interactive tmux session for second-opinion review, without using `claude -p` or treating Claude as a raw backend.
+How to let OpenClaw drive Claude Code through an interactive tmux session, both for second-opinion review and for scripted one-shot calls, without using `claude -p` or treating Claude as a raw backend.
 
-**Tested on:** Claude Code first-party OAuth, Opus, tmux, OpenClaw host workflow
-**Last updated:** 2026-06-05
+**Tested on:** Claude Code first-party OAuth, Opus 4.8, tmux, OpenClaw 2026.6.2 host workflow
+**Last updated:** 2026-06-10
+
+There are two lanes here:
+
+1. **Interactive review sessions** - a long-lived named tmux session you send prompts to and capture answers from. Good for second opinions and cross-review.
+2. **One-shot relay** - a script that spins up a throwaway tmux session per request, gets the answer as a JSON envelope, and tears the session down. This is the drop-in replacement for `claude -p --output-format json` when print mode is blocked, and it is what one-liner wrappers and cron jobs call.
+
+The first lane is the original pattern. The second is what made the whole `claude -p` script ecosystem survive print mode dying.
 
 ## What this is
 
@@ -150,6 +157,75 @@ templates/ai-stack/claude-tmux-relay.sh send \
 templates/ai-stack/claude-tmux-relay.sh capture -200
 ```
 
+## One-shot relay: print-mode behavior without print mode
+
+If your scripts used to call `claude -p --output-format json` and that path now fails auth (`401` on print mode while interactive sessions still work, which is exactly what happened on this stack in June 2026), you do not have to rewrite every caller. Build a one-shot bridge that drives the real TUI through tmux and emits the same JSON envelope the callers already parse.
+
+The bridge does this per request:
+
+1. **Spawn a throwaway session.** Name it `<prefix>-<pid>-<timestamp>` so concurrent calls never collide, launch `claude --model <model> --permission-mode <mode>` in the requested working directory.
+2. **Auto-answer the trust prompt only.** Poll `capture-pane` for the folder-trust prompt text and send Enter once. Nothing else gets auto-approved.
+3. **Ask for the answer as a file, not chat.** Wrap the user prompt with an instruction that the task is not complete until the model uses its Write tool to put ONLY the final answer at an exact temp file path. Chat output scrolls, wraps, and interleaves with the TUI; a file is unambiguous.
+4. **Paste, then submit with `C-m`.** Send the prompt via `load-buffer` + `paste-buffer`, sleep briefly, then `send-keys C-m`. A symbolic `Enter` after a bracketed paste sometimes leaves the text sitting at the prompt; `C-m` has been reliable.
+5. **Poll the result file for stability.** Wait until the file exists, is non-empty, and its size has been stable for a second. Claude may write incrementally.
+6. **Refuse permission prompts.** If the pane shows `Do you want to proceed?` or similar, fail with the pane tail in the error instead of auto-approving. A one-shot text task should never need tool escalations beyond the single Write; if it asks, something is wrong.
+7. **Emit the envelope.** Print `{"is_error": false, "result": "<file contents>", ...}` on success, `{"is_error": true, "result": "<reason>"}` on failure, then kill the session. Existing `claude -p` callers keep working unchanged.
+
+Two robustness details that earn their keep:
+
+- **Load the OAuth token explicitly.** Freshly spawned `claude` processes fall back to `~/.claude/.credentials.json` (which can be expired) when `CLAUDE_CODE_OAUTH_TOKEN` is absent, and it is absent in clean contexts: systemd units, cron, non-login shells. Have the bridge read the token from your env file and export it before launching, so the relay works the same from any caller.
+- **Detached mode for agent callers.** For calls made from an agent turn, add a mode that re-launches the bridge as a transient `systemd-run --user --collect` unit and returns `{"detached": true, "job_id": ...}` immediately. The unit lives outside the gateway's cgroup, so a gateway restart cannot kill in-flight work; an independent outbox timer delivers the result to the requesting channel. Synchronous mode stays the default for cron and shell scripts.
+
+## One-liner wrappers
+
+With the bridge in place, task-specific one-liners become trivial bash: build a system prompt, feed stdin or a file through the relay, gate on the envelope, print `.result`. The pattern:
+
+```bash
+#!/usr/bin/env bash
+# opus-rewrite - one-shot Opus text task via the tmux relay
+set -euo pipefail
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+
+TMUX_RELAY="$HOME/.local/share/agent-scripts/claude-tmux-oneshot.py"
+RELAY_MODEL="claude-opus-4-8"
+RELAY_TIMEOUT="${OPUS_RELAY_TIMEOUT:-600}"
+
+SYSTEM_PROMPT="You are a precise rewriting assistant. Output ONLY the rewritten text, no commentary."
+
+# stdin, file, or --prompt "text"
+if [[ "${1:-}" == "--prompt" ]]; then
+  shift; CONTENT="$*"
+elif [[ -n "${1:-}" ]] && [[ -f "$1" ]]; then
+  CONTENT=$(cat "$1")
+elif [[ ! -t 0 ]]; then
+  CONTENT=$(cat)
+else
+  echo "Usage: opus-rewrite [file | --prompt 'text' | stdin]" >&2; exit 1
+fi
+
+ENVELOPE=$(printf '%s\n\n%s' "$SYSTEM_PROMPT" "$CONTENT" \
+  | timeout $((RELAY_TIMEOUT + 60)) "$TMUX_RELAY" \
+      --model "$RELAY_MODEL" \
+      --cwd "$HOME/workspace" \
+      --timeout "$RELAY_TIMEOUT" \
+      --session-prefix "opus-rewrite")
+
+if [[ "$(jq -r 'if .is_error == false then "ok" else "err" end' <<<"$ENVELOPE" 2>/dev/null || echo err)" != "ok" ]]; then
+  echo "opus-rewrite: relay error: $(jq -r '.result // empty' <<<"$ENVELOPE" | head -c 300)" >&2
+  exit 1
+fi
+
+RESULT=$(jq -r '.result // empty' <<<"$ENVELOPE")
+[[ -n "$RESULT" ]] || { echo "opus-rewrite: empty result" >&2; exit 1; }
+printf '%s\n' "$RESULT"
+```
+
+On this stack a handful of task-specific wrappers in `~/bin` follow this exact shape, and cron jobs call them like any other shell command, with the relay timeout bumped for batch work.
+
+Watch the jq gate carefully. `jq '.is_error // true'` looks right and is wrong: `//` fires on `false` as well as `null`, so a successful envelope (`is_error: false`) would read as an error. Compare explicitly with `if .is_error == false`.
+
+One migration note: converting wrappers is per-script surgery. Every script that shells out to `claude --print` or `claude -p` keeps failing until it is moved onto the relay, and the failures look like auth problems, not code problems. Inventory your wrappers (`grep -l 'claude.*-p\|--print' ~/bin/*`) and migrate the ones you actually use first.
+
 ## OpenClaw agent usage
 
 OpenClaw should treat Claude Code tmux as a tool lane, not as the main model or a fallback model.
@@ -272,11 +348,19 @@ Do not use `acceptEdits` in a production repo unless that is the explicit task.
 
 3. **Plan mode is the default for review.** It keeps Claude in a critique lane and avoids surprise edits.
 
-4. **One-shot does not mean print mode.** Use a prompt file plus `tmux paste-buffer` when you need a one-shot review. Do not call `claude -p` on this host.
+4. **One-shot does not mean print mode.** For interactive sessions, use a prompt file plus `tmux paste-buffer`. For scripted callers, use the one-shot relay bridge above. Do not call `claude -p` on this host.
 
 5. **Capture output is evidence, not memory.** Review artifacts can be noisy. Promote only durable, verified facts through memory handoffs.
 
 6. **Keep ACPX documented as an explicit compatibility lane.** Some OpenClaw setups still need ACP. Do not present ACPX as the only path to Claude Code.
+
+7. **`jq '.is_error // true'` is a bug.** The `//` alternative operator treats `false` like `null`, so a healthy envelope reads as an error. Use `if .is_error == false then ... end`. This one shipped and bit us.
+
+8. **Submit pasted prompts with `C-m`, not `Enter`.** After a bracketed paste, a symbolic `Enter` keystroke sometimes leaves the prompt text unsubmitted in the TUI input. A short sleep then `send-keys C-m` submits reliably.
+
+9. **Never auto-approve tool permission prompts in the one-shot lane.** The bridge auto-answers exactly one prompt, folder trust, and fails loudly with the pane tail on anything else. A text task that suddenly wants shell access is a prompt-injection smell, not an inconvenience to click through.
+
+10. **Wrapper migration is per-script.** Print mode dying does not break your scripts in one obvious place; it breaks each `claude -p` caller individually with what looks like an auth flake. Inventory and migrate deliberately.
 
 ## Templates
 
