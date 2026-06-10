@@ -2,6 +2,8 @@
 
 > Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, local work loops, a multi-agent orchestrator, an agent-facing daily driver, and security scans.
 
+_Current as of brigade-cli 0.9.3, 2026-06-10._
+
 ## What this is
 
 [`brigade`](https://github.com/escoffier-labs/brigade) is the installable and operational version of the agent-kitchen pattern described in this cookbook. It creates a public-safe workspace skeleton for OpenClaw, Claude Code, Codex, Hermes, or a generic harness, then gives you commands to verify, ingest, scan, dogfood, dispatch, and operate agent work from that workspace.
@@ -26,7 +28,7 @@ Manual copying works once. It fails when the template changes, when Codex and Cl
 | Scanner imports | Converts memory-care, chat-sweep, handoff, and security findings into reviewable `brigade work import` items |
 | Publish safety | Installs content-guard policies, a pre-push hook shape, and a local `brigade release` publish gate |
 | Security hygiene | Scans secrets, permissions, hooks, MCP config, supply-chain patterns, and instruction risks |
-| Managed stations | Installs and health-checks optional companion tools such as `memory-doctor`, `bootstrap-doctor`, `content-guard`, and `tokenjuice` |
+| Managed stations | Installs and health-checks optional companion tools: `memory-doctor`/`bootstrap-doctor` (memory), `content-guard` (guard), `tokenjuice` (tokens), `agentpantry` (pantry), `agent-notify` (notifications), `miseledger`/`stationtrail`/`sourceharvest` (evidence), and `code-search-api`/`code-search-mcp` (search) |
 
 The alternative is a pile of local scripts that only work on one host. Brigade is still small enough to inspect, but structured enough to install repeatedly. The whole system is local-first and read-mostly: it never pushes, tags, publishes, mutates remotes, runs restic, installs cron, starts daemons, or edits canonical memory unless you run an explicit command that says so.
 
@@ -66,10 +68,16 @@ Install depths are `workspace` (full memory, handoffs, rules, bootstrap), `repo`
 Initialize managed companion tools only when you want Brigade to wire them for you:
 
 ```bash
-brigade add memory   # memory-doctor + bootstrap-doctor
-brigade add guard    # content-guard
-brigade add tokens   # tokenjuice
+brigade add memory          # memory-doctor + bootstrap-doctor
+brigade add guard           # content-guard
+brigade add tokens          # tokenjuice (third-party, Vincent Koc)
+brigade add pantry          # agentpantry session-auth sync
+brigade add notifications   # agent-notify operator notifications
+brigade add evidence        # miseledger + stationtrail + sourceharvest
+brigade add search          # code-search-api + code-search-mcp
 ```
+
+The evidence station is a local-first audit trail: `stationtrail` exports agent-session logs and `sourceharvest` exports source-system records, both as `miseledger.adapter.v1` JSONL, and `miseledger` imports that into a SQLite FTS archive and emits evidence bundles over CLI, loopback HTTP, and MCP. The Go stations install with `go install github.com/escoffier-labs/<name>/cmd/<name>@latest`.
 
 ### Dispatch a brigade
 
@@ -161,6 +169,8 @@ brigade chat sweep ingest discord-export   # normalize chat exports into memory 
 brigade context plan                   # build/sync context packs from safe summaries
 brigade memory care scan               # find stale, oversized, orphaned, undersourced cards
 brigade learn plan                     # learning candidates with replay
+brigade learn import-learnings         # parse .learnings/ ERR/LRN/FEAT logs into reviewable work imports
+brigade learn skill-candidates         # recurrence detection over learnings; promotion is proposed, never auto-applied
 brigade projects audit                 # project audit/readiness receipts
 ```
 
