@@ -1,0 +1,49 @@
+---
+// site/src/pages/book/index.astro
+import { getCollection, render } from 'astro:content';
+import { CATEGORIES } from '../../lib/cookbook.ts';
+import '../../styles/print.css';
+
+const chapters = await getCollection('chapters');
+const guides = await getCollection('guides');
+
+const orderedChapters = [...chapters].sort((a, b) => a.data.number - b.data.number);
+
+function guidesForChapter(category) {
+  return [...guides]
+    .filter((g) => g.data.category === category)
+    .sort((a, b) => a.data.chapterNumber - b.data.chapterNumber || a.data.slug.localeCompare(b.data.slug));
+}
+
+const rendered = [];
+for (const chapter of orderedChapters) {
+  const { Content: ChapterContent } = await render(chapter);
+  const chapterGuides = [];
+  for (const g of guidesForChapter(chapter.data.category)) {
+    const { Content: GuideContent } = await render(g);
+    chapterGuides.push({ entry: g, GuideContent });
+  }
+  rendered.push({ chapter, ChapterContent, guides: chapterGuides });
+}
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Solomon's Guide to Cookin' with Gas</title>
+  </head>
+  <body>
+    {rendered.map(({ chapter, ChapterContent, guides }) => (
+      <section class="chapter" data-chapter={chapter.data.title}>
+        <h1 class="chapter-title">{chapter.data.title}</h1>
+        <ChapterContent />
+        {guides.map(({ entry, GuideContent }) => (
+          <article class="guide" data-guide={entry.data.title}>
+            <h2 class="guide-title">{entry.data.title}</h2>
+            <GuideContent />
+          </article>
+        ))}
+      </section>
+    ))}
+  </body>
+</html>
