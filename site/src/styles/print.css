@@ -1,3 +1,40 @@
-/* site/src/styles/print.css - filled out in a later task */
+/* site/src/styles/print.css */
+@import '@fontsource-variable/fraunces';
+@import '@fontsource/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+@page {
+  size: 6in 9in;            /* trade-book trim */
+  margin: 0.75in 0.7in 0.85in;
+  @bottom-center { content: counter(page); font-family: 'Inter'; font-size: 9pt; color: #555; }
+  @top-center { content: string(chaptertitle); font-family: 'Inter'; font-size: 8pt; letter-spacing: 0.08em; text-transform: uppercase; color: #888; }
+}
+@page :first { @top-center { content: none; } @bottom-center { content: none; } }
+
+html { font-family: 'Inter', system-ui, sans-serif; font-size: 10.5pt; line-height: 1.5; color: #1a1a1a; }
+body { margin: 0; }
+
 .chapter { break-before: page; }
+.chapter-title {
+  string-set: chaptertitle content();
+  font-family: 'Fraunces Variable', serif;
+  font-size: 30pt; font-weight: 600; line-height: 1.1;
+  margin: 1.2in 0 0.4in; break-after: avoid;
+}
 .guide { break-before: page; }
+.guide-title { font-family: 'Fraunces Variable', serif; font-size: 18pt; font-weight: 600; margin: 0 0 0.25in; break-after: avoid; }
+
+h3, h4 { font-family: 'Inter'; font-weight: 700; break-after: avoid; }
+p, li { orphans: 3; widows: 3; }
+
+pre {
+  font-family: 'JetBrains Mono Variable', monospace; font-size: 8.5pt;
+  background: #f6f6f4; border: 1px solid #e5e5e0; border-radius: 4px;
+  padding: 8pt 10pt; white-space: pre-wrap; word-break: break-word; break-inside: avoid;
+}
+code { font-family: 'JetBrains Mono Variable', monospace; font-size: 9pt; }
+a { color: inherit; text-decoration: none; }
+img, svg { max-width: 100%; break-inside: avoid; }
+blockquote { border-left: 3px solid #d4a017; margin: 0 0 0 0.1in; padding-left: 0.2in; color: #444; font-style: italic; }
+table { width: 100%; border-collapse: collapse; font-size: 9pt; break-inside: avoid; }
+th, td { border: 1px solid #ddd; padding: 4pt 6pt; text-align: left; }
