@@ -4,6 +4,17 @@ import { getCollection, render } from 'astro:content';
 import { CATEGORIES } from '../../lib/cookbook.ts';
 import BookCover from '../../components/BookCover.astro';
 import '../../styles/print.css';
+import memoryOwnershipSvg from '../../diagrams/memory-ownership.svg?raw';
+import multiHarnessHandoffSvg from '../../diagrams/multi-harness-handoff.svg?raw';
+import stackTopologySvg from '../../diagrams/stack-topology.svg?raw';
+import securityTiersSvg from '../../diagrams/security-tiers.svg?raw';
+
+const CHAPTER_DIAGRAMS = {
+  'ai-stack': memoryOwnershipSvg,
+  'knowledge': multiHarnessHandoffSvg,
+  'infrastructure': stackTopologySvg,
+  'security': securityTiersSvg,
+};
 
 const chapters = await getCollection('chapters');
 const guides = await getCollection('guides');
@@ -38,6 +49,9 @@ for (const chapter of orderedChapters) {
     {rendered.map(({ chapter, ChapterContent, guides }) => (
       <section class="chapter" data-chapter={chapter.data.title}>
         <h1 class="chapter-title">{chapter.data.title}</h1>
+        {CHAPTER_DIAGRAMS[chapter.data.category] && (
+          <figure class="chapter-diagram" set:html={CHAPTER_DIAGRAMS[chapter.data.category]} />
+        )}
         <ChapterContent />
         {guides.map(({ entry, GuideContent }) => (
           <article class="guide" data-guide={entry.data.title}>
