@@ -10,12 +10,16 @@ import memoryOwnershipSvg from '../../diagrams/memory-ownership.svg?raw';
 import multiHarnessHandoffSvg from '../../diagrams/multi-harness-handoff.svg?raw';
 import stackTopologySvg from '../../diagrams/stack-topology.svg?raw';
 import securityTiersSvg from '../../diagrams/security-tiers.svg?raw';
+import automationFlowSvg from '../../diagrams/automation-flow.svg?raw';
+import publishingPipelineSvg from '../../diagrams/publishing-pipeline.svg?raw';
 
 const CHAPTER_DIAGRAMS: Record<string, string> = {
   'ai-stack': memoryOwnershipSvg,
+  'automation': automationFlowSvg,
   'knowledge': multiHarnessHandoffSvg,
   'infrastructure': stackTopologySvg,
   'security': securityTiersSvg,
+  'publishing': publishingPipelineSvg,
 };
 
 const chapters = await getCollection('chapters');
