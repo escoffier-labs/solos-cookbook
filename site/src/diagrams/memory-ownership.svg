@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 460" width="100%" height="auto" role="img" aria-labelledby="mo-title mo-desc" font-family="Inter, system-ui, sans-serif">
+  <title id="mo-title">One canonical memory owner, many writers</title>
+  <desc id="mo-desc">Four coding harness writer nodes feed handoffs into a single gold-accented memory owner node, which writes to the memory files.</desc>
+  <defs>
+    <marker id="mo-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b7280" />
+    </marker>
+    <marker id="mo-arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d4a017" />
+    </marker>
+  </defs>
+
+  <!-- caption -->
+  <text x="40" y="34" font-size="11" letter-spacing="0.16em" fill="#d4a017" font-weight="600">ONE CANONICAL MEMORY OWNER, MANY WRITERS</text>
+  <line x1="40" y1="46" x2="560" y2="46" stroke="#d8d8d2" stroke-width="1" />
+
+  <!-- writer column label -->
+  <text x="40" y="78" font-size="9" letter-spacing="0.14em" fill="#6b7280">WRITERS</text>
+
+  <!-- writer nodes (left column) -->
+  <g>
+    <rect x="40" y="92" width="148" height="42" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="114" y="118" font-size="11.5" fill="#1a1a1a" text-anchor="middle">Codex CLI</text>
+
+    <rect x="40" y="158" width="148" height="42" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="114" y="184" font-size="11.5" fill="#1a1a1a" text-anchor="middle">Claude Code</text>
+
+    <rect x="40" y="224" width="148" height="42" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="114" y="250" font-size="11.5" fill="#1a1a1a" text-anchor="middle">OpenCode</text>
+
+    <rect x="40" y="290" width="148" height="42" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="114" y="316" font-size="11.5" fill="#1a1a1a" text-anchor="middle">Browser session</text>
+  </g>
+
+  <!-- handoff label -->
+  <text x="300" y="78" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">HANDOFFS</text>
+
+  <!-- arrows from writers converging into owner -->
+  <g fill="none" stroke="#6b7280" stroke-width="1.25">
+    <path d="M188,113 C236,113 250,212 296,212" marker-end="url(#mo-arrow)" />
+    <path d="M188,179 C238,179 252,212 296,212" marker-end="url(#mo-arrow)" />
+    <path d="M188,245 C238,245 252,212 296,212" marker-end="url(#mo-arrow)" />
+    <path d="M188,311 C236,311 250,212 296,212" marker-end="url(#mo-arrow)" />
+  </g>
+
+  <!-- memory owner node (gold accent) -->
+  <g>
+    <rect x="300" y="176" width="180" height="72" rx="8" fill="#ffffff" stroke="#d4a017" stroke-width="2" />
+    <text x="390" y="206" font-size="13" font-weight="600" fill="#1a1a1a" text-anchor="middle">Memory owner</text>
+    <text x="390" y="226" font-size="9" letter-spacing="0.12em" fill="#d4a017" text-anchor="middle">CANONICAL</text>
+  </g>
+
+  <!-- owner writes to files (gold arrow) -->
+  <path d="M480,212 C516,212 520,212 540,212" fill="none" stroke="#d4a017" stroke-width="1.5" marker-end="url(#mo-arrow-gold)" transform="translate(0,0)" />
+
+  <!-- files panel (right) -->
+  <g>
+    <rect x="300" y="300" width="260" height="120" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="316" y="324" font-size="9" letter-spacing="0.14em" fill="#6b7280">OWNER WRITES TO</text>
+    <g font-size="11" fill="#1a1a1a" font-family="Inter, system-ui, sans-serif">
+      <circle cx="320" cy="349" r="2" fill="#d4a017" />
+      <text x="332" y="353">MEMORY.md</text>
+      <circle cx="320" cy="375" r="2" fill="#d4a017" />
+      <text x="332" y="379">cards/</text>
+      <circle cx="320" cy="401" r="2" fill="#d4a017" />
+      <text x="332" y="405">TOOLS.md</text>
+    </g>
+  </g>
+
+  <!-- connector owner to files -->
+  <path d="M390,248 L390,300" fill="none" stroke="#6b7280" stroke-width="1.25" stroke-dasharray="3 3" marker-end="url(#mo-arrow)" />
+</svg>
