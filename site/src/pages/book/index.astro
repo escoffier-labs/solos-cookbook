@@ -2,6 +2,7 @@
 // site/src/pages/book/index.astro
 import { getCollection, render } from 'astro:content';
 import BookCover from '../../components/BookCover.astro';
+import { toRoman } from '../../lib/cookbook.ts';
 import '../../styles/print.css';
 import memoryOwnershipSvg from '../../diagrams/memory-ownership.svg?raw';
 import multiHarnessHandoffSvg from '../../diagrams/multi-harness-handoff.svg?raw';
@@ -45,15 +46,40 @@ for (const chapter of orderedChapters) {
   </head>
   <body>
     <BookCover />
+    <nav class="toc">
+      <h1>Contents</h1>
+      {rendered.map(({ chapter, guides }) => (
+        <div class="toc-chapter">
+          <a href={`#ch-${chapter.data.category}`}>
+            <span class="toc-label">
+              <span class="toc-num">{toRoman(chapter.data.number)}</span>
+              <span class="toc-text">{chapter.data.title}</span>
+            </span>
+          </a>
+          {guides.map(({ entry }) => (
+            <div class="toc-guide">
+              <a href={`#g-${entry.data.category}-${entry.data.slug}`}>
+                <span class="toc-text">{entry.data.title}</span>
+              </a>
+            </div>
+          ))}
+        </div>
+      ))}
+    </nav>
     {rendered.map(({ chapter, ChapterContent, guides }) => (
-      <section class="chapter" data-chapter={chapter.data.title}>
-        <h1 class="chapter-title">{chapter.data.title}</h1>
-        {CHAPTER_DIAGRAMS[chapter.data.category] && (
-          <figure class="chapter-diagram" set:html={CHAPTER_DIAGRAMS[chapter.data.category]} />
-        )}
-        <ChapterContent />
+      <section class="chapter" id={`ch-${chapter.data.category}`} data-chapter={chapter.data.title}>
+        <header class="chapter-divider">
+          <p class="chapter-numeral">{toRoman(chapter.data.number)}</p>
+          <h1 class="chapter-title">{chapter.data.title}</h1>
+          <div class="chapter-intro">
+            <ChapterContent />
+          </div>
+          {CHAPTER_DIAGRAMS[chapter.data.category] && (
+            <figure class="chapter-diagram" set:html={CHAPTER_DIAGRAMS[chapter.data.category]} />
+          )}
+        </header>
         {guides.map(({ entry, GuideContent }) => (
-          <article class="guide" data-guide={entry.data.title}>
+          <article class="guide" id={`g-${entry.data.category}-${entry.data.slug}`} data-guide={entry.data.title}>
             <h2 class="guide-title">{entry.data.title}</h2>
             <GuideContent />
           </article>
