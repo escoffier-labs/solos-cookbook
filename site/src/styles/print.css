@@ -10,6 +10,7 @@
   @top-center { content: string(chaptertitle); font-family: 'Inter'; font-size: 8pt; letter-spacing: 0.08em; text-transform: uppercase; color: #888; }
 }
 @page :first { @top-center { content: none; } @bottom-center { content: none; } }
+@page frontmatter { @top-center { content: none; } @bottom-center { content: none; } }
 
 html { font-family: 'Inter', system-ui, sans-serif; font-size: 10.5pt; line-height: 1.5; color: #1a1a1a; }
 body { margin: 0; }
@@ -39,11 +40,11 @@ blockquote { border-left: 3px solid #d4a017; margin: 0 0 0 0.1in; padding-left: 
 table { width: 100%; border-collapse: collapse; font-size: 9pt; break-inside: avoid; }
 th, td { border: 1px solid #ddd; padding: 4pt 6pt; text-align: left; }
 
-.cover { break-after: page; height: 8in; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.cover { page: frontmatter; break-after: page; height: 8in; display: flex; flex-direction: column; justify-content: center; text-align: center; }
 .cover-kicker { font-family: 'Inter'; text-transform: uppercase; letter-spacing: 0.2em; font-size: 9pt; color: #d4a017; }
-.cover-title { font-family: 'Fraunces Variable', serif; font-size: 40pt; font-weight: 600; line-height: 1.05; margin: 0.3in 0; }
+.cover-title { font-family: 'Fraunces Variable', serif; font-size: 33pt; font-weight: 600; line-height: 1.08; margin: 0.3in 0; }
 .cover-sub { font-size: 12pt; color: #444; max-width: 4in; margin: 0 auto; }
 .cover-edition { margin-top: 0.6in; font-family: 'Inter'; font-size: 10pt; color: #888; }
-.colophon { break-after: page; font-size: 9pt; color: #555; padding-top: 2in; }
+.colophon { page: frontmatter; break-after: page; font-size: 9pt; color: #555; padding-top: 2in; }
 .chapter-diagram { margin: 0.3in 0 0.5in; break-inside: avoid; }
 .chapter-diagram svg { width: 100%; height: auto; }
