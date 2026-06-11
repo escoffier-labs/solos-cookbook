@@ -66,6 +66,30 @@ th, td { border: 1px solid #ddd; padding: 4pt 6pt; text-align: left; }
 }
 .chapter-diagram svg { width: 100%; height: auto; }
 
+/* Start here: the orientation preface */
+.start-here { break-before: page; break-after: page; }
+.start-here h1 {
+  font-family: 'Fraunces Variable', serif;
+  font-size: 30pt; font-weight: 600; line-height: 1.1;
+  margin: 0 0 0.3in; break-after: avoid;
+  padding-bottom: 0.18in; border-bottom: 1px solid #e5e5e0;
+}
+.start-here h2 {
+  font-family: 'Fraunces Variable', serif;
+  font-size: 16pt; font-weight: 600;
+  margin: 0.4in 0 0.15in; break-after: avoid;
+}
+.start-here p { font-size: 11pt; line-height: 1.55; color: #333; margin: 0 0 0.16in; max-width: 4.4in; }
+.start-here .lead {
+  font-size: 13pt; line-height: 1.45; color: #1a1a1a; margin-bottom: 0.3in;
+}
+.start-here figure.start-here-diagram {
+  margin: 0.3in 0 0.4in; break-inside: avoid;
+  border: 1px solid #e5e5e0; border-radius: 4px;
+  padding: 0.2in; background: #fafaf8;
+}
+.start-here figure.start-here-diagram svg { width: 100%; height: auto; }
+
 /* Table of contents */
 .toc { break-before: page; break-after: page; }
 .toc h1 { font-family: 'Fraunces Variable', serif; font-size: 24pt; margin: 0 0 0.3in; }
