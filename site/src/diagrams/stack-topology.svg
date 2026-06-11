@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 440" width="100%" height="auto" role="img" aria-labelledby="st-title st-desc" font-family="Inter, system-ui, sans-serif">
+  <title id="st-title">Single host, homelab behind it</title>
+  <desc id="st-desc">A bare-metal host containing a gateway and local APIs, connected to a hypervisor running VMs and containers, a NAS for backups, and network mounts.</desc>
+  <defs>
+    <marker id="st-dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5">
+      <circle cx="3" cy="3" r="2.5" fill="#6b7280" />
+    </marker>
+  </defs>
+
+  <!-- caption -->
+  <text x="40" y="34" font-size="11" letter-spacing="0.16em" fill="#d4a017" font-weight="600">SINGLE HOST, HOMELAB BEHIND IT</text>
+  <line x1="40" y1="46" x2="560" y2="46" stroke="#d8d8d2" stroke-width="1" />
+
+  <!-- bare-metal host (primary, gold accent) -->
+  <g>
+    <rect x="40" y="74" width="280" height="150" rx="8" fill="#ffffff" stroke="#d4a017" stroke-width="2" />
+    <text x="60" y="100" font-size="9" letter-spacing="0.14em" fill="#d4a017">PRIMARY</text>
+    <text x="60" y="120" font-size="13" font-weight="600" fill="#1a1a1a">Bare-metal host</text>
+
+    <!-- inner services -->
+    <rect x="60" y="138" width="110" height="64" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="115" y="166" font-size="10.5" fill="#1a1a1a" text-anchor="middle">gateway</text>
+    <text x="115" y="182" font-size="8.5" fill="#6b7280" text-anchor="middle">loopback</text>
+
+    <rect x="190" y="138" width="110" height="64" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="245" y="166" font-size="10.5" fill="#1a1a1a" text-anchor="middle">local APIs</text>
+    <text x="245" y="182" font-size="8.5" fill="#6b7280" text-anchor="middle">index + search</text>
+  </g>
+
+  <!-- hypervisor -->
+  <g>
+    <rect x="380" y="74" width="180" height="86" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="400" y="100" font-size="9" letter-spacing="0.14em" fill="#6b7280">HOMELAB</text>
+    <text x="400" y="120" font-size="12.5" font-weight="600" fill="#1a1a1a">Hypervisor</text>
+    <text x="400" y="140" font-size="9.5" fill="#6b7280">VMs and containers</text>
+  </g>
+
+  <!-- NAS -->
+  <g>
+    <rect x="380" y="186" width="180" height="74" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="400" y="212" font-size="9" letter-spacing="0.14em" fill="#6b7280">STORAGE</text>
+    <text x="400" y="232" font-size="12.5" font-weight="600" fill="#1a1a1a">NAS</text>
+    <text x="400" y="250" font-size="9.5" fill="#6b7280">scheduled backups</text>
+  </g>
+
+  <!-- network mounts -->
+  <g>
+    <rect x="40" y="290" width="280" height="74" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="60" y="316" font-size="9" letter-spacing="0.14em" fill="#6b7280">SHARES</text>
+    <text x="60" y="336" font-size="12.5" font-weight="600" fill="#1a1a1a">Network mounts</text>
+    <text x="60" y="354" font-size="9.5" fill="#6b7280">remote filesystems over LAN</text>
+  </g>
+
+  <!-- connectors -->
+  <g fill="none" stroke="#6b7280" stroke-width="1.25">
+    <!-- host to hypervisor -->
+    <line x1="320" y1="117" x2="380" y2="117" marker-start="url(#st-dot)" marker-end="url(#st-dot)" />
+    <!-- host to NAS -->
+    <path d="M320,170 C346,170 354,223 380,223" marker-start="url(#st-dot)" marker-end="url(#st-dot)" />
+    <!-- host to network mounts -->
+    <line x1="180" y1="224" x2="180" y2="290" marker-start="url(#st-dot)" marker-end="url(#st-dot)" />
+    <!-- hypervisor to NAS (backup flow) -->
+    <line x1="470" y1="160" x2="470" y2="186" stroke-dasharray="3 3" marker-end="url(#st-dot)" />
+  </g>
+
+  <!-- backup flow label -->
+  <text x="482" y="178" font-size="8" fill="#6b7280">backup</text>
+
+  <!-- footnote -->
+  <text x="40" y="404" font-size="8.5" fill="#6b7280">Solid links are live traffic. Dashed links are scheduled backup flows.</text>
+</svg>
