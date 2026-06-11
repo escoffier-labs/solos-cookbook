@@ -1,7 +1,6 @@
 ---
 // site/src/pages/book/index.astro
 import { getCollection, render } from 'astro:content';
-import { CATEGORIES } from '../../lib/cookbook.ts';
 import BookCover from '../../components/BookCover.astro';
 import '../../styles/print.css';
 import memoryOwnershipSvg from '../../diagrams/memory-ownership.svg?raw';
@@ -9,7 +8,7 @@ import multiHarnessHandoffSvg from '../../diagrams/multi-harness-handoff.svg?raw
 import stackTopologySvg from '../../diagrams/stack-topology.svg?raw';
 import securityTiersSvg from '../../diagrams/security-tiers.svg?raw';
 
-const CHAPTER_DIAGRAMS = {
+const CHAPTER_DIAGRAMS: Record<string, string> = {
   'ai-stack': memoryOwnershipSvg,
   'knowledge': multiHarnessHandoffSvg,
   'infrastructure': stackTopologySvg,
@@ -21,7 +20,7 @@ const guides = await getCollection('guides');
 
 const orderedChapters = [...chapters].sort((a, b) => a.data.number - b.data.number);
 
-function guidesForChapter(category) {
+function guidesForChapter(category: string) {
   return [...guides]
     .filter((g) => g.data.category === category)
     .sort((a, b) => a.data.chapterNumber - b.data.chapterNumber || a.data.slug.localeCompare(b.data.slug));
