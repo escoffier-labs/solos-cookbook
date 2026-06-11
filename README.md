@@ -43,6 +43,8 @@ The infrastructure examples come from a single-engineer bare-metal Linux setup w
 >
 > [![Star Brigade](https://img.shields.io/github/stars/escoffier-labs/brigade?style=social&label=Star%20brigade)](https://github.com/escoffier-labs/brigade)
 
+Every recipe is free to read here and on the site. If you want the polished version, there is a [premium edition](https://CREEM_PRODUCT_URL): the whole cookbook as a typeset PDF with exclusive full-page diagrams, plus a runnable kitchen bundle of every template, config, and a setup checklist. It is $39 one-time with free updates, and you are buying the artifact and the bundle, not access to the knowledge.
+
 ## Who this is for
 
 Use this cookbook if you want:
