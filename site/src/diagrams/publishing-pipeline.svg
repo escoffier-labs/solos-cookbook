@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 440" width="100%" height="auto" role="img" aria-labelledby="pp-title pp-desc" font-family="Inter, system-ui, sans-serif">
+  <title id="pp-title">From draft to published, scrubbed on the way out</title>
+  <desc id="pp-desc">A draft passes through a gold-accented scrub and check gate, then a schedule step, then fans out to several publishing destinations: a blog and three social platforms.</desc>
+  <defs>
+    <marker id="pp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b7280" />
+    </marker>
+    <marker id="pp-arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d4a017" />
+    </marker>
+  </defs>
+
+  <!-- caption -->
+  <text x="40" y="34" font-size="11" letter-spacing="0.14em" fill="#d4a017" font-weight="600">FROM DRAFT TO PUBLISHED, SCRUBBED ON THE WAY OUT</text>
+  <line x1="40" y1="46" x2="560" y2="46" stroke="#d8d8d2" stroke-width="1" />
+
+  <!-- stage labels -->
+  <text x="92" y="80" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">WRITE</text>
+  <text x="246" y="80" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">GATE</text>
+  <text x="400" y="80" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">QUEUE</text>
+  <text x="528" y="80" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">SHIP</text>
+
+  <!-- draft node -->
+  <g>
+    <rect x="32" y="208" width="120" height="56" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <!-- page glyph -->
+    <path d="M58,224 h16 l8,8 v22 h-24 z" fill="#ffffff" stroke="#6b7280" stroke-width="1.25" />
+    <path d="M74,224 v8 h8" fill="none" stroke="#6b7280" stroke-width="1.25" />
+    <text x="98" y="232" font-size="11.5" fill="#1a1a1a">Draft</text>
+    <text x="98" y="246" font-size="8.5" fill="#6b7280">your words</text>
+  </g>
+
+  <!-- arrow draft -> scrub -->
+  <path d="M152,236 L188,236" fill="none" stroke="#6b7280" stroke-width="1.25" marker-end="url(#pp-arrow)" />
+
+  <!-- scrub / check gate (gold accent) -->
+  <g>
+    <rect x="192" y="200" width="108" height="72" rx="8" fill="#ffffff" stroke="#d4a017" stroke-width="2" />
+    <text x="246" y="222" font-size="9" letter-spacing="0.13em" fill="#d4a017" text-anchor="middle">SCRUB + CHECK</text>
+    <!-- shield glyph -->
+    <path d="M246,232 l16,5 v10 c0,9 -8,13 -16,17 c-8,-4 -16,-8 -16,-17 v-10 z" fill="none" stroke="#d4a017" stroke-width="1.4" />
+    <path d="M239,250 l5,5 l9,-10" fill="none" stroke="#d4a017" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- arrow scrub -> schedule -->
+  <path d="M300,236 L336,236" fill="none" stroke="#6b7280" stroke-width="1.25" marker-end="url(#pp-arrow)" />
+
+  <!-- schedule node -->
+  <g>
+    <rect x="340" y="208" width="120" height="56" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <circle cx="368" cy="236" r="12" fill="none" stroke="#6b7280" stroke-width="1.25" />
+    <path d="M368,236 L368,229 M368,236 L373,236" fill="none" stroke="#6b7280" stroke-width="1.25" stroke-linecap="round" />
+    <text x="390" y="233" font-size="11.5" fill="#1a1a1a" text-anchor="start">Schedule</text>
+    <text x="390" y="247" font-size="8.5" fill="#6b7280" text-anchor="start">pick a slot</text>
+  </g>
+
+  <!-- fan-out hub -->
+  <path d="M460,236 L488,236" fill="none" stroke="#6b7280" stroke-width="1.25" />
+  <circle cx="490" cy="236" r="2.5" fill="#6b7280" />
+
+  <!-- destinations (fan-out, right column) -->
+  <g>
+    <rect x="476" y="118" width="100" height="40" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="526" y="143" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Blog</text>
+
+    <rect x="476" y="170" width="100" height="40" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="526" y="195" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Mastodon</text>
+
+    <rect x="476" y="262" width="100" height="40" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="526" y="287" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Bluesky</text>
+
+    <rect x="476" y="314" width="100" height="40" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="526" y="339" font-size="10.5" fill="#1a1a1a" text-anchor="middle">LinkedIn</text>
+  </g>
+
+  <!-- fan-out connectors -->
+  <g fill="none" stroke="#6b7280" stroke-width="1.25">
+    <path d="M490,236 C490,138 466,138 476,138" marker-end="url(#pp-arrow)" />
+    <path d="M490,236 C490,190 466,190 476,190" marker-end="url(#pp-arrow)" />
+    <path d="M490,236 C490,282 466,282 476,282" marker-end="url(#pp-arrow)" />
+    <path d="M490,236 C490,334 466,334 476,334" marker-end="url(#pp-arrow)" />
+  </g>
+
+  <!-- footnote -->
+  <text x="40" y="416" font-size="8.5" fill="#6b7280">The scrub gate runs before anything leaves the machine. One draft fans out to every destination, already clean.</text>
+</svg>

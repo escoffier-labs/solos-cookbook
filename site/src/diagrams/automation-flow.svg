@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 440" width="100%" height="auto" role="img" aria-labelledby="af-title af-desc" font-family="Inter, system-ui, sans-serif">
+  <title id="af-title">A scheduled task, from cron tick to notification</title>
+  <desc id="af-desc">A cron schedule fires a job, the job runs a sequence of tasks, the tasks produce outputs, and a gold-accented notification step reports the result back out.</desc>
+  <defs>
+    <marker id="af-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b7280" />
+    </marker>
+    <marker id="af-arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d4a017" />
+    </marker>
+  </defs>
+
+  <!-- caption -->
+  <text x="40" y="34" font-size="11" letter-spacing="0.14em" fill="#d4a017" font-weight="600">SCHEDULED WORK, START TO NOTIFICATION</text>
+  <line x1="40" y1="46" x2="560" y2="46" stroke="#d8d8d2" stroke-width="1" />
+
+  <!-- stage labels -->
+  <text x="84" y="84" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">SCHEDULE</text>
+  <text x="300" y="84" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">RUN</text>
+  <text x="516" y="84" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">REPORT</text>
+
+  <!-- schedule node (clock-faced cron tick) -->
+  <g>
+    <rect x="24" y="170" width="120" height="64" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <circle cx="56" cy="202" r="13" fill="none" stroke="#6b7280" stroke-width="1.25" />
+    <path d="M56,202 L56,194 M56,202 L62,202" fill="none" stroke="#6b7280" stroke-width="1.25" stroke-linecap="round" />
+    <text x="82" y="199" font-size="11.5" fill="#1a1a1a" text-anchor="start">cron</text>
+    <text x="82" y="213" font-size="8.5" fill="#6b7280" text-anchor="start">timer fires</text>
+  </g>
+
+  <!-- arrow schedule -> job -->
+  <path d="M144,202 L196,202" fill="none" stroke="#6b7280" stroke-width="1.25" marker-end="url(#af-arrow)" />
+
+  <!-- job container with stacked tasks -->
+  <g>
+    <rect x="200" y="108" width="200" height="188" rx="8" fill="#ffffff" stroke="#d8d8d2" stroke-width="1" />
+    <text x="216" y="130" font-size="9" letter-spacing="0.14em" fill="#6b7280">JOB</text>
+    <text x="384" y="130" font-size="8.5" fill="#6b7280" text-anchor="end">single shot</text>
+
+    <!-- task steps -->
+    <rect x="216" y="142" width="168" height="36" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="228" y="158" font-size="8" letter-spacing="0.12em" fill="#6b7280">TASK 01</text>
+    <text x="228" y="171" font-size="11" fill="#1a1a1a">Gather inputs</text>
+
+    <rect x="216" y="186" width="168" height="36" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="228" y="202" font-size="8" letter-spacing="0.12em" fill="#6b7280">TASK 02</text>
+    <text x="228" y="215" font-size="11" fill="#1a1a1a">Do the work</text>
+
+    <rect x="216" y="230" width="168" height="36" rx="6" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="228" y="246" font-size="8" letter-spacing="0.12em" fill="#6b7280">TASK 03</text>
+    <text x="228" y="259" font-size="11" fill="#1a1a1a">Write outputs</text>
+
+    <!-- internal task flow ticks -->
+    <path d="M300,178 L300,186" fill="none" stroke="#6b7280" stroke-width="1.25" marker-end="url(#af-arrow)" />
+    <path d="M300,222 L300,230" fill="none" stroke="#6b7280" stroke-width="1.25" marker-end="url(#af-arrow)" />
+  </g>
+
+  <!-- outputs panel (lower right) -->
+  <g>
+    <rect x="436" y="232" width="140" height="84" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="452" y="254" font-size="9" letter-spacing="0.14em" fill="#6b7280">OUTPUTS</text>
+    <circle cx="456" cy="276" r="2" fill="#d4a017" />
+    <text x="466" y="280" font-size="10" fill="#1a1a1a">files written</text>
+    <circle cx="456" cy="298" r="2" fill="#d4a017" />
+    <text x="466" y="302" font-size="10" fill="#1a1a1a">logs + status</text>
+  </g>
+
+  <!-- arrow job -> outputs -->
+  <path d="M400,248 C418,248 422,265 432,272" fill="none" stroke="#6b7280" stroke-width="1.25" marker-end="url(#af-arrow)" />
+
+  <!-- notification node (gold accent, upper right) -->
+  <g>
+    <rect x="436" y="108" width="140" height="84" rx="8" fill="#ffffff" stroke="#d4a017" stroke-width="2" />
+    <text x="452" y="130" font-size="9" letter-spacing="0.14em" fill="#d4a017">NOTIFY</text>
+    <!-- bell glyph -->
+    <path d="M468,150 a10,10 0 0 1 20,0 c0,8 4,10 4,13 l-28,0 c0,-3 4,-5 4,-13 z" fill="none" stroke="#d4a017" stroke-width="1.4" />
+    <path d="M474,166 a4,3 0 0 0 8,0" fill="none" stroke="#d4a017" stroke-width="1.4" />
+    <text x="500" y="156" font-size="10.5" fill="#1a1a1a" text-anchor="start">chat ping</text>
+    <text x="500" y="170" font-size="8.5" fill="#6b7280" text-anchor="start">on done / fail</text>
+  </g>
+
+  <!-- arrow job -> notify (gold) -->
+  <path d="M400,160 C418,160 422,150 432,150" fill="none" stroke="#d4a017" stroke-width="1.5" marker-end="url(#af-arrow-gold)" />
+
+  <!-- footnote -->
+  <text x="40" y="416" font-size="8.5" fill="#6b7280">One tick, one run. The job reports back whether it finished clean or fell over, so silence never means success.</text>
+</svg>

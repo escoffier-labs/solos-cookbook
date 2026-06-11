@@ -3,10 +3,43 @@
 const today = new Date().toISOString().slice(0, 10);
 ---
 <section class="cover">
-  <p class="cover-kicker">Escoffier Labs</p>
+  <div class="cover-top">
+    <p class="cover-kicker">Escoffier Labs</p>
+    <span class="cover-rule" aria-hidden="true"></span>
+  </div>
+  <svg class="cover-mark" viewBox="0 0 120 120" role="img" aria-label="Lobster mark" fill="none"
+       stroke="#d4a017" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+    <!-- antennae -->
+    <path d="M52 22 C 44 12, 36 8, 28 7" />
+    <path d="M68 22 C 76 12, 84 8, 92 7" />
+    <!-- head / carapace -->
+    <path d="M60 18 C 50 18, 44 26, 44 34 C 44 40, 48 44, 48 48 L 72 48 C 72 44, 76 40, 76 34 C 76 26, 70 18, 60 18 Z" />
+    <!-- eyes -->
+    <circle cx="54" cy="30" r="1.6" fill="#d4a017" stroke="none" />
+    <circle cx="66" cy="30" r="1.6" fill="#d4a017" stroke="none" />
+    <!-- claws: arm out to a pincer -->
+    <path d="M48 47 C 38 49, 30 52, 24 58" />
+    <path d="M24 58 C 16 54, 12 62, 17 67 C 13 64, 14 58, 20 59 C 14 62, 16 70, 22 69 C 27 68, 29 63, 26 58 Z" />
+    <path d="M72 47 C 82 49, 90 52, 96 58" />
+    <path d="M96 58 C 104 54, 108 62, 103 67 C 107 64, 106 58, 100 59 C 106 62, 104 70, 98 69 C 93 68, 91 63, 94 58 Z" />
+    <!-- segmented tail -->
+    <path d="M48 48 L 72 48" />
+    <path d="M50 48 C 50 60, 54 66, 60 66 C 66 66, 70 60, 70 48" />
+    <path d="M51 58 L 69 58" />
+    <path d="M53 68 C 53 76, 56 82, 60 82 C 64 82, 67 76, 67 68" />
+    <path d="M54 76 L 66 76" />
+    <!-- legs -->
+    <path d="M49 52 L 40 56 M49 58 L 41 63 M49 64 L 42 70" />
+    <path d="M71 52 L 80 56 M71 58 L 79 63 M71 64 L 78 70" />
+    <!-- fanned tail fin -->
+    <path d="M55 82 C 52 92, 50 98, 47 102" />
+    <path d="M60 84 L 60 104" />
+    <path d="M65 82 C 68 92, 70 98, 73 102" />
+    <path d="M47 102 C 53 106, 67 106, 73 102" />
+  </svg>
   <h1 class="cover-title">Solomon's Guide to<br/>Cookin' with Gas</h1>
   <p class="cover-sub">How one engineer runs a 24/7 multi-agent AI stack on bare metal.</p>
-  <p class="cover-edition">Premium Edition - {today}</p>
+  <p class="cover-edition">Premium Edition &middot; {today}</p>
 </section>
 <section class="colophon">
   <p>Copyright (c) 2026 Solomon Neas. All rights reserved.</p>
