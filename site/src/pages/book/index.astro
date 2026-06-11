@@ -2,6 +2,7 @@
 // site/src/pages/book/index.astro
 import { getCollection, render } from 'astro:content';
 import { CATEGORIES } from '../../lib/cookbook.ts';
+import BookCover from '../../components/BookCover.astro';
 import '../../styles/print.css';
 
 const chapters = await getCollection('chapters');
@@ -33,6 +34,7 @@ for (const chapter of orderedChapters) {
     <title>Solomon's Guide to Cookin' with Gas</title>
   </head>
   <body>
+    <BookCover />
     {rendered.map(({ chapter, ChapterContent, guides }) => (
       <section class="chapter" data-chapter={chapter.data.title}>
         <h1 class="chapter-title">{chapter.data.title}</h1>

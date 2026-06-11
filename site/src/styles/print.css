@@ -38,3 +38,10 @@ img, svg { max-width: 100%; break-inside: avoid; }
 blockquote { border-left: 3px solid #d4a017; margin: 0 0 0 0.1in; padding-left: 0.2in; color: #444; font-style: italic; }
 table { width: 100%; border-collapse: collapse; font-size: 9pt; break-inside: avoid; }
 th, td { border: 1px solid #ddd; padding: 4pt 6pt; text-align: left; }
+
+.cover { break-after: page; height: 8in; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.cover-kicker { font-family: 'Inter'; text-transform: uppercase; letter-spacing: 0.2em; font-size: 9pt; color: #d4a017; }
+.cover-title { font-family: 'Fraunces Variable', serif; font-size: 40pt; font-weight: 600; line-height: 1.05; margin: 0.3in 0; }
+.cover-sub { font-size: 12pt; color: #444; max-width: 4in; margin: 0 auto; }
+.cover-edition { margin-top: 0.6in; font-family: 'Inter'; font-size: 10pt; color: #888; }
+.colophon { break-after: page; font-size: 9pt; color: #555; padding-top: 2in; }
