@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 470" width="100%" height="auto" role="img" aria-labelledby="so-title so-desc" font-family="Inter, system-ui, sans-serif">
+  <title id="so-title">The whole system at a glance</title>
+  <desc id="so-desc">Coding harnesses on the left hand durable context to an always-on memory owner at the center. Self-hosted infrastructure sits beneath the owner. Publishing and automation outputs flow out to the right.</desc>
+  <defs>
+    <marker id="so-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b7280" />
+    </marker>
+    <marker id="so-arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d4a017" />
+    </marker>
+  </defs>
+
+  <!-- caption -->
+  <text x="40" y="34" font-size="11" letter-spacing="0.16em" fill="#d4a017" font-weight="600">THE WHOLE SYSTEM AT A GLANCE</text>
+  <line x1="40" y1="46" x2="560" y2="46" stroke="#d8d8d2" stroke-width="1" />
+
+  <!-- writer column label -->
+  <text x="40" y="80" font-size="9" letter-spacing="0.14em" fill="#6b7280">CODING HARNESSES</text>
+
+  <!-- writer nodes (left column) -->
+  <g>
+    <rect x="40" y="92" width="132" height="40" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="106" y="116" font-size="11" fill="#1a1a1a" text-anchor="middle">Codex CLI</text>
+
+    <rect x="40" y="146" width="132" height="40" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="106" y="170" font-size="11" fill="#1a1a1a" text-anchor="middle">Claude Code</text>
+
+    <rect x="40" y="200" width="132" height="40" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="106" y="224" font-size="11" fill="#1a1a1a" text-anchor="middle">OpenCode</text>
+
+    <rect x="40" y="254" width="132" height="40" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="106" y="278" font-size="11" fill="#1a1a1a" text-anchor="middle">Browser session</text>
+  </g>
+
+  <!-- handoff label -->
+  <text x="265" y="80" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">DURABLE HANDOFFS</text>
+
+  <!-- arrows from writers converging into owner -->
+  <g fill="none" stroke="#6b7280" stroke-width="1.25">
+    <path d="M172,112 C214,112 232,193 268,193" marker-end="url(#so-arrow)" />
+    <path d="M172,166 C216,166 234,193 268,193" marker-end="url(#so-arrow)" />
+    <path d="M172,220 C216,220 234,193 268,193" marker-end="url(#so-arrow)" />
+    <path d="M172,274 C214,274 232,193 268,193" marker-end="url(#so-arrow)" />
+  </g>
+
+  <!-- memory owner node (gold accent, center) -->
+  <g>
+    <rect x="272" y="160" width="166" height="68" rx="8" fill="#ffffff" stroke="#d4a017" stroke-width="2" />
+    <text x="355" y="188" font-size="13" font-weight="600" fill="#1a1a1a" text-anchor="middle">Memory owner</text>
+    <text x="355" y="208" font-size="8.5" letter-spacing="0.12em" fill="#d4a017" text-anchor="middle">ALWAYS ON · CANONICAL</text>
+  </g>
+
+  <!-- outputs label -->
+  <text x="500" y="80" font-size="9" letter-spacing="0.14em" fill="#6b7280" text-anchor="middle">OUTPUTS</text>
+
+  <!-- output nodes (right column) -->
+  <g>
+    <rect x="438" y="120" width="122" height="40" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="499" y="144" font-size="11" fill="#1a1a1a" text-anchor="middle">Publishing</text>
+
+    <rect x="438" y="226" width="122" height="40" rx="7" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+    <text x="499" y="250" font-size="11" fill="#1a1a1a" text-anchor="middle">Automation</text>
+  </g>
+
+  <!-- arrows from owner to outputs (gold accent flow) -->
+  <g fill="none" stroke="#d4a017" stroke-width="1.5">
+    <path d="M438,180 C470,180 474,140 438,140" marker-end="url(#so-arrow-gold)" />
+    <path d="M438,208 C470,208 474,246 438,246" marker-end="url(#so-arrow-gold)" />
+  </g>
+
+  <!-- infrastructure label -->
+  <text x="40" y="330" font-size="9" letter-spacing="0.14em" fill="#6b7280">SELF-HOSTED INFRASTRUCTURE</text>
+
+  <!-- infrastructure panel (beneath owner) -->
+  <g>
+    <rect x="40" y="342" width="520" height="100" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
+
+    <rect x="60" y="366" width="150" height="56" rx="6" fill="#ffffff" stroke="#d8d8d2" stroke-width="1" />
+    <text x="135" y="392" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Single host</text>
+    <text x="135" y="408" font-size="8.5" fill="#6b7280" text-anchor="middle">gateway · local APIs</text>
+
+    <rect x="225" y="366" width="150" height="56" rx="6" fill="#ffffff" stroke="#d8d8d2" stroke-width="1" />
+    <text x="300" y="392" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Homelab</text>
+    <text x="300" y="408" font-size="8.5" fill="#6b7280" text-anchor="middle">VMs · containers</text>
+
+    <rect x="390" y="366" width="150" height="56" rx="6" fill="#ffffff" stroke="#d8d8d2" stroke-width="1" />
+    <text x="465" y="392" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Storage</text>
+    <text x="465" y="408" font-size="8.5" fill="#6b7280" text-anchor="middle">backups · network mounts</text>
+  </g>
+
+  <!-- connector owner down to infrastructure -->
+  <path d="M355,228 L355,342" fill="none" stroke="#6b7280" stroke-width="1.25" stroke-dasharray="3 3" marker-end="url(#so-arrow)" />
+  <text x="364" y="290" font-size="8" fill="#6b7280">runs on</text>
+
+  <!-- footnote -->
+  <text x="40" y="462" font-size="8.5" fill="#6b7280">Harnesses do the work and hand context back. The owner remembers, then drives publishing and automation.</text>
+</svg>

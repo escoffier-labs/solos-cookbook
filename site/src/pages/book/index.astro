@@ -2,6 +2,7 @@
 // site/src/pages/book/index.astro
 import { getCollection, render } from 'astro:content';
 import BookCover from '../../components/BookCover.astro';
+import StartHere from '../../components/StartHere.astro';
 import { toRoman } from '../../lib/cookbook.ts';
 import '../../styles/print.css';
 import memoryOwnershipSvg from '../../diagrams/memory-ownership.svg?raw';
@@ -66,6 +67,7 @@ for (const chapter of orderedChapters) {
         </div>
       ))}
     </nav>
+    <StartHere />
     {rendered.map(({ chapter, ChapterContent, guides }) => (
       <section class="chapter" id={`ch-${chapter.data.category}`} data-chapter={chapter.data.title}>
         <header class="chapter-divider">
