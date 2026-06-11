@@ -4,6 +4,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ChapterNav from '../components/ChapterNav.astro';
 import RecipeCard from '../components/RecipeCard.astro';
 import { SITE, EXTERNAL, sitePath } from '../lib/site.ts';
+import stackTopologySvg from '../diagrams/stack-topology.svg?raw';
+import securityTiersSvg from '../diagrams/security-tiers.svg?raw';
+
+// Creem checkout for the premium edition. Placeholder until the product is live;
+// swap this single constant when the real checkout URL exists.
+const PREMIUM_CHECKOUT_URL = 'https://CREEM_PRODUCT_URL';
 
 const guides = await getCollection('guides');
 const chapters = await getCollection('chapters');
@@ -51,6 +57,55 @@ const featured = FEATURED
       </section>
     </header>
 
+    <section id="premium" class="px-6 md:px-10 py-12 max-w-6xl mx-auto">
+      <div class="premium-panel">
+        <div class="premium-copy">
+          <span class="kicker">The plated edition</span>
+          <h2 class="font-display font-semibold premium-title">The Premium Edition</h2>
+          <p class="premium-lede">
+            All recipes are free to read on this site. This is the typeset, designed
+            edition with exclusive diagrams, plus the whole kitchen as a runnable bundle.
+          </p>
+
+          <ul class="premium-list">
+            <li>
+              <span class="premium-list-head">The typeset PDF</span>
+              <span class="premium-list-body">790+ pages, cover to colophon, set in
+                Fraunces and built for offline reading away from the terminal.</span>
+            </li>
+            <li>
+              <span class="premium-list-head">Exclusive hero diagrams</span>
+              <span class="premium-list-body">Full-page plates of the stack, memory
+                ownership, harness handoff, and security tiers, drawn for print and not
+                published on the web.</span>
+            </li>
+            <li>
+              <span class="premium-list-head">The runnable kitchen bundle</span>
+              <span class="premium-list-body">Every template and config from the book,
+                plus a setup checklist, packaged to drop straight into your own kitchen.</span>
+            </li>
+          </ul>
+
+          <div class="premium-buy">
+            <div class="premium-price">
+              <span class="premium-amount">$39</span>
+              <span class="premium-terms">one-time<span class="premium-terms-dot"></span>free updates</span>
+            </div>
+            <a href={PREMIUM_CHECKOUT_URL} class="premium-cta">Get the premium edition</a>
+          </div>
+          <p class="premium-fineprint">
+            The recipes stay free here. You are buying the artifact and the bundle, not access to the knowledge.
+          </p>
+        </div>
+
+        <figure class="premium-teaser" aria-label="A preview of two of the exclusive full-page diagrams from the premium edition">
+          <div class="premium-plate premium-plate-front" set:html={stackTopologySvg} />
+          <div class="premium-plate premium-plate-back" aria-hidden="true" set:html={securityTiersSvg} />
+          <figcaption class="premium-teaser-cap">Two of the exclusive full-page plates</figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section class="px-6 md:px-10 py-12 max-w-6xl mx-auto">
       <div class="chapter-rule mb-6">
         <span class="kicker">Tonight's specials</span>
@@ -86,4 +141,194 @@ const featured = FEATURED
       transparent 85%);
   }
   :global([data-theme="light"]) .hero-bg { opacity: 0.42; }
+
+  /* ============================================================
+     Premium edition: the conversion panel. Built from the same
+     panel / hairline / accent tokens as the rest of the site, with
+     a warm accent wash so it reads as the one section to stop on.
+     ============================================================ */
+  .premium-panel {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 2.5rem;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--hairline));
+    border-radius: 14px;
+    padding: 2.4rem 2.6rem;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+      linear-gradient(160deg, var(--bg-panel) 0%, var(--bg-panel-2) 100%);
+  }
+  .premium-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  .premium-copy { position: relative; z-index: 1; }
+  .premium-title {
+    font-size: 2.6rem;
+    line-height: 1.04;
+    margin: 0.5rem 0 0.7rem;
+    color: var(--text);
+  }
+  .premium-lede {
+    font-size: 1.05rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+    margin: 0 0 1.6rem;
+    max-width: 38ch;
+  }
+
+  .premium-list { list-style: none; margin: 0 0 1.8rem; padding: 0; display: grid; gap: 1rem; }
+  .premium-list li {
+    position: relative;
+    padding-left: 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .premium-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 2px;
+    background: var(--accent);
+    transform: rotate(45deg);
+  }
+  .premium-list-head {
+    font-family: "Fraunces Variable", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+  .premium-list-body { font-size: 0.92rem; line-height: 1.55; color: var(--text-muted); }
+
+  .premium-buy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.2rem 1.6rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--hairline);
+  }
+  .premium-price { display: flex; align-items: baseline; gap: 0.55rem; }
+  .premium-amount {
+    font-family: "Fraunces Variable", Georgia, serif;
+    font-weight: 650;
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--text);
+  }
+  .premium-terms {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: "JetBrains Mono Variable", ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .premium-terms-dot {
+    width: 3px; height: 3px; border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .premium-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 650;
+    font-size: 0.98rem;
+    padding: 0.8rem 1.6rem;
+    border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 28%, transparent);
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+  .premium-cta::after { content: "\2192"; transition: transform 120ms ease; }
+  .premium-cta:hover {
+    transform: translateY(-2px);
+    background: color-mix(in srgb, var(--accent) 90%, #fff);
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 38%, transparent);
+  }
+  .premium-cta:hover::after { transform: translateX(3px); }
+
+  .premium-fineprint {
+    margin: 1rem 0 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+
+  /* Two exclusive plates, stacked with depth. The back plate peeks out and
+     squares up on hover so the preview feels like flipping through the book. */
+  .premium-teaser {
+    position: relative;
+    margin: 0;
+    min-height: 320px;
+    z-index: 1;
+  }
+  .premium-plate {
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--bg-panel-2);
+    padding: 1.1rem;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+    transition: transform 220ms ease, box-shadow 220ms ease;
+  }
+  .premium-plate :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 320px;
+  }
+  .premium-plate-back {
+    transform: rotate(4deg) translate(14px, 14px) scale(0.97);
+    filter: saturate(0.9);
+    z-index: 0;
+  }
+  .premium-plate-front {
+    transform: rotate(-2deg);
+    z-index: 1;
+  }
+  .premium-teaser:hover .premium-plate-back { transform: rotate(6deg) translate(26px, 18px) scale(0.97); }
+  .premium-teaser:hover .premium-plate-front { transform: rotate(0deg) translateY(-4px); }
+  .premium-teaser-cap {
+    position: absolute;
+    left: 0;
+    bottom: -1.9rem;
+    width: 100%;
+    text-align: center;
+    font-family: "JetBrains Mono Variable", ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    z-index: 2;
+  }
+
+  @media (max-width: 860px) {
+    .premium-panel { grid-template-columns: 1fr; gap: 3rem; padding: 1.8rem 1.5rem; }
+    .premium-title { font-size: 2.1rem; }
+    .premium-teaser { min-height: 260px; order: 2; }
+    .premium-teaser-cap { bottom: -1.6rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .premium-cta, .premium-cta::after, .premium-plate { transition: none; }
+  }
 </style>
