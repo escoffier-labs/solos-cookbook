@@ -90,6 +90,30 @@ th, td { border: 1px solid #ddd; padding: 4pt 6pt; text-align: left; }
 }
 .start-here figure.start-here-diagram svg { width: 100%; height: auto; }
 
+/* Appendix: back matter */
+.appendix-part { break-before: page; }
+.appendix-head { margin: 0 0 0.35in; break-after: avoid; padding-bottom: 0.2in; border-bottom: 1px solid #e5e5e0; }
+.appendix-kicker {
+  font-family: 'Inter'; text-transform: uppercase; letter-spacing: 0.2em;
+  font-size: 9pt; font-weight: 600; color: #d4a017; margin: 0 0 0.1in;
+}
+.appendix-title {
+  string-set: chaptertitle content();
+  font-family: 'Fraunces Variable', serif;
+  font-size: 26pt; font-weight: 600; line-height: 1.1; margin: 0;
+}
+.appendix-body { font-size: 10.5pt; color: #1a1a1a; }
+.appendix-body h2 {
+  font-family: 'Fraunces Variable', serif; font-size: 14pt; font-weight: 600;
+  margin: 0.3in 0 0.1in; break-after: avoid;
+}
+.appendix-body p, .appendix-body li { orphans: 3; widows: 3; }
+.appendix-glossary .appendix-body h2 {
+  font-family: 'Inter'; font-size: 11pt; font-weight: 700;
+  margin: 0.22in 0 0.04in; break-after: avoid;
+}
+.appendix-glossary .appendix-body p { margin: 0 0 0.1in; }
+
 /* Table of contents */
 .toc { break-before: page; break-after: page; }
 .toc h1 { font-family: 'Fraunces Variable', serif; font-size: 24pt; margin: 0 0 0.3in; }

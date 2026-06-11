@@ -1,0 +1,43 @@
+---
+// site/src/components/Appendix.astro
+import { getCollection, render } from 'astro:content';
+
+const [templatesEntry] = await getCollection('appendix');
+const [checklistEntry] = await getCollection('checklist');
+const [glossaryEntry] = await getCollection('glossary');
+
+const { Content: TemplatesContent } = await render(templatesEntry);
+const { Content: ChecklistContent } = await render(checklistEntry);
+const { Content: GlossaryContent } = await render(glossaryEntry);
+---
+<section class="appendix">
+  <section class="appendix-part" id="appendix-templates" data-chapter="Appendix A: Templates reference">
+    <header class="appendix-head">
+      <p class="appendix-kicker">Appendix A</p>
+      <h1 class="appendix-title">Templates reference</h1>
+    </header>
+    <div class="appendix-body">
+      <TemplatesContent />
+    </div>
+  </section>
+
+  <section class="appendix-part" id="appendix-checklist" data-chapter="Appendix B: Setup checklist">
+    <header class="appendix-head">
+      <p class="appendix-kicker">Appendix B</p>
+      <h1 class="appendix-title">Setup checklist</h1>
+    </header>
+    <div class="appendix-body">
+      <ChecklistContent />
+    </div>
+  </section>
+
+  <section class="appendix-part appendix-glossary" id="appendix-glossary" data-chapter="Appendix C: Glossary">
+    <header class="appendix-head">
+      <p class="appendix-kicker">Appendix C</p>
+      <h1 class="appendix-title">Glossary</h1>
+    </header>
+    <div class="appendix-body">
+      <GlossaryContent />
+    </div>
+  </section>
+</section>

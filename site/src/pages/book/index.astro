@@ -3,6 +3,7 @@
 import { getCollection, render } from 'astro:content';
 import BookCover from '../../components/BookCover.astro';
 import StartHere from '../../components/StartHere.astro';
+import Appendix from '../../components/Appendix.astro';
 import { toRoman } from '../../lib/cookbook.ts';
 import '../../styles/print.css';
 import memoryOwnershipSvg from '../../diagrams/memory-ownership.svg?raw';
@@ -66,6 +67,29 @@ for (const chapter of orderedChapters) {
           ))}
         </div>
       ))}
+      <div class="toc-chapter">
+        <a href="#appendix-templates">
+          <span class="toc-label">
+            <span class="toc-num">A</span>
+            <span class="toc-text">Appendix</span>
+          </span>
+        </a>
+        <div class="toc-guide">
+          <a href="#appendix-templates">
+            <span class="toc-text">Templates reference</span>
+          </a>
+        </div>
+        <div class="toc-guide">
+          <a href="#appendix-checklist">
+            <span class="toc-text">Setup checklist</span>
+          </a>
+        </div>
+        <div class="toc-guide">
+          <a href="#appendix-glossary">
+            <span class="toc-text">Glossary</span>
+          </a>
+        </div>
+      </div>
     </nav>
     <StartHere />
     {rendered.map(({ chapter, ChapterContent, guides }) => (
@@ -88,5 +112,6 @@ for (const chapter of orderedChapters) {
         ))}
       </section>
     ))}
+    <Appendix />
   </body>
 </html>

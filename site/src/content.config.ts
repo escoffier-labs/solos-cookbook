@@ -101,6 +101,30 @@ const appendixLoader: Loader = {
   },
 };
 
+const checklistLoader: Loader = {
+  name: 'cookbook-checklist',
+  load: async (ctx) => {
+    ctx.store.clear();
+    const raw = await readFile(path.join(REPO_ROOT, 'templates', 'SETUP-CHECKLIST.md'), 'utf-8');
+    const parsed = parseCategoryReadme(raw);
+    await loadEntry(ctx, 'setup-checklist', {
+      title: parsed.title || 'Setup Checklist',
+    }, parsed.body, 'templates');
+  },
+};
+
+const glossaryLoader: Loader = {
+  name: 'cookbook-glossary',
+  load: async (ctx) => {
+    ctx.store.clear();
+    const raw = await readFile(path.join(REPO_ROOT, 'site', 'src', 'content', 'glossary.md'), 'utf-8');
+    const parsed = parseCategoryReadme(raw);
+    await loadEntry(ctx, 'glossary', {
+      title: parsed.title || 'Glossary',
+    }, parsed.body, 'templates');
+  },
+};
+
 const guides = defineCollection({
   loader: guidesLoader,
   schema: z.object({
@@ -133,4 +157,18 @@ const appendix = defineCollection({
   }),
 });
 
-export const collections = { guides, chapters, appendix };
+const checklist = defineCollection({
+  loader: checklistLoader,
+  schema: z.object({
+    title: z.string(),
+  }),
+});
+
+const glossary = defineCollection({
+  loader: glossaryLoader,
+  schema: z.object({
+    title: z.string(),
+  }),
+});
+
+export const collections = { guides, chapters, appendix, checklist, glossary };
