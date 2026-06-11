@@ -1,0 +1,63 @@
+---
+// site/src/components/StartHere.astro
+import systemOverviewSvg from '../diagrams/system-overview.svg?raw';
+---
+<section class="start-here">
+  <h1>Start here</h1>
+
+  <p class="lead">This is a working cookbook for engineers who run a long-lived
+    agent in an orchestrator like OpenClaw or Hermes, while also coding every day
+    in tools like Codex CLI, Claude Code, OpenCode, and browser-native model
+    sessions. The problem it solves is continuity.</p>
+
+  <figure class="start-here-diagram" set:html={systemOverviewSvg} />
+
+  <p>Your coding harnesses see one repo and one task at a time. Your always-on
+    agent should see the whole kitchen: your projects, current work, durable
+    decisions, local tools, safety rules, and the handoffs from every coding
+    session. Without a shared place for that context, every new session starts
+    cold and asks you to re-explain what it should already know.</p>
+
+  <h2>The mental model</h2>
+
+  <p>There is one canonical memory owner and many writers. The owner is the
+    always-on agent. It is the single source of truth for durable knowledge:
+    what each project is, what changed, which decisions are settled, and which
+    rules the stack runs by. In this stack OpenClaw is the tested reference
+    memory owner, and Hermes can play the same role.</p>
+
+  <p>The writers are the coding harnesses. Codex CLI, Claude Code, OpenCode, and
+    browser-native model sessions do the work, then hand durable context back to
+    the owner so future sessions start with the right project state. They write
+    handoffs instead of building isolated session memories that no one else can
+    see. The owner ingests those handoffs and keeps the shared files current:
+    the memory index, the tools and project notes, the agent and safety rules,
+    and the memory cards behind them.</p>
+
+  <p>Underneath all of it is a single self-hosted host with a homelab behind it
+    for self-hosting, security tooling, and knowledge management. The agent runs
+    there, reads and writes the shared memory there, and drives the outputs from
+    there: publishing and automation. The pattern generalizes past any one
+    machine. One canonical memory owner, many coding harnesses, one shared
+    contract for what gets remembered.</p>
+
+  <p>This is not a framework, not a product, and not a tutorial series. It is a
+    record of what is actually deployed, why each piece is shaped the way it is,
+    and what broke along the way. Lift any single piece, adopt the whole thing,
+    or use it as a counterexample. All three are valid.</p>
+
+  <h2>How to read this book</h2>
+
+  <p>New readers should go front to back. The chapters move from the agent stack
+    out to knowledge, infrastructure, automation, security, and the rest, so the
+    mental model builds in order and each recipe lands with the context it
+    assumes.</p>
+
+  <p>Experienced readers can jump straight to any recipe through the contents.
+    Each recipe is self-contained. It states what it is and who it is for, why it
+    is shaped the way it is, what you need first, the implementation with real
+    commands, how to verify it, and the gotchas from real deployments. You do not
+    have to read the chapter around a recipe to use it. Pick the one that solves a
+    problem you have right now and come back for the rest when you want the why
+    behind it.</p>
+</section>
