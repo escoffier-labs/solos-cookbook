@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "prebuild": "node scripts/scrub-check.mjs",
     "build": "astro build",
+    "build:pdf": "node scripts/build-pdf.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@types/node": "^25.9.2",
+    "pagedjs-cli": "^0.4.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   },
