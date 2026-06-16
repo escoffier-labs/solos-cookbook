@@ -24,6 +24,10 @@ const GUIDE_DIRS = [
 // Required top-level headings per guide.
 const REQUIRED_HEADINGS = ['## Verification', '## Gotchas'];
 
+// Launch-ops / internal checklists that live under a guide dir but are not
+// reader-facing guides, so they are exempt from the guide skeleton.
+const EXEMPT_FILES = new Set(['publishing/creem-product.md']);
+
 /** Strip fenced code blocks so example markdown inside ``` fences can't
  *  satisfy (or fake) a required heading. */
 function stripFences(text) {
@@ -38,6 +42,7 @@ for (const dir of GUIDE_DIRS) {
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith('.md') || entry.name === 'README.md') continue;
     const rel = path.join(dir, entry.name);
+    if (EXEMPT_FILES.has(rel.split(path.sep).join('/'))) continue;
     const text = stripFences(await readFile(path.join(REPO_ROOT, rel), 'utf-8'));
     scanned += 1;
     for (const heading of REQUIRED_HEADINGS) {

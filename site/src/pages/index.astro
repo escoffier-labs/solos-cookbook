@@ -7,9 +7,11 @@ import { SITE, EXTERNAL, sitePath } from '../lib/site.ts';
 import stackTopologySvg from '../diagrams/stack-topology.svg?raw';
 import securityTiersSvg from '../diagrams/security-tiers.svg?raw';
 
-// Creem checkout for the premium edition. Placeholder until the product is live;
-// swap this single constant when the real checkout URL exists.
-const PREMIUM_CHECKOUT_URL = 'https://CREEM_PRODUCT_URL';
+// Creem checkout for the premium edition. Set PUBLIC_PREMIUM_CHECKOUT_URL once
+// the product is live; until then it stays a placeholder and the buy CTA renders
+// as "coming soon" rather than dead-ending on an unresolvable host.
+const PREMIUM_CHECKOUT_URL = import.meta.env.PUBLIC_PREMIUM_CHECKOUT_URL ?? 'https://CREEM_PRODUCT_URL';
+const PREMIUM_LIVE = PREMIUM_CHECKOUT_URL.startsWith('https://') && !PREMIUM_CHECKOUT_URL.includes('CREEM_PRODUCT_URL');
 
 const guides = await getCollection('guides');
 const chapters = await getCollection('chapters');
@@ -91,7 +93,11 @@ const featured = FEATURED
               <span class="premium-amount">$39</span>
               <span class="premium-terms">one-time<span class="premium-terms-dot"></span>free updates</span>
             </div>
-            <a href={PREMIUM_CHECKOUT_URL} class="premium-cta">Get the premium edition</a>
+            {PREMIUM_LIVE ? (
+              <a href={PREMIUM_CHECKOUT_URL} class="premium-cta">Get the premium edition</a>
+            ) : (
+              <span class="premium-cta premium-cta-soon" aria-disabled="true">Coming soon</span>
+            )}
           </div>
           <p class="premium-fineprint">
             The recipes stay free here. You are buying the artifact and the bundle, not access to the knowledge.
