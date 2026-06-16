@@ -62,7 +62,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Open [http://localhost:5173](http://localhost:5173). On first run, the sidecar mounts the bundled `./sample-workspace`, so the demo content shows up without any other setup.
+Open `http://localhost:5173`. On first run, the sidecar mounts the bundled `./sample-workspace`, so the demo content shows up without any other setup.
 
 ### Point at your real workspace
 
