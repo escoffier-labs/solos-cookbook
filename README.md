@@ -55,6 +55,37 @@ Use this cookbook if you want:
 - local-first automation, security checks, content scrubbing, backups, and memory care around an agent that can actually touch your systems
 - an installable starter layout via [Brigade](https://github.com/escoffier-labs/brigade), with the cookbook as the explanation layer
 
+## Quick start
+
+There is nothing to install for the cookbook itself - it is a collection of standalone guides. Pick the one that solves a problem you have right now:
+
+- **[automation/cron-patterns.md](automation/cron-patterns.md)**: decide which layer (systemd, agent cron, n8n) each scheduled task in your stack actually belongs in
+- **[ai-stack/multi-model-orchestration.md](ai-stack/multi-model-orchestration.md)**: wire one orchestrator across many models with the right model per task
+- **[security/linux-hardening.md](security/linux-hardening.md)**: UFW, SSH hardening, fail2ban, and defense in depth for the host
+- **[infrastructure/backup-recovery.md](infrastructure/backup-recovery.md)**: restic to NAS (twice daily) + cloud (weekly), Drive quota gotchas, KeePass canonical sync, snapshot mounts
+
+### If you're here for the memory system
+
+Read these in order:
+
+1. **[knowledge/memory-token-optimization.md](knowledge/memory-token-optimization.md)**: the three-tier layout, local embeddings, and why the index stays tiny
+2. **[knowledge/memory-architecture.md](knowledge/memory-architecture.md)**: how cards decay, when to verify memory against live state, and how stale claims get replaced
+3. **[ai-stack/self-improving-agents.md](ai-stack/self-improving-agents.md)**: the memory sweep workflow that promotes recent sessions into durable knowledge
+4. **[knowledge/claude-code-memory-handoffs.md](knowledge/claude-code-memory-handoffs.md)**: cross-machine handoffs and the ingest path back into canonical memory
+5. **[automation/openclaw-cron-deep-dive.md](automation/openclaw-cron-deep-dive.md)**: scheduling patterns for sweep jobs, decay scans, and quiet-hour-safe maintenance
+
+### If you want the installable version
+
+The cookbook is the long-form guide. **[Brigade](https://github.com/escoffier-labs/brigade)** is the installable starter kit that turns the patterns here into a working agent kitchen: shared bootstrap files, per-harness handoff inboxes, memory ownership rules, content guards, a multi-agent orchestrator, an agent-facing daily driver, and local work loops.
+
+```bash
+pipx install brigade-cli
+brigade init --target ~/agent-kitchen --depth workspace --harnesses claude,codex,openclaw
+brigade doctor --target ~/agent-kitchen
+```
+
+It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a conservative ingester, content-guard publish gates, a bounded `brigade run` orchestrator, a `brigade daily` driver, and a `brigade work` loop for dogfooding trusted repos. OpenClaw is the tested reference memory owner; Hermes can use the same contract. Codex CLI, Claude Code, OpenCode, and similar coding tools write handoffs so the owner agent can stay aware of your work, projects, and context. Adopt the cookbook patterns piecemeal here, or let `brigade` set up the whole shape and read the cookbook to understand why each piece is the way it is.
+
 ## The stack at a glance
 
 ```mermaid
@@ -108,37 +139,6 @@ Two things changed the guidance:
 2. By the June 2026 notes, `claude -p` / print-mode automation was drawing from Claude's separate **Usage** bucket. Print-mode automation is not the same budget surface as an interactive Claude Code session.
 
 ACPX remains documented as a compatibility path when you need an ACP endpoint. For ordinary second-opinion code review, use the tmux relay. See [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) for OpenClaw/Codex commands and [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) for the ACPX compatibility runbook.
-
-## Quick start
-
-There is nothing to install for the cookbook itself - it is a collection of standalone guides. Pick the one that solves a problem you have right now:
-
-- **[automation/cron-patterns.md](automation/cron-patterns.md)**: decide which layer (systemd, agent cron, n8n) each scheduled task in your stack actually belongs in
-- **[ai-stack/multi-model-orchestration.md](ai-stack/multi-model-orchestration.md)**: wire one orchestrator across many models with the right model per task
-- **[security/linux-hardening.md](security/linux-hardening.md)**: UFW, SSH hardening, fail2ban, and defense in depth for the host
-- **[infrastructure/backup-recovery.md](infrastructure/backup-recovery.md)**: restic to NAS (twice daily) + cloud (weekly), Drive quota gotchas, KeePass canonical sync, snapshot mounts
-
-### If you're here for the memory system
-
-Read these in order:
-
-1. **[knowledge/memory-token-optimization.md](knowledge/memory-token-optimization.md)**: the three-tier layout, local embeddings, and why the index stays tiny
-2. **[knowledge/memory-architecture.md](knowledge/memory-architecture.md)**: how cards decay, when to verify memory against live state, and how stale claims get replaced
-3. **[ai-stack/self-improving-agents.md](ai-stack/self-improving-agents.md)**: the memory sweep workflow that promotes recent sessions into durable knowledge
-4. **[knowledge/claude-code-memory-handoffs.md](knowledge/claude-code-memory-handoffs.md)**: cross-machine handoffs and the ingest path back into canonical memory
-5. **[automation/openclaw-cron-deep-dive.md](automation/openclaw-cron-deep-dive.md)**: scheduling patterns for sweep jobs, decay scans, and quiet-hour-safe maintenance
-
-### If you want the installable version
-
-The cookbook is the long-form guide. **[Brigade](https://github.com/escoffier-labs/brigade)** is the installable starter kit that turns the patterns here into a working agent kitchen: shared bootstrap files, per-harness handoff inboxes, memory ownership rules, content guards, a multi-agent orchestrator, an agent-facing daily driver, and local work loops.
-
-```bash
-pipx install brigade-cli
-brigade init --target ~/agent-kitchen --depth workspace --harnesses claude,codex,openclaw
-brigade doctor --target ~/agent-kitchen
-```
-
-It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a conservative ingester, content-guard publish gates, a bounded `brigade run` orchestrator, a `brigade daily` driver, and a `brigade work` loop for dogfooding trusted repos. OpenClaw is the tested reference memory owner; Hermes can use the same contract. Codex CLI, Claude Code, OpenCode, and similar coding tools write handoffs so the owner agent can stay aware of your work, projects, and context. Adopt the cookbook patterns piecemeal here, or let `brigade` set up the whole shape and read the cookbook to understand why each piece is the way it is.
 
 ## Guides
 
