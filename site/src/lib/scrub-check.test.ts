@@ -9,15 +9,34 @@ interface Violation {
   snippet: string;
 }
 
-const rules = (text: string): string[] => (scan(text) as Violation[]).map((v) => v.rule);
+// The real denylist is injected from the environment at runtime; tests use a
+// fake hostname so they stay hermetic and never name a real machine.
+const HOSTS = ['examplehost'];
+
+const rules = (text: string): string[] =>
+  (scan(text, '<input>', { hostnames: HOSTS }) as Violation[]).map((v) => v.rule);
 
 describe('scrub scan', () => {
   it('passes clean text', () => {
-    expect(scan('Just a normal guide about cron patterns.\nNothing to see.')).toEqual([]);
+    expect(scan('Just a normal guide about cron patterns.\nNothing to see.', '<input>', { hostnames: HOSTS })).toEqual([]);
   });
 
   it('flags private hostnames', () => {
-    expect(rules('ssh into gandalf and restart')).toContain('private-hostname');
+    expect(rules('ssh into examplehost and restart')).toContain('private-hostname');
+  });
+
+  it('omits the private-hostname rule when no denylist is configured', () => {
+    // No hostnames -> the rule is dropped entirely, so even a configured-looking
+    // host name is not flagged (the env-driven list is the only source of truth).
+    expect((scan('ssh into examplehost and restart', '<input>', { hostnames: [] }) as Violation[]).map((v) => v.rule)).toEqual([]);
+  });
+
+  it('escapes regex metacharacters in hostnames', () => {
+    // A dotted name must match literally, not as a regex wildcard.
+    const r = (scan('connect to web.example and idle', '<input>', { hostnames: ['web.example'] }) as Violation[]).map((v) => v.rule);
+    expect(r).toContain('private-hostname');
+    const safe = (scan('connect to webXexample and idle', '<input>', { hostnames: ['web.example'] }) as Violation[]).map((v) => v.rule);
+    expect(safe).toEqual([]);
   });
 
   it('flags RFC 1918 IPs but allows RFC 5737 doc IPs', () => {
@@ -52,17 +71,17 @@ describe('scrub scan', () => {
   });
 
   it('honors inline allow tags on the previous line', () => {
-    const text = '<!-- content-guard: allow private-hostname -->\nssh into gandalf';
+    const text = '<!-- content-guard: allow private-hostname -->\nssh into examplehost';
     expect(rules(text)).toEqual([]);
   });
 
   it('does not let an allow tag suppress other rules', () => {
-    const text = 'gandalf at 192.168.1.21 <!-- content-guard: allow private-ipv4 -->';
+    const text = 'examplehost at 192.168.1.21 <!-- content-guard: allow private-ipv4 -->';
     expect(rules(text)).toEqual(['private-hostname']);
   });
 
   it('reports file and line', () => {
-    const v = (scan('ok\nssh gandalf\nok', 'guide.md') as Violation[])[0];
+    const v = (scan('ok\nssh examplehost\nok', 'guide.md', { hostnames: HOSTS }) as Violation[])[0];
     expect(v).toMatchObject({ file: 'guide.md', line: 2, rule: 'private-hostname' });
   });
 });
