@@ -23,6 +23,8 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - run: npm --prefix site ci
       - run: ./scripts/verify
+        env:
+          SCRUB_HOSTNAMES: ${{ secrets.SCRUB_HOSTNAMES }}
 
   external-links:
     # Non-blocking by design: a flaky third-party site must never fail
