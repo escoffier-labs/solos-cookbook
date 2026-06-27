@@ -4,12 +4,18 @@
  * Runs as `prebuild`, so `astro build` (locally and on Vercel) fails
  * before emitting dist/ if anything private-looking lands in a guide.
  *
- * Usage: node scripts/scrub-check.mjs
+ * The private-hostname denylist is read from the SCRUB_HOSTNAMES env var
+ * (comma- and/or whitespace-separated). It is NOT committed to source. This
+ * gate FAILS CLOSED: if SCRUB_HOSTNAMES is unset/empty it refuses to run,
+ * so a deploy can never ship without hostname scrubbing. Set SCRUB_HOSTNAMES
+ * in your local env and in the Vercel project. See site/.env.example.
+ *
+ * Usage: SCRUB_HOSTNAMES=host1,host2 node scripts/scrub-check.mjs
  */
 import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { scan } from './scrub-core.mjs';
+import { scan, parseHostnames } from './scrub-core.mjs';
 
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
@@ -19,6 +25,17 @@ const SCAN_DIRS = [
   'hardware', 'tools', 'publishing', 'philosophy', 'plans', 'skills', 'templates',
 ];
 const SCAN_ROOT_FILES = ['README.md', 'CONTRIBUTING.md'];
+
+// Fail closed: never run the publish scrub without the private hostname denylist.
+const hostnames = parseHostnames();
+if (hostnames.length === 0) {
+  console.error(
+    'scrub-check: SCRUB_HOSTNAMES is not set - refusing to run the publish scrub ' +
+      'without the private hostname denylist. Set SCRUB_HOSTNAMES (comma-separated) ' +
+      'in the local env and in the Vercel project.',
+  );
+  process.exit(1);
+}
 
 async function* walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -33,12 +50,12 @@ const violations = [];
 for (const dir of SCAN_DIRS) {
   for await (const file of walk(path.join(REPO_ROOT, dir))) {
     const text = await readFile(file, 'utf-8');
-    violations.push(...scan(text, path.relative(REPO_ROOT, file)));
+    violations.push(...scan(text, path.relative(REPO_ROOT, file), { hostnames }));
   }
 }
 for (const name of SCAN_ROOT_FILES) {
   const text = await readFile(path.join(REPO_ROOT, name), 'utf-8');
-  violations.push(...scan(text, name));
+  violations.push(...scan(text, name, { hostnames }));
 }
 
 if (violations.length > 0) {
