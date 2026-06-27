@@ -448,7 +448,7 @@ for hostnames/IPs (Solomon's rule: no real hostnames, RFC 5737 IPs only).
 ```bash
 cd site && node scripts/scrub-check.mjs
 ```
-Expected: pass. Manually confirm no "Rocinante/Hogwarts/Gandalf"-type names or
+Expected: pass. Manually confirm no real workstation or server names, and no
 RFC 1918 IPs are baked into the SVGs.
 
 - [ ] **Step 5: Commit**
