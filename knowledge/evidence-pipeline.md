@@ -2,8 +2,8 @@
 
 > Your agent did the work. The proof is smeared across `~/.codex/sessions`, `~/.claude/projects`, `~/.openclaw/agents`, a pile of notes, and a git log. None of it is searchable, none of it is citable, and six weeks later "did we already decide this?" has no answer you can pull up in one command. This is the trio that fixes it: StationTrail and SourceHarvest export local history into one adapter contract, MiseLedger imports it into a local SQLite evidence archive with FTS search and Brigade-ready evidence bundles. Local-only, no network calls, imported text stays data and never becomes instructions. 🦞
 
-**Tested on:** miseledger 0.1.5, stationtrail 0.1.4, sourceharvest 0.1.1 (Go 1.22+), Linux. End-to-end run on 2026-06-10: three codex session fixtures exported to 27 `miseledger.adapter.v1` records, imported into a fresh SQLite FTS archive, searched, evidence-bundled across CLI + loopback HTTP + stdio MCP, then a markdown note imported through SourceHarvest into the same archive to prove cross-source search.
-**Last updated:** 2026-06-10
+**Tested on:** miseledger 0.2.0, stationtrail 0.2.0, sourceharvest 0.2.0 (Go 1.22+), Linux; the shared `miseledger.adapter.v1` contract is unchanged across the 0.1.x to 0.2.0 bump. The documented end-to-end run (captured on the 0.1.x line, 2026-06-10): three codex session fixtures exported to 27 `miseledger.adapter.v1` records, imported into a fresh SQLite FTS archive, searched, evidence-bundled across CLI + loopback HTTP + stdio MCP, then a markdown note imported through SourceHarvest into the same archive to prove cross-source search.
+**Last updated:** 2026-06-27
 
 ---
 

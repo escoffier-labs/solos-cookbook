@@ -27,7 +27,7 @@ Grouped by what the underlying service does. Versions move; see each repo for cu
 | MCP | Wraps | What the agent does with it |
 |-----|-------|----------------------------|
 | [`jellyfin-mcp`](https://github.com/solomonneas/jellyfin-mcp) | Jellyfin media server | List libraries, scan, list sessions, control playback, manage playlists/collections, manage users, run scheduled tasks, Quick Connect auth |
-| `media-cli` (not yet published) | Radarr / Sonarr / Prowlarr ("arr stack") | This is a CLI, not an MCP, and the repo is not public yet. The agent shells out to it for `arr search`, `arr add`, `arr health`. See [`repo-redeploy.md`](repo-redeploy.md) for how it stays current |
+| [`media-cli`](https://github.com/solomonneas/media-cli) | Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyseerr, Tdarr (the "arr" media stack) | A single bash script (binary `media`), not an MCP. The agent shells out to it (`media movies search`, `media movies add`, `media downloads active`), locally or over SSH. Public now: `npm i -g @solomonneas/media-cli` or curl the script. Pairs with [`jellyfin-mcp`](https://github.com/solomonneas/jellyfin-mcp) for Jellyfin playback; see [`repo-redeploy.md`](repo-redeploy.md) for how it stays current |
 
 ### Social & publishing
 

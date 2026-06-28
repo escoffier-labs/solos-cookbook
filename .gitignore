@@ -16,3 +16,6 @@ node_modules/
 /memory/
 .brigade/
 dist-book/
+
+# Internal audit reports (line-check, etc.) - not for the public tree
+docs/audit/

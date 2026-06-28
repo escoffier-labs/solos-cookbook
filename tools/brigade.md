@@ -2,7 +2,7 @@
 
 > Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, local work loops, a multi-agent orchestrator, an agent-facing daily driver, and security scans.
 
-_Current as of brigade-cli 0.9.3, 2026-06-10._
+_Current as of brigade-cli 0.13.0, 2026-06-27._
 
 ## What this is
 
@@ -25,6 +25,9 @@ Manual copying works once. It fails when the template changes, when Codex and Cl
 | Long unattended runs | A phase execution ledger and AFK sessions make multi-phase work auditable and catch silent compression |
 | Operator surfaces | `brigade center`, `brigade repos`, `brigade context`, `brigade learn`, and `brigade projects` turn local evidence into reviewable reports and action queues |
 | Portable tooling | `brigade tools` registers skills, slash commands, scripts, and MCP servers and projects them into each harness's config |
+| Canonical MCP catalog | `brigade mcp` keeps one `.brigade/mcp.json` catalog and merges it into each tool's native MCP config, dry-run unless `--write` |
+| Verified learning | `brigade outcome` scores learned cards and skills by real verify-run results, so promotion and rollback are evidence-backed, not vibes |
+| Reviewed runbooks | `brigade runbook` plans, runs, resumes, and closes out reviewed runbooks with receipts |
 | Scanner imports | Converts memory-care, chat-sweep, handoff, and security findings into reviewable `brigade work import` items |
 | Publish safety | Installs content-guard policies, a pre-push hook shape, and a local `brigade release` publish gate |
 | Security hygiene | Scans secrets, permissions, hooks, MCP config, supply-chain patterns, and instruction risks |
@@ -184,6 +187,30 @@ brigade work import chat-sweep --target .
 brigade work import triage --target .
 brigade work import promote <import-id>
 ```
+
+### Canonical MCP config, outcomes, and runbooks
+
+`brigade mcp` is the dedicated MCP surface: keep one canonical catalog and project it into each harness's native config instead of hand-editing four config files. Writes are gated, so it fits the same local-first boundary as everything else.
+
+```bash
+brigade mcp init                  # scaffold .brigade/mcp.json + the ownership sidecar
+brigade mcp add <name> ...        # add or update a server in the canonical catalog
+brigade mcp plan                  # show what a sync would change (read-only)
+brigade mcp sync                  # dry-run merge into each tool's config
+brigade mcp sync --write          # actually write the harness configs
+brigade mcp doctor                # validate the catalog and report gaps
+```
+
+`brigade outcome` is the verified-learning ledger: it scores learned cards and skills by what actually passed verification, so promotion and rollback rest on evidence rather than a one-time guess.
+
+```bash
+brigade outcome capture <artifact>   # record a verify run's outcome
+brigade outcome score                # verified scores for learned cards and skills
+brigade outcome rank                 # rank learned skills, most-proven first
+brigade outcome reconcile            # apply verified promote/rollback decisions (dry-run by default)
+```
+
+`brigade runbook` runs reviewed runbooks with receipts (`plan`, `run`, `resume`, `closeout`), so a multi-step local procedure is auditable the same way `brigade work` and `brigade release` are.
 
 ### Security scanning
 

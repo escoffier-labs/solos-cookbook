@@ -6,8 +6,8 @@ This is the compatibility setup that works as of April 2026. As of the June 2026
 
 > **June 2026 warning:** Do not replace ACPX with `claude -p` automation. Print-mode Claude Code started drawing from Claude's separate **Usage** bucket in the June notes. Use tmux for ordinary OpenClaw/Codex review handoffs.
 
-**Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.113, ACPX plugin 0.4.0. Current stack: OpenClaw 2026.6.2 with Opus 4.8 via ACPX as primary (4.7 wrapper still wired as fallback).
-**Last updated:** 2026-06-10
+**Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.113, ACPX plugin (`acpx`) 0.11.x. Current stack: OpenClaw 2026.6.2 with Opus 4.8 via ACPX as primary (4.7 wrapper still wired as fallback).
+**Last updated:** 2026-06-27
 
 ---
 
@@ -44,7 +44,7 @@ ACPX is the OpenClaw plugin that wraps the ACP protocol. Install it user-local (
 mkdir -p ~/.openclaw/vendor/acpx
 cd ~/.openclaw/vendor/acpx
 npm init -y
-npm install @openclaw/acpx@^0.4.0
+npm install acpx@latest
 ```
 
 Verify the binary landed:
