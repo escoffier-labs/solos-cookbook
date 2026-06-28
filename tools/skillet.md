@@ -2,24 +2,26 @@
 
 > The skills rack: installable agent skills for auditing, improving, and shipping repos. The flagship is line-check, a repo audit that ends in a leverage-sorted improvement backlog instead of a wall of findings.
 
-_Current as of skillet 0.1.0, 2026-06-10._
+_Current as of skillet 0.4.0, 2026-06-27._
 
 ## What this is
 
 [`skillet`](https://github.com/escoffier-labs/skillet) is a public collection of agent skills extracted from the workflows in this cookbook. Where [Brigade](brigade.md) gives your agent kitchen its shape (memory, handoffs, guards), skillet gives the cooks their techniques: repeatable procedures any SKILL.md-capable harness can load on demand.
 
-Eight skills ship in 0.1.0:
+Twenty-nine skills ship in 0.4.0, organized by job. Any SKILL.md-capable harness loads them on demand:
 
-| Skill | What it does |
-|-------|--------------|
-| `line-check` | The flagship. Audits a repo across seven stations (docs, agent-readiness, tests/CI, hygiene, structure, release hygiene, TODO mining), scores each 0-5, and delivers a backlog sorted by impact relative to effort |
-| `bug-hunt` | Correctness sweep across five lenses; every candidate bug must survive an adversarial refutation attempt before it reaches the report |
-| `security-sweep` | Defensive audit: secrets in tree and history, dependency CVEs, injection surfaces, authn/authz, accidental exposure |
-| `pressure-test` | Interrogates a plan one question at a time until decisions are explicit; sous mode self-answers from evidence with an auditable Q&A transcript when you go AFK |
-| `publish-readiness` | The private-to-public gate: tree and history leak scans plus the full filter-repo rewrite recipe when something already leaked |
-| `release-cut` | Changelog roll-up, semver bump, tag, GitHub release, drafted announcement; releases on request, never per feature |
-| `memory-handoff` | Ends a session by writing durable knowledge into a brigade-lintable handoff |
-| `skillify` | Turns a script or repeated workflow into a new skill, with a fresh-agent test before it counts as done |
+| Family | Skills |
+|--------|--------|
+| Design and build | `mise` (idea to approved spec), `recipe` (spec to plan), `demi`, `taste` (test-first), `fire` (execute a plan task by task), `stations` (fan out parallel work), `worktree` |
+| Debug and verify | `refire` (root-cause before any fix), `check` (prove it works before claiming it) |
+| Review and ship | `pass` (the pre-PR gate), `review`, `sendback`, `release-cut`, `expedite` |
+| Audit and direction | `line-check` (the flagship repo audit), `bug-hunt`, `security-sweep`, `special` |
+| Simplify | `reduce` |
+| Writing and publishing | `grill`, `plate`, `publish-readiness`, `reel-check`, `seo-fleet` |
+| Memory | `memory-handoff`, `brigade-handoffs` |
+| Pressure and meta | `pressure-test`, `skillify`, `using-skillet` |
+
+`line-check` is still the flagship: it audits a repo across seven stations (docs, agent-readiness, tests/CI, hygiene, structure, release hygiene, TODO mining), scores each 0-5, and delivers a backlog sorted by impact relative to effort. It composes with `bug-hunt` and `security-sweep` (the audit trio) on a shared report contract.
 
 ## Why this way
 
@@ -53,16 +55,19 @@ cp -r skillet/skillet/skills/line-check <your-skills-dir>/
 
 ## Verification
 
-Confirm the clone has all eight skills and every skill ships its `SKILL.md`:
+Confirm the clone ships every skill as a discoverable `SKILL.md`:
 
 ```bash
 git clone https://github.com/escoffier-labs/skillet
-ls skillet/skillet/skills
-# bug-hunt  line-check  memory-handoff  pressure-test
-# publish-readiness  release-cut  security-sweep  skillify
-
 ls skillet/skillet/skills/*/SKILL.md | wc -l
-# 8
+# 29
+
+ls skillet/skillet/skills
+# brigade-handoffs  bug-hunt  check  demi  expedite  fire  grill
+# line-check  memory-handoff  mise  pass  plate  pressure-test
+# publish-readiness  recipe  reduce  reel-check  refire  release-cut
+# review  security-sweep  sendback  seo-fleet  skillify  special
+# stations  taste  using-skillet  worktree
 ```
 
 In Claude Code, after the marketplace install, run `/plugin` and confirm `skillet` appears in the installed list; its skills then show up as `skillet:line-check` and friends.
