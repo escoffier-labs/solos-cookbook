@@ -1,0 +1,45 @@
+name: deploy
+
+# Auto-deploy on push to main, replacing the native Vercel git integration that
+# broke when this repo moved to the escoffier-labs org (the Vercel GitHub App is
+# not installed on the org). This deploys to Vercel production AND repoints the
+# cookbook-site-beta.vercel.app alias, which escoffier-site rewrites /cookbook/* to.
+#
+# Requires one repo secret: VERCEL_TOKEN (create at vercel.com/account/tokens).
+# VERCEL_ORG_ID and VERCEL_PROJECT_ID are pre-set. Until VERCEL_TOKEN exists this
+# job no-ops, so it is safe to land ahead of the token.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy to Vercel production and repoint the serving alias
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          SERVING_ALIAS: cookbook-site-beta.vercel.app
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::notice::VERCEL_TOKEN not set - skipping deploy. Add it (vercel.com/account/tokens) to enable auto-deploy."
+            exit 0
+          fi
+          npm i -g vercel@latest
+          # Vercel builds remotely using the project env (incl. SCRUB_HOSTNAMES), so the scrub gate passes.
+          url=$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" | tail -1)
+          echo "Deployed: $url"
+          vercel alias set "$url" "$SERVING_ALIAS" --token "$VERCEL_TOKEN"
+          echo "Repointed https://$SERVING_ALIAS -> $url"
