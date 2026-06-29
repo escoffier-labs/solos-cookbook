@@ -6,7 +6,7 @@ Drop-in snippets for model aliases, Claude Code tmux relay, ACP wrapper shape, l
 
 - `model-aliases.openclaw.json` - model alias fragment
 - `ollama-local-routing.openclaw.json` - local embedding and utility alias fragment
-- `claude-tmux-relay.sh` - helper for driving a first-party Claude Code tmux session without `claude -p`
+- `claude-tmux-relay.sh` - helper for driving a first-party Claude Code tmux session (a recoverable alternative to `claude -p`)
 - `acp-wrapper.mjs` - wrapper pattern for launching an ACP server
 - `plugin-health-check.sh` - smoke-check shape for enabled plugins
 - `browser-lane-lock.sh` - `flock` wrapper for persistent browser profile lanes

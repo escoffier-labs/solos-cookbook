@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
   <img src="https://img.shields.io/badge/guides-60-red?style=for-the-badge" alt="60 guides">
-  <img src="https://img.shields.io/badge/updated-2026--06--27-white?style=for-the-badge" alt="Updated 2026-06-27">
+  <img src="https://img.shields.io/badge/updated-2026--06--29-white?style=for-the-badge" alt="Updated 2026-06-29">
 </p>
 
 <p align="center">
@@ -124,21 +124,21 @@ The guides assume a specific provider mix. You can substitute, but if you want a
 
 - **The $200 stack is the normal recommendation.** Use Codex Pro as the main agent + coder lane when your OpenClaw agent is active every day, doing cron work, repo work, and second-pass review. One flat subscription covers the hot path, and Codex OAuth slots cleanly into OpenClaw's primary-model path.
 - **A $100-ish stack can work if usage is conservative.** If your agent is not busy, you are not sharing the subscription with heavy coding sessions, and most background work stays on local/Ollama/browser lanes, you can run a smaller setup. Expect to manage rate limits more actively.
-- **Claude Opus via Claude Code: escalation only.** Intel, design, architecture review, and second-opinion code review. Prefer the Claude Code tmux relay for interactive first-party harness work; keep ACPX for setups that explicitly need ACP. Do not call `claude -p` from OpenClaw automation.
+- **Claude Opus via Claude Code: escalation only.** Intel, design, architecture review, and second-opinion code review. As of late June 2026 `claude -p` automation works again (Anthropic reverted the June print-mode change), so it is fine for simple scripted calls; the Claude Code tmux relay is still the better lane for recoverable, attachable review sessions, and ACPX stays for setups that explicitly need ACP.
 - **Ollama (free): embeddings, commit messages, triage.** Local, fast, no round-trip.
 
 ### Claude Code via tmux: the June 2026 lesson
 
 The Claude lesson has its own guide now: [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md).
 
-The short version: keep Claude Code in its first-party interactive harness and let OpenClaw or Codex drive it through tmux. Use `tmux send-keys`, `tmux paste-buffer`, and `tmux capture-pane`; do not automate review with `claude -p`.
+The short version: you can drive Claude Code from OpenClaw or Codex through an interactive tmux session with `tmux send-keys`, `tmux paste-buffer`, and `tmux capture-pane`, keeping it in its first-party harness.
 
-Two things changed the guidance:
+What changed, and the current state:
 
-1. In April 2026, direct Claude subscription OAuth through third-party harnesses stopped being a reliable OpenClaw backend.
-2. By the June 2026 notes, `claude -p` / print-mode automation was drawing from Claude's separate **Usage** bucket. Print-mode automation is not the same budget surface as an interactive Claude Code session.
+1. In April 2026, direct Claude subscription OAuth through third-party harnesses stopped being a reliable OpenClaw model backend. That still holds: do not wire `anthropic:claude-cli` as a model backend.
+2. In June 2026, `claude -p` / print-mode automation briefly drew from Claude's separate **Usage** bucket (and 401'd on this stack). Anthropic reverted that in late June 2026, so `claude -p` works again and is fine for scripted automation.
 
-ACPX remains documented as a compatibility path when you need an ACP endpoint. For ordinary second-opinion code review, use the tmux relay. See [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) for OpenClaw/Codex commands and [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) for the ACPX compatibility runbook.
+So `claude -p` is no longer off-limits. The tmux relay is still worth using when you want a recoverable, human-attachable session with visible permission prompts, or a resilient one-shot bridge. ACPX remains documented for setups that explicitly need an ACP endpoint. See [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) for OpenClaw/Codex commands and [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) for the ACPX compatibility runbook.
 
 ## Guides
 
@@ -149,7 +149,7 @@ ACPX remains documented as a compatibility path when you need an ACP endpoint. F
 | [Multi-Model Orchestration](ai-stack/multi-model-orchestration.md) | Run GPT 5.5, Claude Code review, browser-LLM skills, and Ollama in one setup with the right model per task | Any |
 | [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) | Move Opus off the main-agent slot after Anthropic's April 2026 subscription-OAuth block | Anthropic |
 | [Claude Code via ACP](ai-stack/acp-claude-code.md) | Running Claude Code as an ACP-driven compatibility lane after Anthropic's April 2026 harness block | Any |
-| [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) | Drive first-party Claude Code from OpenClaw through tmux for second-opinion review without `claude -p` | Any |
+| [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) | Drive first-party Claude Code from OpenClaw through tmux for recoverable second-opinion review (a robust alternative to `claude -p`) | Any |
 | [Sub-Agent Patterns](ai-stack/sub-agent-patterns.md) | Spawn patterns, model assignment, ACP escalation, error handling, and the wrapper script | Any |
 | [GPT 5.5 Orchestration](ai-stack/gpt-55-orchestration.md) | Tool-call narration guard, strict-agentic detection gaps, silent-tool-loop triage, action-verb tuning | Any |
 | [Self-Improving Agents](ai-stack/self-improving-agents.md) | Correction capture, behavioral-guard plugins (tool-narration-guard, tokenjuice), memory sweeps, and promotion rules | Any |

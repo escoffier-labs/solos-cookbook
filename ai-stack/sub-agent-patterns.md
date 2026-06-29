@@ -3,7 +3,7 @@
 How to use OpenClaw sub-agents effectively. Spawn patterns, model assignment, error handling, and the lessons we learned from breaking things.
 
 **Tested on:** OpenClaw with GPT 5.5 (main + coder), Claude Code via tmux relay for review escalation, ACP compatibility, browser-LLM stack for research/imagegen
-**Last updated:** 2026-06-05
+**Last updated:** 2026-06-29
 
 ---
 
@@ -245,7 +245,7 @@ templates/ai-stack/claude-tmux-relay.sh send \
 templates/ai-stack/claude-tmux-relay.sh capture -200
 ```
 
-For one-shot reviews, put the prompt in a file and use `send-file`. Do not call `claude -p`.
+For one-shot reviews, put the prompt in a file and use `send-file`. (`claude -p` works again as of late June 2026, so it is fine for simple scripted calls; the relay gives you recoverable sessions.)
 
 ACP remains a compatibility path when OpenClaw needs a formal ACP endpoint. The tmux relay has no access to your main agent's conversation history - pass all necessary context in the prompt itself.
 
