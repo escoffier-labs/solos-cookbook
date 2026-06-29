@@ -3,9 +3,9 @@
 How to move Claude Opus off the main-agent slot and onto an ACP escalation path after Anthropic blocked subscription OAuth from third-party harnesses in April 2026.
 
 **Tested on:** OpenClaw 2026.4.x, Claude Code 2.1.92+, Claude Max subscription. Current stack: OpenClaw 2026.6.2 with Opus 4.8 via ACPX (4.7 wrapper still wired as fallback).
-**Last updated:** 2026-06-27
+**Last updated:** 2026-06-29
 
-> **June 2026 note:** This is now the ACPX compatibility runbook. For normal second-opinion code review, prefer [Claude Code via tmux Relay](claude-code-tmux-relay.md), which keeps Claude Code in its first-party interactive harness and avoids `claude -p`. The June notes observed print-mode automation drawing from Claude's separate **Usage** bucket, so do not use `claude -p` as the OpenClaw/Codex handoff path.
+> **June 2026 note (updated late June 2026):** This is the ACPX compatibility runbook. For normal second-opinion code review, the [Claude Code tmux relay](claude-code-tmux-relay.md) keeps Claude in its first-party interactive harness and gives recoverable sessions. The June notes had observed print-mode automation drawing from Claude's separate **Usage** bucket; Anthropic reverted that, so `claude -p` works again and is a fine handoff path for simple scripted calls.
 
 ---
 

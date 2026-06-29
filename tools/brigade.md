@@ -2,7 +2,7 @@
 
 > Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, local work loops, a multi-agent orchestrator, an agent-facing daily driver, and security scans.
 
-_Current as of brigade-cli 0.13.0, 2026-06-27._
+_Current as of brigade-cli 0.13.0, 2026-06-29._
 
 ## What this is
 
@@ -115,7 +115,7 @@ For second-opinion code review, keep the lanes separate:
 4. Codex reviews Claude's findings, applies only validated fixes, and runs tests.
 5. Brigade closeout records what was accepted, rejected, verified, and handed off.
 
-Use [`../ai-stack/claude-code-tmux-relay.md`](../ai-stack/claude-code-tmux-relay.md) for the Claude lane. Do not document Brigade workflows that call `claude -p`; when a one-shot review is useful, paste a prompt file into the existing tmux session and capture the pane.
+Use [`../ai-stack/claude-code-tmux-relay.md`](../ai-stack/claude-code-tmux-relay.md) for the Claude lane. `claude -p` works again as of late June 2026 (Anthropic reverted the June print-mode change), so Brigade workflows may use it for simple scripted reviews; the tmux relay is the more recoverable option when you want an attachable session and visible permission prompts.
 
 ### Daily dogfooding
 

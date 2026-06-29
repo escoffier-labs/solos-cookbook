@@ -1,16 +1,18 @@
 # Claude Code via tmux Relay
 
-How to let OpenClaw drive Claude Code through an interactive tmux session, both for second-opinion review and for scripted one-shot calls, without using `claude -p` or treating Claude as a raw backend.
+How to let OpenClaw drive Claude Code through an interactive tmux session, both for second-opinion review and for scripted one-shot calls, keeping Claude in its first-party harness rather than treating it as a raw backend.
 
 **Tested on:** Claude Code first-party OAuth, Opus 4.8, tmux, OpenClaw 2026.6.2 host workflow
-**Last updated:** 2026-06-10
+**Last updated:** 2026-06-29
+
+> **Update (late June 2026):** Anthropic reverted the print-mode change this guide was written around. `claude -p` / print mode works again, so this relay is no longer required and `claude -p` is fine for scripted automation. Keep this guide anyway: the tmux relay is still the better lane when you want a recoverable, human-attachable, first-party Claude Code session (interactive review with visible permission prompts), and the one-shot bridge below is a resilient JSON-envelope fallback. The June 2026 breakage is kept below as the war story that explains why the relay exists.
 
 There are two lanes here:
 
 1. **Interactive review sessions** - a long-lived named tmux session you send prompts to and capture answers from. Good for second opinions and cross-review.
-2. **One-shot relay** - a script that spins up a throwaway tmux session per request, gets the answer as a JSON envelope, and tears the session down. This is the drop-in replacement for `claude -p --output-format json` when print mode is blocked, and it is what one-liner wrappers and cron jobs call.
+2. **One-shot relay** - a script that spins up a throwaway tmux session per request, gets the answer as a JSON envelope, and tears the session down. It is a drop-in replacement for `claude -p --output-format json` that does not depend on print mode at all, and it is what one-liner wrappers and cron jobs call.
 
-The first lane is the original pattern. The second is what made the whole `claude -p` script ecosystem survive print mode dying.
+The first lane is the original pattern. The second is what made the whole `claude -p` script ecosystem survive the June 2026 print-mode outage (since reverted) and stays useful as insurance against a repeat.
 
 ## What this is
 
@@ -21,7 +23,7 @@ Claude Code can run as a normal interactive terminal app inside tmux. OpenClaw o
 - capture output with `tmux capture-pane`
 - keep Claude Code inside Anthropic's first-party harness and OAuth path
 
-This is the preferred Claude escalation lane for code review and architecture review when you want a real second opinion from Claude Code but do not want to call `claude -p`.
+This is a strong Claude escalation lane for code review and architecture review when you want a real, recoverable second opinion from Claude Code. With print mode working again you can also call `claude -p` directly for simple scripted reviews; the relay wins when you want an attachable session and visible permission prompts.
 
 ACP still has a place when you explicitly need an ACP endpoint, but the tmux relay is simpler to inspect, easier to recover, and closer to how Claude Code is meant to be used.
 
@@ -31,7 +33,7 @@ The lesson is not just "tmux works." The real lesson is that Claude Code should 
 
 In April 2026, direct Claude subscription OAuth through third-party harnesses stopped being reliable. ACPX was the first working repair because it launched Claude Code instead of impersonating it.
 
-By the June 2026 notes, `claude -p` / print-mode automation had a second problem: it drew from Claude's separate **Usage** bucket. If OpenClaw or Codex needs Claude, drive an interactive Claude Code session through tmux instead of shelling out to `claude -p`.
+By the June 2026 notes, `claude -p` / print-mode automation briefly had a second problem: it drew from Claude's separate **Usage** bucket. Anthropic reverted that in late June 2026, so `claude -p` is fine again. Driving an interactive Claude Code session through tmux is still the more recoverable lane when OpenClaw or Codex needs Claude, but it is now a choice, not a forced workaround.
 
 That keeps:
 
@@ -159,7 +161,7 @@ templates/ai-stack/claude-tmux-relay.sh capture -200
 
 ## One-shot relay: print-mode behavior without print mode
 
-If your scripts used to call `claude -p --output-format json` and that path now fails auth (`401` on print mode while interactive sessions still work, which is exactly what happened on this stack in June 2026), you do not have to rewrite every caller. Build a one-shot bridge that drives the real TUI through tmux and emits the same JSON envelope the callers already parse.
+Print mode works again as of late June 2026, so this bridge is now a resilience choice rather than a necessity. It earned its keep during the June 2026 outage, when `claude -p --output-format json` started failing auth (`401` on print mode while interactive sessions still worked) - and it is still worth having, because a relay caller never depends on print mode at all. If you want that insurance, build a one-shot bridge that drives the real TUI through tmux and emits the same JSON envelope the callers already parse.
 
 The bridge does this per request:
 
@@ -348,7 +350,7 @@ Do not use `acceptEdits` in a production repo unless that is the explicit task.
 
 3. **Plan mode is the default for review.** It keeps Claude in a critique lane and avoids surprise edits.
 
-4. **One-shot does not mean print mode.** For interactive sessions, use a prompt file plus `tmux paste-buffer`. For scripted callers, use the one-shot relay bridge above. Do not call `claude -p` on this host.
+4. **One-shot does not have to mean print mode.** For interactive sessions, use a prompt file plus `tmux paste-buffer`. For scripted callers, the one-shot relay bridge above avoids print mode entirely. `claude -p` works again as of late June 2026, so it is a fine option for simple scripted calls; reach for the relay when you want recoverable, attachable sessions.
 
 5. **Capture output is evidence, not memory.** Review artifacts can be noisy. Promote only durable, verified facts through memory handoffs.
 
@@ -360,7 +362,7 @@ Do not use `acceptEdits` in a production repo unless that is the explicit task.
 
 9. **Never auto-approve tool permission prompts in the one-shot lane.** The bridge auto-answers exactly one prompt, folder trust, and fails loudly with the pane tail on anything else. A text task that suddenly wants shell access is a prompt-injection smell, not an inconvenience to click through.
 
-10. **Wrapper migration is per-script.** Print mode dying does not break your scripts in one obvious place; it breaks each `claude -p` caller individually with what looks like an auth flake. Inventory and migrate deliberately.
+10. **Wrapper migration is per-script (historical, June 2026).** During the June 2026 outage, print mode dying did not break your scripts in one obvious place; it broke each `claude -p` caller individually with what looked like an auth flake. Anthropic has since reverted that, so `claude -p` callers work again. This note stays as the recovery playbook if print mode ever regresses: inventory wrappers (`grep -l 'claude.*-p\|--print' ~/bin/*`) and migrate the ones you use.
 
 ## Templates
 
