@@ -28,6 +28,14 @@ const FEATURED = [
 const featured = FEATURED
   .map((id) => guides.find((g) => g.id === id))
   .filter((g) => g !== undefined);
+
+// Most recently updated guides, by the "Last updated: YYYY-MM-DD" stamp, so
+// returning readers can see what changed since their last visit.
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
+const recent = guides
+  .filter((g) => g.data.lastUpdated !== undefined && ISO_DATE.test(g.data.lastUpdated))
+  .sort((a, b) => (b.data.lastUpdated ?? '').slice(0, 10).localeCompare((a.data.lastUpdated ?? '').slice(0, 10)))
+  .slice(0, 4);
 ---
 <BaseLayout>
   <main>
@@ -120,6 +128,17 @@ const featured = FEATURED
         {featured.map((g) => <RecipeCard guide={g} />)}
       </div>
     </section>
+
+    {recent.length > 0 && (
+      <section class="px-6 md:px-10 py-12 max-w-6xl mx-auto">
+        <div class="chapter-rule mb-6">
+          <span class="kicker">Recently updated</span>
+        </div>
+        <div class="card-grid">
+          {recent.map((g) => <RecipeCard guide={g} />)}
+        </div>
+      </section>
+    )}
 
     <section id="chapters" class="px-6 md:px-10 py-12 max-w-6xl mx-auto">
       <div class="chapter-rule mb-6">
