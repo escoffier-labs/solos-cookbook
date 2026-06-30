@@ -16,6 +16,12 @@ prebuild reruns the scrub gate).
 Report actual results. If any command fails, report the failure output verbatim
 and do not claim success. Node >= 22.12.0 is required (`site/package.json` engines).
 
+`scripts/verify` is fail-closed: its first stage (`check:content`) refuses to run
+unless `SCRUB_HOSTNAMES` (the private-hostname denylist) is exported. Source the
+real value from your local env or the Vercel project and export it before running,
+e.g. `export SCRUB_HOSTNAMES=host1,host2` (comma-separated; format in
+`site/.env.example`). Never commit the value and never weaken the gate to pass it.
+
 ## Hard Prohibitions
 - This repo is PUBLIC. Never commit private hostnames, LAN or RFC 1918 IPs,
   real container, VM, or user names, home-network domains, or personal context.
@@ -40,6 +46,9 @@ and do not claim success. Node >= 22.12.0 is required (`site/package.json` engin
   `cookbook.solomonneas.dev` redirects to `escoffierlabs.dev/cookbook`.
 - Dual license: MIT for code and templates, CC BY-NC-ND 4.0 for narrative
   content (`LICENSE`, `CONTENT-LICENSE`).
+- Releases are continuous: pushing `main` deploys the live site via Vercel.
+  There are no git tags or `CHANGELOG` by design; the README badges (guide count
+  and updated date) are the release surface.
 
 ## Guide Rules
 - Adding or editing a guide: follow the fixed skeleton in `CONTRIBUTING.md`
@@ -50,7 +59,11 @@ and do not claim success. Node >= 22.12.0 is required (`site/package.json` engin
   No theoretical guides, no commands you did not run. Every guide needs
   runnable Verification commands with expected output.
 - Adding or removing a guide: update the README badge counts (guide count,
-  updated date) in the same change.
+  updated date) in the same change. The `guides-NN` count is the number of
+  reader-facing guides and essays linked in the README `## Guides` table (the
+  nine categories shown there); it excludes `plans/`, `skills/`, and
+  `EXEMPT_FILES`, and is neither the total site page count nor the
+  `structure-check` skeleton count.
 - Guide content is plain markdown plus existing `templates/` artifacts only.
   Site dependencies are separate and live in `site/package.json`.
 
