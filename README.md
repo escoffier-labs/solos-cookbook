@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
   <img src="https://img.shields.io/badge/guides-60-red?style=for-the-badge" alt="60 guides">
-  <img src="https://img.shields.io/badge/updated-2026--06--29-white?style=for-the-badge" alt="Updated 2026-06-29">
+  <img src="https://img.shields.io/badge/updated-2026--06--30-white?style=for-the-badge" alt="Updated 2026-06-30">
 </p>
 
 <p align="center">

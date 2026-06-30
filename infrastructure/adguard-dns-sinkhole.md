@@ -2,8 +2,8 @@
 
 > Block ads, trackers, and malware at the resolver instead of on every device, run a synced standby so a single reboot doesn't take DNS down, and let an AI agent query and tune it through tiered MCP tools where reads are open and anything that can break resolution stays gated. 🦞
 
-**Tested on:** AdGuard Home in an unprivileged LXC container on Proxmox VE 9.2.3, a second AdGuardHome Sync instance keeping a standby aligned, an eero mesh LAN, and the operator's own `adguard-mcp` server (33 tools across three write tiers).
-**Last updated:** 2026-06-10
+**Tested on:** AdGuard Home in an unprivileged LXC container on Proxmox VE 9.2.3, a second AdGuardHome Sync instance keeping a standby aligned, an eero mesh LAN, and the operator's own `adguard-mcp` server (50 tools across three write tiers).
+**Last updated:** 2026-06-30
 
 ---
 
@@ -109,10 +109,10 @@ Set the resolver as the network's DNS server where your gear allows it, and per-
 
 ## Agent Management via adguard-mcp
 
-The operator runs their own MCP server, [`adguard-mcp`](https://github.com/solomonneas/adguard-mcp), which exposes AdGuard Home (and AdGuardHome Sync) to an AI agent as structured tools. It is **33 tools split into three write tiers**, and the tiering is the whole safety story:
+The operator runs their own MCP server, [`adguard-mcp`](https://github.com/solomonneas/adguard-mcp), which exposes AdGuard Home (and AdGuardHome Sync) to an AI agent as structured tools. It is **50 tools split into three write tiers**, and the tiering is the whole safety story:
 
-- **Reads (14):** open, no confirmation. Status, stats, query log, filter lists, user rules, clients, blocked-services catalog, host checks, DNS config, SafeSearch, and the three Sync read tools.
-- **Safe writes (13):** require an explicit `confirm: true`. Add or remove a user rule, subscribe or unsubscribe a blocklist, toggle a list, refresh lists, add or update a client, set blocked services, toggle SafeSearch/SafeBrowsing, trigger a sync run.
+- **Reads (22):** open, no confirmation. Status, stats, query log, filter lists, user rules, clients, blocked-services catalog, host checks, DNS config, SafeSearch settings, DNS rewrites and access lists, query-log and stats config, DHCP and TLS status, and the three Sync read tools.
+- **Safe writes (22):** require an explicit `confirm: true`. Add or remove a user rule, subscribe or unsubscribe a blocklist, toggle or refresh lists, add or update a client, set blocked services (global and per-client), toggle SafeSearch/SafeBrowsing, add/update/delete and toggle DNS rewrites, set the access list, update query-log and stats config, validate TLS config, test an upstream resolver, and trigger a sync run.
 - **Destructive (6):** require `confirm: true` **and** `destructive: true`. Wholesale replace the user-rules block, toggle global protection (off = all blocking stops), delete a client, clear the query log, reset stats, clear sync logs.
 
 The model literally cannot disable protection or overwrite the rules block from a single hallucinated call, because the destructive tier needs two explicit boolean flags the agent has to mean to set. Credentials live only in memory after env-load and are redacted from logs and errors.
