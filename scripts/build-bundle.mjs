@@ -1,4 +1,9 @@
 // scripts/build-bundle.mjs
+//
+// Premium kitchen-bundle builder (paid artifact). This is the premium-edition
+// pipeline, separate from the public-site `scripts/verify` gate. It is verified
+// by its own CI job (.github/workflows/ci.yml `bundle`) via build-bundle.test.mjs,
+// not by `npm --prefix site test`. Needs the `zip` binary. Output is gitignored.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
