@@ -2,7 +2,7 @@
 
 > Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, local work loops, a multi-agent orchestrator, an agent-facing daily driver, and security scans.
 
-_Current as of brigade-cli 0.13.0, 2026-06-29._
+_Current as of brigade-cli 0.15.0, 2026-06-30._
 
 ## What this is
 
