@@ -20,7 +20,7 @@ cd .. && node scripts/build-bundle.mjs          # -> dist-book/cookbook-kitchen-
 ```
 
 Upload both to the Creem product:
-- `dist-book/cookbook.pdf` (the typeset book, ~24 MB, 823 pages)
+- `dist-book/cookbook.pdf` (the typeset book, ~24 MB, 790+ pages)
 - `dist-book/cookbook-kitchen-bundle.zip` (templates + setup checklist)
 
 No license keys needed: the files are ungated, Creem just delivers them on purchase.
@@ -34,7 +34,7 @@ No license keys needed: the files are ungated, Creem just delivers them on purch
 > typeset and designed for offline reading, plus the parts that are not on the web.
 >
 > What you get:
-> - The typeset PDF. 823 pages, cover to colophon, designed to actually read.
+> - The typeset PDF. 790+ pages, cover to colophon, designed to actually read.
 > - Exclusive hero diagrams that open each chapter. They are not on the website.
 > - The runnable kitchen bundle: every template, config, and a one-page setup
 >   checklist that takes you from an empty machine to a running stack.
