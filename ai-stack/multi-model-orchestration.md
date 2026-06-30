@@ -127,7 +127,7 @@ ollama pull deepseek-v4-flash:cloud
 ollama pull deepseek-v4-pro:cloud
 ```
 
-Local tools can call cloud models through the localhost Ollama daemon after `ollama signin`. For direct hosted calls to `https://ollama.com/api`, use the provider auth flow documented by Ollama. For most OpenClaw automation, the simpler path is to sign in once with `ollama signin` and let local tools call the cloud models through the localhost Ollama daemon.
+Local tools can call cloud models through the localhost Ollama daemon after `ollama signin`. For direct hosted calls to the Ollama cloud API (`https://ollama.com`), use the provider auth flow documented by Ollama. For most OpenClaw automation, the simpler path is to sign in once with `ollama signin` and let local tools call the cloud models through the localhost Ollama daemon.
 
 Ollama Pro is currently $20/month, includes 50x more cloud usage than Free, and allows 3 concurrent cloud models. Ollama documents usage as infrastructure utilization rather than a fixed token cap, with session limits resetting every 5 hours and weekly limits resetting every 7 days.
 
