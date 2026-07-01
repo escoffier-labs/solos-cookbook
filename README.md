@@ -13,12 +13,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/code-MIT-green?style=for-the-badge" alt="Code license: MIT">
-  <img src="https://img.shields.io/badge/content-CC_BY--NC--ND_4.0-lightgrey?style=for-the-badge" alt="Content license: CC BY-NC-ND 4.0">
-  <img src="https://img.shields.io/badge/platform-Linux-blue?style=for-the-badge&logo=linux&logoColor=white" alt="Platform: Linux">
-  <img src="https://img.shields.io/badge/OpenClaw-stack-ef4444?style=for-the-badge" alt="OpenClaw stack">
-  <img src="https://img.shields.io/badge/guides-60-red?style=for-the-badge" alt="60 guides">
-  <img src="https://img.shields.io/badge/updated-2026--06--30-white?style=for-the-badge" alt="Updated 2026-06-30">
+  <img src="https://shieldcn.dev/badge/code-MIT-green.svg" alt="Code license: MIT">
+  <img src="https://shieldcn.dev/badge/content-CC_BY--NC--ND_4.0-lightgrey.svg" alt="Content license: CC BY-NC-ND 4.0">
+  <img src="https://shieldcn.dev/badge/platform-Linux-blue.svg?logo=linux&logoColor=white" alt="Platform: Linux">
+  <img src="https://shieldcn.dev/badge/OpenClaw-stack-ef4444.svg" alt="OpenClaw stack">
+  <img src="https://shieldcn.dev/badge/guides-60-red.svg" alt="60 guides">
+  <img src="https://shieldcn.dev/badge/updated-2026--06--30-white.svg" alt="Updated 2026-06-30">
 </p>
 
 <p align="center">
@@ -41,7 +41,7 @@ The infrastructure examples come from a single-engineer bare-metal Linux setup w
 
 > The starter layout documented here was extracted into an installable CLI: [**Brigade**](https://github.com/escoffier-labs/brigade) (`pipx install brigade-cli`). If you want the kitchen without reading every recipe first, start there. The cookbook explains the why, Brigade gives you the setup.
 >
-> [![Star Brigade](https://img.shields.io/github/stars/escoffier-labs/brigade?style=social&label=Star%20brigade)](https://github.com/escoffier-labs/brigade)
+> [![Star Brigade](https://shieldcn.dev/github/stars/escoffier-labs/brigade.svg)](https://github.com/escoffier-labs/brigade)
 
 Every recipe is free to read here and on the site. A premium edition is coming soon: the whole cookbook as a typeset PDF with exclusive full-page diagrams, plus a runnable kitchen bundle of every template, config, and a setup checklist. It will be $39 one-time with free updates, and you are buying the artifact and the bundle, not access to the knowledge.
 
