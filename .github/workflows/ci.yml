@@ -2,8 +2,18 @@ name: CI
 
 on:
   push:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitignore'
     branches: [main]
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+      - '.gitignore'
   schedule:
     # Weekly external link sweep (Mondays 06:17 UTC).
     - cron: '17 6 * * 1'
