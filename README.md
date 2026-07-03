@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/solos-cookbook-banner.jpg" alt="Solomon's Guide to Cookin' with Gas banner">
+  <img src="docs/assets/solos-cookbook-social-preview.jpg" alt="Solomon's Guide to Cookin' with Gas banner">
 </p>
 
 <h1 align="center">🦞 Solomon's Guide to Cookin' with Gas</h1>
