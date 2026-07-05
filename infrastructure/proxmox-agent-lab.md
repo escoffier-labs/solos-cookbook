@@ -13,7 +13,7 @@ This is the substrate guide for a home agent lab: the physical box that hosts ev
 
 The shape is one consumer hypervisor running a pile of small LXC containers and a couple of VMs. The persistent services are the lab's plumbing: a DNS sinkhole, a SIEM, a network monitor, a photo service, an n8n automation stack, and a Proxmox Backup Server living on the same box it protects. Alongside those sit a handful of build and smoke-test containers that spend nearly all their life stopped. A separate hypervisor (a Windows desktop running Hyper-V) carries the heavier SOC VMs, so it stays out of the RAM budget here.
 
-The distinctive part is the operator layer. The agent never gets an SSH root shell on the host. It reaches Proxmox through the operator's own [`proxmox-mcp`](https://github.com/solomonneas/proxmox-mcp), a Model Context Protocol server that exposes the host through tiered, token-authenticated tools: reads are open, writes need an explicit confirm flag, and destructive operations need a confirm flag plus a destructive flag plus a process-level env gate. Security posture is graded out-of-band by [ProxGuard](https://github.com/solomonneas/proxguard), which parses the host's real config files against CIS Debian benchmarks and emits copy-paste remediation.
+The distinctive part is the operator layer. The agent never gets an SSH root shell on the host. It reaches Proxmox through the operator's own [`proxmox-mcp`](https://github.com/lidless-labs/proxmox-mcp), a Model Context Protocol server that exposes the host through tiered, token-authenticated tools: reads are open, writes need an explicit confirm flag, and destructive operations need a confirm flag plus a destructive flag plus a process-level env gate. Security posture is graded out-of-band by [ProxGuard](https://github.com/solomonneas/proxguard), which parses the host's real config files against CIS Debian benchmarks and emits copy-paste remediation.
 
 If you want the raw inventory of what runs in which container, that map is [`homelab-topology.md`](homelab-topology.md). If you want the discipline behind one-service-per-container and the throwaway build-container pattern, that's [`service-isolation.md`](service-isolation.md). This guide is about using that lab as an *agent-operated* substrate: the MCP boundary, the safe-write tiers, and the audit loop.
 
@@ -33,7 +33,7 @@ The point is not that the agent runs the lab. It is that the lab is built so the
 - A Proxmox VE 9.x host you control, single node is fine. Consumer hardware is fine; this lab runs on a 32GB box.
 - SSH access to the host for the operator (the MCP uses host SSH for in-guest `pct exec`, file reads, and writes).
 - A Proxmox API token. Start read-only: a role with `Datastore.Audit + VM.Audit + Sys.Audit`. Grade up to `VM.PowerMgmt + VM.Snapshot + VM.Backup` only after the read tier is verified.
-- [`proxmox-mcp`](https://github.com/solomonneas/proxmox-mcp) installed in whatever agent harness you run (Claude Desktop, Claude Code, OpenClaw, Codex CLI, Hermes are all documented upstream).
+- [`proxmox-mcp`](https://github.com/lidless-labs/proxmox-mcp) installed in whatever agent harness you run (Claude Desktop, Claude Code, OpenClaw, Codex CLI, Hermes are all documented upstream).
 - [ProxGuard](https://github.com/solomonneas/proxguard) for the audit pass. It runs entirely client-side in the browser; nothing leaves the machine.
 - For self-signed lab certs, you'll want `PROXMOX_TLS_INSECURE=true` on the MCP. See the gotchas; this is the only place that toggle belongs.
 

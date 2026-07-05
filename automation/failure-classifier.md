@@ -335,7 +335,7 @@ To smoke-test the cascade end to end, remember the rule from [`n8n-patterns.md`]
 
 **`require('crypto')` needs `NODE_FUNCTION_ALLOW_BUILTIN: "*"`.** The fingerprint hash depends on it. If that compose env var goes missing, the classifier breaks at the same time as every other Code node, and now your error workflow is the thing throwing errors. Use `var crypto = require('crypto')`, not `const`, to match the lenient-fold pattern.
 
-**`errorWorkflow` gets stripped by `PUT /workflows/:id`.** This is the single most common way the whole classifier silently stops working. You script a routine workflow update through the API, the API drops `settings.errorWorkflow`, and that workflow's errors now go nowhere. Run the verification query #1 periodically. Prefer the n8n-ops MCP or direct sqlite for any settings change. Full detail in [`n8n-patterns.md`](n8n-patterns.md) Layer 2.
+**`errorWorkflow` gets stripped by `PUT /workflows/:id`.** This is the single most common way the whole classifier silently stops working. You script a routine workflow update through the API, the API drops `settings.errorWorkflow`, and that workflow's errors now go nowhere. Run the verification query #1 periodically. Prefer `n8nctrl` or direct sqlite for any settings change. Full detail in [`n8n-patterns.md`](n8n-patterns.md) Layer 2.
 
 **Suppression is per-fingerprint, not per-workflow.** Two different errors in the same workflow fingerprint apart and notify independently. This is correct: a workflow can have one self-healing timeout and one real auth failure at the same time, and you want the auth failure even while the timeout is suppressed. Do not "fix" this by keying suppression on workflow id.
 
@@ -354,4 +354,4 @@ To smoke-test the cascade end to end, remember the rule from [`n8n-patterns.md`]
 - [`automation/n8n-patterns.md`](n8n-patterns.md) - the three interfaces, the Code node sandbox, the constant-folding trap, and the Layer 5 overview this guide expands on
 - [`automation/hooks.md`](hooks.md) - three-layer hook model; the classifier is the n8n-side analogue of a tool-call hook, and the same outbound-scrub discipline applies to its delivery step
 - [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model; n8n is layer 3, and the classifier is what keeps a fleet of layer-3 schedule triggers from going dark silently
-- [n8n-ops-mcp](https://github.com/solomonneas/n8n-ops-mcp) - the MCP that wraps the `errorWorkflow`-preserving update path so a routine edit does not strip your classifier wiring
+- [n8nctrl](https://github.com/lidless-labs/n8nctrl) - the CLI and MCP adapter that wrap the `errorWorkflow`-preserving update path so a routine edit does not strip your classifier wiring

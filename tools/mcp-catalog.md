@@ -26,15 +26,15 @@ Grouped by what the underlying service does. Versions move; see each repo for cu
 
 | MCP | Wraps | What the agent does with it |
 |-----|-------|----------------------------|
-| [`jellyfin-mcp`](https://github.com/solomonneas/jellyfin-mcp) | Jellyfin media server | List libraries, scan, list sessions, control playback, manage playlists/collections, manage users, run scheduled tasks, Quick Connect auth |
-| [`media-cli`](https://github.com/solomonneas/media-cli) | Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyseerr, Tdarr (the "arr" media stack) | A single bash script (binary `media`), not an MCP. The agent shells out to it (`media movies search`, `media movies add`, `media downloads active`), locally or over SSH. Public now: `npm i -g @solomonneas/media-cli` or curl the script. Pairs with [`jellyfin-mcp`](https://github.com/solomonneas/jellyfin-mcp) for Jellyfin playback; see [`repo-redeploy.md`](repo-redeploy.md) for how it stays current |
+| [`jellyctrl`](https://github.com/lidless-labs/jellyctrl) (`jellyfin-mcp` on npm) | Jellyfin media server | List libraries, scan, list sessions, control playback, manage playlists/collections, manage users, run scheduled tasks, Quick Connect auth |
+| [`media-cli`](https://github.com/solomonneas/media-cli) | Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyseerr, Tdarr (the "arr" media stack) | A single bash script (binary `media`), not an MCP. The agent shells out to it (`media movies search`, `media movies add`, `media downloads active`), locally or over SSH. Public now: `npm i -g @solomonneas/media-cli` or curl the script. Pairs with [`jellyctrl`](https://github.com/lidless-labs/jellyctrl) for Jellyfin playback; see [`repo-redeploy.md`](repo-redeploy.md) for how it stays current |
 
 ### Social & publishing
 
 | MCP | Wraps | What the agent does with it |
 |-----|-------|----------------------------|
 | [`postiz-mcp`](https://github.com/solomonneas/postiz-mcp) | Postiz scheduled-posting platform | Create/schedule/delete posts and post groups, list integrations, check integration health, get post + platform analytics, find next scheduling slot, upload media, invoke per-provider integration tools |
-| [`n8n-ops-mcp`](https://github.com/solomonneas/n8n-ops-mcp) | n8n workflow automation | List/inspect workflows and executions, trigger and toggle workflows, read execution status and errors, manage credentials metadata, with confirmation gates on activate/deactivate |
+| [`n8nctrl`](https://github.com/lidless-labs/n8nctrl) (`n8n-ops-mcp` on npm) | n8n workflow automation | List/inspect workflows and executions, trigger and toggle workflows, read execution status and errors, manage credentials metadata, with confirmation gates on activate/deactivate |
 
 ### Security operations
 
@@ -42,10 +42,10 @@ The SOC-side stack lands six MCPs against a typical purple-team toolchain. Each 
 
 | MCP | Wraps | What the agent does with it |
 |-----|-------|----------------------------|
-| [`wazuh-mcp`](https://github.com/solomonneas/wazuh-mcp) | Wazuh SIEM/XDR | List/search alerts, agent inventory, agent processes/ports/packages/network, FIM files, manager config + logs, rules/decoders, SCA checks, rootcheck |
-| [`thehive-mcp`](https://github.com/solomonneas/thehive-mcp) | TheHive case management | Cases, alerts, tasks, observables, custom fields - read-leaning, with explicit write tools gated |
-| [`cortex-mcp`](https://github.com/solomonneas/cortex-mcp) (`thehive-cortex-mcp`) | Cortex analyzer/responder runs | Job submission, results, analyzer catalog. Pairs with `thehive-mcp` |
-| [`misp-mcp`](https://github.com/solomonneas/misp-mcp) | MISP threat-intel platform | Event/attribute/tag CRUD, feeds, sharing groups, taxonomies |
+| [`wazuh-mcp`](https://github.com/lidless-labs/wazuh-mcp) | Wazuh SIEM/XDR | List/search alerts, agent inventory, agent processes/ports/packages/network, FIM files, manager config + logs, rules/decoders, SCA checks, rootcheck |
+| [`thehive-mcp`](https://github.com/lidless-labs/thehive-mcp) | TheHive case management | Cases, alerts, tasks, observables, custom fields - read-leaning, with explicit write tools gated |
+| [`cortex-mcp`](https://github.com/lidless-labs/cortex-mcp) (`thehive-cortex-mcp`) | Cortex analyzer/responder runs | Job submission, results, analyzer catalog. Pairs with `thehive-mcp` |
+| [`misp-mcp`](https://github.com/lidless-labs/misp-mcp) | MISP threat-intel platform | Event/attribute/tag CRUD, feeds, sharing groups, taxonomies |
 | [`rapid7-mcp`](https://github.com/solomonneas/rapid7-mcp) | Rapid7 InsightVM | Asset inventory, vulnerability findings, scan templates, site management |
 | [`sophos-mcp`](https://github.com/solomonneas/sophos-mcp) | Sophos Central | Endpoint inventory, alerts, isolation, scan triggers |
 
@@ -53,14 +53,14 @@ The SOC-side stack lands six MCPs against a typical purple-team toolchain. Each 
 
 | MCP | Wraps | What the agent does with it |
 |-----|-------|----------------------------|
-| [`suricata-mcp`](https://github.com/solomonneas/suricata-mcp) | Suricata IDS | Alert search, rule management, ruleset reload, traffic stats |
-| [`zeek-mcp`](https://github.com/solomonneas/zeek-mcp) | Zeek (network security monitor) | Log search across conn/dns/http/ssl/files, signature management |
+| [`suricata-mcp`](https://github.com/lidless-labs/suricata-mcp) | Suricata IDS | Alert search, rule management, ruleset reload, traffic stats |
+| [`zeek-mcp`](https://github.com/lidless-labs/zeek-mcp) | Zeek (network security monitor) | Log search across conn/dns/http/ssl/files, signature management |
 
 ### Threat-intel framework
 
 | MCP | Wraps | What the agent does with it |
 |-----|-------|----------------------------|
-| [`mitre-mcp`](https://github.com/solomonneas/mitre-mcp) | MITRE ATT&CK + D3FEND knowledge bases | Lookup techniques, tactics, mitigations, groups, software, relationships |
+| [`mitre-mcp`](https://github.com/lidless-labs/mitre-mcp) | MITRE ATT&CK + D3FEND knowledge bases | Lookup techniques, tactics, mitigations, groups, software, relationships |
 
 ### OSINT graph
 
@@ -80,7 +80,7 @@ These are not MCPs - they ship as standalone tools the orchestrator or other age
 | [`agent-notify`](https://github.com/escoffier-labs/agent-notify) | Private operator notifications for agent events - long-running run completions, approvals, blockers. Go binary, ships SBOM |
 | [`cloche`](https://github.com/escoffier-labs/cloche) | Agent-neutral screenshot capture CLI (renamed from appshots). Rust, on crates.io (`cargo install cloche`) |
 | [`openclaw-overlay`](https://github.com/solomonneas/openclaw-overlay) | HUD for session monitoring - which agent is talking to which channel, what tools fired, what cron job is in flight |
-| [`ops-deck-oss`](https://github.com/solomonneas/ops-deck-oss) | Self-hosted ops dashboard - service health, cron freshness, backup status, agent activity. See [`opsdeck.md`](opsdeck.md) |
+| [`opsdeck`](https://github.com/solomonneas/opsdeck) | Self-hosted ops dashboard - tasks, services, projects, memory, usage, security, architecture, and agent activity. See [`opsdeck.md`](opsdeck.md) |
 
 ### Upstream contributions (not owned, but maintained alongside)
 
@@ -97,7 +97,7 @@ These are not published from this stack but they get tracked in the same release
 The repos share enough that you can read one and predict the rest:
 
 - **TypeScript, MCP SDK transport.** All speak the official MCP server-stdio transport. No HTTP-tunneled MCPs.
-- **Confirmation gates on destructive operations.** Anything that deletes, modifies, or restarts production state requires a `confirm: true` argument. Without it, the tool returns a structured "confirm required" response. The pattern lives in [`mcp-tool-handler-test-pattern`](https://github.com/solomonneas/jellyfin-mcp/tree/main/tests).
+- **Confirmation gates on destructive operations.** Anything that deletes, modifies, or restarts production state requires a `confirm: true` argument. Without it, the tool returns a structured "confirm required" response. The pattern lives in [`mcp-tool-handler-test-pattern`](https://github.com/lidless-labs/jellyctrl/tree/main/tests).
 - **`--help` on the binary.** Every MCP can be launched directly from the command line for smoke checks: `npx <mcp-name> --help` prints tool list, required env vars, and version.
 - **Five-client README.** Every README includes setup blocks for Claude Desktop, Claude Code, OpenClaw, Hermes Agent, and Codex CLI. See [`mcp-readme-five-clients.md`](mcp-readme-five-clients.md).
 - **No hard-coded service URLs.** Service base URL, token, and any per-instance flags come from environment variables. The README documents each one.
@@ -146,7 +146,7 @@ A healthy stack: every catalog entry resolves on npm, every README contains all 
 
 **A confirmation gate in one direction is not symmetry.** Destructive tools require `confirm: true`, but the agent has no way to require `confirm: false` for safety. Defense in depth: also gate the dangerous tools at the agent's `tools.allow` policy.
 
-**Test fixtures that hit a real API will rot.** Each MCP has a fake-server capture pattern for unit tests; the integration-style tests are deliberately not in the repo (see [`mcp-tool-handler-test-pattern`](https://github.com/solomonneas/jellyfin-mcp)). If you add a new MCP, copy that pattern - do not write tests that hit a live service.
+**Test fixtures that hit a real API will rot.** Each MCP has a fake-server capture pattern for unit tests; the integration-style tests are deliberately not in the repo (see [`mcp-tool-handler-test-pattern`](https://github.com/lidless-labs/jellyctrl)). If you add a new MCP, copy that pattern - do not write tests that hit a live service.
 
 **`npm publish` on a working tree with private files in `dist/` will leak.** Always `npm pack --dry-run` before `npm publish` and review the tarball contents. The MCP release publish checklist lives in the parent repo's notes and has bitten every catalog entry at least once.
 
