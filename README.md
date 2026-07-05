@@ -170,7 +170,7 @@ So `claude -p` is no longer off-limits. The tmux relay is still worth using when
 | [OpenClaw Cron Deep-Dive](automation/openclaw-cron-deep-dive.md) | Heartbeat batching, thinking-budget aliases, explicit delivery routing, quiet hours, and real-incident gotchas | OpenClaw |
 | [Multi-Channel Setup](automation/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, ACP threads, and access control | Any |
 | [Hooks](automation/hooks.md) | Three-layer hook model: boundary (git pre-push, outbound-scrub CLIs), tool-call (PreToolUse/PostToolUse, OpenClaw `before_tool_call`/`tool_result_persist`), lifecycle (SessionStart, `before_prompt_build`, `message_sending`) | Any |
-| [n8n Patterns](automation/n8n-patterns.md) | Three interfaces (n8n-ops-mcp, REST API, direct sqlite), Code node sandbox + task-runner constant-folding trap, failure-classifier topology | n8n |
+| [n8n Patterns](automation/n8n-patterns.md) | Three interfaces (n8nctrl, REST API, direct sqlite), Code node sandbox + task-runner constant-folding trap, failure-classifier topology | n8n |
 | [Social Publishing Stack](automation/social-publishing-stack.md) | Self-hosted Postiz + n8n publishing plumbing in one container, agent-driven over MCP with env-gated writes, the rate-limit guard, per-network token expiry. The pipes, not the content | n8n |
 | [Sandbox Shims](automation/sandbox-shims.md) | PATH wrappers for read-only git, denied network tools, package-manager controls, and restricted worker lanes | Any |
 | [Failure Classifier](automation/failure-classifier.md) | One n8n error workflow for the whole fleet: bucket taxonomy, fingerprint dedup, escalation routing, taxonomy tuning | n8n |
@@ -185,7 +185,7 @@ So `claude -p` is no longer off-limits. The tmux relay is still worth using when
 | [Homelab Topology](infrastructure/homelab-topology.md) | The hypervisor map: LXC vs VM split, container inventory, resource allocation on a small box, backup wiring | Proxmox |
 | [Service Isolation](infrastructure/service-isolation.md) | One service per unprivileged container: blast-radius thinking, resource caps, ephemeral build containers, when a VM is justified | Proxmox |
 | [Proxmox Agent Lab](infrastructure/proxmox-agent-lab.md) | Proxmox as the agent-stack substrate: service vs ephemeral CTs, the RAM budget, PBS backups, safe agent control via proxmox-mcp, proxguard CIS audits | Proxmox |
-| [AdGuard DNS Sinkhole](infrastructure/adguard-dns-sinkhole.md) | Network DNS sinkhole on a home lab with a synced standby, managed by an agent through adguard-mcp tiers | Any |
+| [AdGuard DNS Sinkhole](infrastructure/adguard-dns-sinkhole.md) | Network DNS sinkhole on a home lab with a synced standby, managed by an agent through adguardctrl tiers | Any |
 | [NAS & Network Mounts](infrastructure/nas-and-backups.md) | CIFS automount that never hangs boot, soft mounts, guest vs credential auth, bind-mount traps, PBS-on-NAS resilience | Any |
 | [Desktop Integration](infrastructure/desktop-integration.md) | The daily-driver desktop as a peer: SSH into Windows, SMB shares both ways, an SCP inbox, remote OBS control | Windows 11 + Linux |
 
@@ -234,7 +234,7 @@ So `claude -p` is no longer off-limits. The tmux relay is still worth using when
 | [MCP Catalog](tools/mcp-catalog.md) | Every MCP server published from this stack, what each one wraps, who uses it | Any |
 | [Brigade](tools/brigade.md) | Installable agent workspace bootstrap, a multi-agent orchestrator, per-writer handoffs, an agent-facing daily driver, scanners, and local publish gates | Any |
 | [Skillet](tools/skillet.md) | Installable agent skills: line-check repo audits with leverage-sorted backlogs, bug-hunt, security-sweep, publish gates, releases, handoffs | Any |
-| [OpsDeck](tools/opsdeck.md) | Self-hosted ops dashboard, eight pages over the OpenClaw workspace, with auto-detected sidecar | Any |
+| [OpsDeck](tools/opsdeck.md) | Self-hosted ops dashboard, 20 routes over projects, services, memory, usage, security, and agent operations | Any |
 | [Repo Redeploy](tools/repo-redeploy.md) | One cron job that watches your own MCP/CLI repos and redeploys them across hosts | Any |
 | [MCP READMEs: All Five Clients](tools/mcp-readme-five-clients.md) | Every MCP repo ships setup blocks for Claude Desktop, Claude Code, OpenClaw, Hermes, Codex CLI | Any |
 
@@ -300,8 +300,8 @@ git config core.hooksPath hooks
 - [Brigade](https://github.com/escoffier-labs/brigade): the installable starter kit for synced agent memory, handoffs, and workspace bootstrap files
 - [OpenClaw](https://github.com/openclaw/openclaw): the tested reference agent and memory owner for this stack
 - [content-guard](https://github.com/escoffier-labs/content-guard): the policy-driven scanner used by the pre-push hook
-- [ops-deck-oss](https://github.com/solomonneas/ops-deck-oss): self-hosted ops dashboard
-- [n8n-ops-mcp](https://github.com/solomonneas/n8n-ops-mcp), [jellyfin-mcp](https://github.com/solomonneas/jellyfin-mcp), [mcporter](https://github.com/solomonneas/mcporter): MCPs from this stack
+- [OpsDeck](https://github.com/solomonneas/opsdeck): self-hosted ops dashboard
+- [n8nctrl](https://github.com/lidless-labs/n8nctrl), [jellyctrl](https://github.com/lidless-labs/jellyctrl), [mcporter](https://github.com/steipete/mcporter): MCPs and operator tools from this stack
 - [openclaw-overlay](https://github.com/solomonneas/openclaw-overlay): HUD overlay for session monitoring
 - [usage-tracker](https://github.com/escoffier-labs/usage-tracker): token usage and cost analytics
 

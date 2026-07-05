@@ -8,7 +8,7 @@
 #
 # Replace <SCANNER_DIR>, <SCANNER_INVOCATION>, and <POLICY_PATH> with the
 # scanner you actually use. The shape below assumes content-guard
-# (https://github.com/solomonneas/content-guard) but any CLI that returns
+# (https://github.com/escoffier-labs/content-guard) but any CLI that returns
 # non-zero on policy violations works.
 set -euo pipefail
 

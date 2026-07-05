@@ -2,7 +2,7 @@
 
 > The publishing plumbing I actually run: Postiz for scheduling and fan-out to the networks, n8n for the multi-step orchestration around it, and an agent driving both over MCP with writes gated off by default. You own the scheduler, the queue, and the data. No per-seat SaaS, no third party holding your calendar. 🦞
 
-**Tested on:** Postiz (self-hosted) + n8n 2.16.x in one Docker compose stack inside a single unprivileged LXC on a home Proxmox host, driven by `postiz-mcp` and `n8n-ops-mcp` from an OpenClaw agent (also works from Claude Code, Codex CLI, Hermes), writes env-gated, deletes double-gated
+**Tested on:** Postiz (self-hosted) + n8n 2.16.x in one Docker compose stack inside a single unprivileged LXC on a home Proxmox host, driven by `postiz-mcp` and `n8nctrl` (published as `n8n-ops-mcp`) from an OpenClaw agent (also works from Claude Code, Codex CLI, Hermes), writes env-gated, deletes double-gated
 **Last updated:** 2026-06-10
 
 ---
@@ -28,7 +28,7 @@ The obvious alternative is a hosted scheduler (Buffer, Hootsuite, Typefully, etc
 
 - **You own scheduling.** The calendar, the queue, and the "next free slot" logic live on your box. No vendor decides your posting windows or rate-limits your API access on top of the networks' own limits.
 - **No per-seat SaaS.** One container, no monthly tier that scales with channels or "team members." Add networks until the platforms themselves push back.
-- **It composes with the agent stack.** Postiz and n8n both expose clean surfaces (`postiz-mcp`, `n8n-ops-mcp`) that slot into the same MCP-driven agent you already run for everything else. No bespoke integration, no hand-rolled HTTP in every workflow.
+- **It composes with the agent stack.** Postiz and n8n both expose clean surfaces (`postiz-mcp`, `n8nctrl`) that slot into the same MCP-driven agent you already run for everything else. No bespoke integration, no hand-rolled HTTP in every workflow.
 - **Data stays local.** Your connected-account tokens, scheduled queue, and analytics history sit in a container you control, not a third party's database. When you tear it down, it is actually gone.
 
 The tradeoff is honest: you now own the uptime, the upgrades, and the blast radius. The Gotchas section is where that bill comes due.
@@ -39,7 +39,7 @@ The tradeoff is honest: you now own the uptime, the upgrades, and the blast radi
 - Postiz self-hosted via its official compose file, reachable on its internal port (e.g. `http://192.0.2.10:5000`).
 - n8n in the same compose stack, reachable on its internal port (e.g. `http://192.0.2.10:5678`).
 - An MCP-capable client (Claude Code, Claude Desktop, OpenClaw, Hermes Agent, Codex CLI) to drive both.
-- `postiz-mcp` and `n8n-ops-mcp` installed and wired to that client. Tool surfaces and env flags are documented in [`tools/mcp-catalog.md`](../tools/mcp-catalog.md).
+- `postiz-mcp` and `n8nctrl` installed and wired to that client. The n8n npm package remains `n8n-ops-mcp` for compatibility. Tool surfaces and env flags are documented in [`tools/mcp-catalog.md`](../tools/mcp-catalog.md).
 - A Postiz Public API key (Postiz → Settings → Public API → Generate) and an n8n Public API key (n8n → Settings → API).
 
 ## Architecture and topology
@@ -52,7 +52,7 @@ Both services live in one Docker compose stack inside the social-automation cont
   agent (MCP host)        │   docker compose                              │
   ┌───────────────┐       │   ┌──────────────┐      ┌──────────────────┐  │
   │ postiz-mcp    │──────────▶│ Postiz       │─────▶│ X / Bluesky /    │──┼──▶ networks
-  │ n8n-ops-mcp   │──┐    │   │ :5000        │      │ LinkedIn / etc.  │  │
+  │ n8nctrl       │──┐    │   │ :5000        │      │ LinkedIn / etc.  │  │
   └───────────────┘  │    │   └──────────────┘      └──────────────────┘  │
                      │    │          ▲                                    │
                      └───────────────┼──── n8n ──────────────────────────│
@@ -125,7 +125,7 @@ Three rules carry over from the cron and n8n guides and matter here specifically
 
 - **Fan out in parallel branches, not a chain.** If you publish to four networks, run them as parallel branches with their own retry logic. One slow or rate-limited network should not block the other three.
 - **Wire the shared `errorWorkflow`.** Point the workflow's `errorWorkflow` setting at the one Failure Classifier workflow so a per-network rate-limit or a dead token gets bucketed and routed instead of flooding a chat channel. The full classifier build is in [`failure-classifier.md`](failure-classifier.md); the buckets you will hit most on a publishing workflow are `rate-limit` (safe retry with backoff), `auth` (token expired - investigate, do not retry), and `http-client` (a malformed payload - investigate).
-- **Mind the `errorWorkflow`-stripping trap.** Editing a workflow through the raw `PUT /workflows/:id` strips `settings.errorWorkflow`. Use `n8n-ops-mcp` (which wraps the update correctly) or direct sqlite with n8n stopped. This is the single most common way a publishing workflow quietly stops routing its failures. See [`n8n-patterns.md`](n8n-patterns.md) Layer 2.
+- **Mind the `errorWorkflow`-stripping trap.** Editing a workflow through the raw `PUT /workflows/:id` strips `settings.errorWorkflow`. Use `n8nctrl` (which wraps the update correctly) or direct sqlite with n8n stopped. This is the single most common way a publishing workflow quietly stops routing its failures. See [`n8n-patterns.md`](n8n-patterns.md) Layer 2.
 
 For the schedule-trigger skeleton, lift [`../templates/cron/n8n-schedule-trigger.json`](../templates/cron/n8n-schedule-trigger.json).
 
@@ -148,7 +148,7 @@ Representative operational calls (real tool names):
 
 **The rate-limit guard.** The Postiz Public API is rate-limited (30 requests/hour by default). `postiz-mcp` tracks the budget locally and **refuses to send when it is exhausted**, rather than letting the agent burn the hour on retries and lock you out. Raise the ceiling with `POSTIZ_RATE_LIMIT_PER_HOUR` only if your Postiz instance is actually configured higher.
 
-### n8n over `n8n-ops-mcp`
+### n8n over `n8nctrl`
 
 Representative operational calls (real tool names):
 
@@ -196,7 +196,7 @@ docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite \
 # Every active publishing workflow should have an errorWorkflow id set.
 ```
 
-If a publishing workflow is active but its `errorWorkflow` is null, a recent raw `PUT` stripped it - re-set via `n8n-ops-mcp` or direct sqlite. See [`n8n-patterns.md`](n8n-patterns.md).
+If a publishing workflow is active but its `errorWorkflow` is null, a recent raw `PUT` stripped it - re-set via `n8nctrl` or direct sqlite. See [`n8n-patterns.md`](n8n-patterns.md).
 
 ## Gotchas
 
@@ -208,7 +208,7 @@ If a publishing workflow is active but its `errorWorkflow` is null, a recent raw
 
 **`now` and near-term publishes are unrecallable.** Deleting a published post in Postiz removes Postiz's record, not the live post on the platform. **Fix:** prefer `type: "schedule"` with a near-future date over `type: "now"` so there is a window to cancel via `postiz_delete_post` before it actually ships, and keep `POSTIZ_ENABLE_DELETE` off until the moment you need it.
 
-**Editing a publishing workflow through raw `PUT` strips its `errorWorkflow`.** The single most common way a publishing pipeline quietly stops routing failures: a scripted edit through `PUT /workflows/:id` drops `settings.errorWorkflow`, and from then on rate-limit and dead-token errors vanish instead of bucketing. **Fix:** edit through `n8n-ops-mcp` (it wraps the update correctly) or direct sqlite with n8n stopped, and verify with the active-workflow query in Verification. Full detail in [`n8n-patterns.md`](n8n-patterns.md) Layer 2.
+**Editing a publishing workflow through raw `PUT` strips its `errorWorkflow`.** The single most common way a publishing pipeline quietly stops routing failures: a scripted edit through `PUT /workflows/:id` drops `settings.errorWorkflow`, and from then on rate-limit and dead-token errors vanish instead of bucketing. **Fix:** edit through `n8nctrl` (it wraps the update correctly) or direct sqlite with n8n stopped, and verify with the active-workflow query in Verification. Full detail in [`n8n-patterns.md`](n8n-patterns.md) Layer 2.
 
 **Postiz upgrades are a publishing outage if they go sideways.** Postiz moves fast and self-hosted upgrades occasionally need a database migration. An upgrade mid-day with a queued post calendar is a bad time to discover a migration issue. **Fix:** snapshot the container (or the Postiz database volume) before any `docker compose pull` + recreate, upgrade in a quiet window, and re-run the integration-health sweep afterward - tokens occasionally need a reconnect after a major version bump.
 
@@ -219,5 +219,5 @@ If a publishing workflow is active but its `errorWorkflow` is null, a recent raw
 - [`automation/cron-patterns.md`](cron-patterns.md) - the three-layer scheduling model; the n8n publishing workflow is layer 3
 - [`automation/n8n-patterns.md`](n8n-patterns.md) - n8n interface choices, Code node traps, the `errorWorkflow`-stripping trap, failure-classifier shape
 - [`automation/failure-classifier.md`](failure-classifier.md) - the shared error workflow that buckets per-network rate-limits and dead tokens
-- [`tools/mcp-catalog.md`](../tools/mcp-catalog.md) - `postiz-mcp` and `n8n-ops-mcp` tool surfaces and env flags in full
+- [`tools/mcp-catalog.md`](../tools/mcp-catalog.md) - `postiz-mcp` and `n8nctrl` tool surfaces and env flags in full
 - [`infrastructure/service-isolation.md`](../infrastructure/service-isolation.md) - why the social-automation container is one unprivileged LXC and how to bound its blast radius

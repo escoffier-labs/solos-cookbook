@@ -2,7 +2,7 @@
 
 > Block ads, trackers, and malware at the resolver instead of on every device, run a synced standby so a single reboot doesn't take DNS down, and let an AI agent query and tune it through tiered MCP tools where reads are open and anything that can break resolution stays gated. 🦞
 
-**Tested on:** AdGuard Home in an unprivileged LXC container on Proxmox VE 9.2.3, a second AdGuardHome Sync instance keeping a standby aligned, an eero mesh LAN, and the operator's own `adguard-mcp` server (50 tools across three write tiers).
+**Tested on:** AdGuard Home in an unprivileged LXC container on Proxmox VE 9.2.3, a second AdGuardHome Sync instance keeping a standby aligned, an eero mesh LAN, and the operator's own `adguardctrl` MCP adapter (published as `@solomonneas/adguard-mcp`, 50 tools across three write tiers).
 **Last updated:** 2026-06-30
 
 ---
@@ -11,7 +11,7 @@
 
 A DNS sinkhole is a resolver that answers "no such host" (or a black-hole IP) for domains you don't want anything on the network to reach: ad servers, trackers, telemetry endpoints, known-malware domains. Everything else resolves normally. Because nearly every connection starts with a DNS lookup, blocking at that layer kills the request before the device ever opens a socket.
 
-This guide covers running [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) as the LAN's sinkhole on a home Proxmox lab: where it sits in the network, how a second synced instance gives you a standby, and how an AI agent reads and safely manages it through the operator's `adguard-mcp` server. It is the DNS-layer companion to the lab map in [`homelab-topology.md`](homelab-topology.md), where the resolver shows up as CT 100 with its sync sidecar at CT 118.
+This guide covers running [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) as the LAN's sinkhole on a home Proxmox lab: where it sits in the network, how a second synced instance gives you a standby, and how an AI agent reads and safely manages it through the operator's `adguardctrl` MCP adapter. It is the DNS-layer companion to the lab map in [`homelab-topology.md`](homelab-topology.md), where the resolver shows up as CT 100 with its sync sidecar at CT 118.
 
 This is not a guide to per-app content filtering, a VPN, or a firewall. It is one specific job: be the resolver the whole network points at, and answer honestly for the domains you trust while answering "gone" for the ones you don't.
 
@@ -32,7 +32,7 @@ The honest limits up front, because this matters for how you deploy: DNS blockin
 - A LAN where you can set the DNS server clients use, either network-wide or per-device. On an eero mesh that's the eero app's DNS field where it exists, and per-device DNS where it doesn't (see [Gotchas](#gotchas)).
 - A stable IP for the resolver. DNS is the one service you do *not* want moving on a DHCP lease, so hand it a static address.
 - Optional but recommended: a second small guest for the sync standby.
-- For agent management: the [`adguard-mcp`](https://github.com/solomonneas/adguard-mcp) server wired into your agent harness, pointed at the resolver's admin API.
+- For agent management: the [`adguardctrl`](https://github.com/lidless-labs/adguardctrl) MCP adapter wired into your agent harness, pointed at the resolver's admin API. The npm package remains `@solomonneas/adguard-mcp` for compatibility.
 
 ## Topology: Where It Sits
 
@@ -107,9 +107,9 @@ Both can be managed by the agent (`adguard_add_user_rule` / `adguard_add_filter_
 
 Set the resolver as the network's DNS server where your gear allows it, and per-device elsewhere. List the primary and the standby as the two DNS servers so resolution survives one box being down. On an eero mesh this is the practical sticking point, covered next.
 
-## Agent Management via adguard-mcp
+## Agent Management via adguardctrl
 
-The operator runs their own MCP server, [`adguard-mcp`](https://github.com/solomonneas/adguard-mcp), which exposes AdGuard Home (and AdGuardHome Sync) to an AI agent as structured tools. It is **50 tools split into three write tiers**, and the tiering is the whole safety story:
+The operator runs their own MCP adapter, [`adguardctrl`](https://github.com/lidless-labs/adguardctrl), which exposes AdGuard Home (and AdGuardHome Sync) to an AI agent as structured tools. It is still published to npm as `@solomonneas/adguard-mcp` and keeps the back-compatible `adguard-mcp` launcher. It is **50 tools split into three write tiers**, and the tiering is the whole safety story:
 
 - **Reads (22):** open, no confirmation. Status, stats, query log, filter lists, user rules, clients, blocked-services catalog, host checks, DNS config, SafeSearch settings, DNS rewrites and access lists, query-log and stats config, DHCP and TLS status, and the three Sync read tools.
 - **Safe writes (22):** require an explicit `confirm: true`. Add or remove a user rule, subscribe or unsubscribe a blocklist, toggle or refresh lists, add or update a client, set blocked services (global and per-client), toggle SafeSearch/SafeBrowsing, add/update/delete and toggle DNS rewrites, set the access list, update query-log and stats config, validate TLS config, test an upstream resolver, and trigger a sync run.
