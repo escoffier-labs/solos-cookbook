@@ -258,7 +258,7 @@ codex mcp list | grep jellyfin
 
 ## Templates
 
-This guide is itself the template. The reference implementation is in [`jellyfin-mcp/README.md`](https://github.com/solomonneas/jellyfin-mcp/blob/main/README.md). Lift the structure, swap the placeholders.
+This guide is itself the template. The reference implementation is in [`jellyctrl/README.md`](https://github.com/lidless-labs/jellyctrl/blob/main/README.md). Lift the structure, swap the placeholders.
 
 ## Related
 
