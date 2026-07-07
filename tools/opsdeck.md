@@ -4,7 +4,7 @@
 
 ## What this is
 
-A React dashboard ([`opsdeck`](https://github.com/solomonneas/opsdeck)) that reads live operator state through a companion API and renders 20 routes over the daily stack:
+A React dashboard called `opsdeck` that reads live operator state through a companion API and renders 20 routes over the daily stack:
 
 | Page | What it shows | Why I want it on one screen |
 |------|---------------|------------------------------|
@@ -57,7 +57,7 @@ The alternatives that lose:
 ### Get the dashboard up
 
 ```bash
-git clone git@github.com:solomonneas/opsdeck.git
+git clone <opsdeck-repo-url>
 cd opsdeck
 npm install
 npm run dev
