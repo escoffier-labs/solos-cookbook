@@ -26,6 +26,11 @@ e.g. `export SCRUB_HOSTNAMES=host1,host2` (comma-separated; format in
 - This repo is PUBLIC. Never commit private hostnames, LAN or RFC 1918 IPs,
   real container, VM, or user names, home-network domains, or personal context.
   Use generic stand-ins and RFC 5737 example IPs (table in `CONTRIBUTING.md`).
+- Keep public content focused on the artifact, not the drafting process. Do not
+  include authorship/provenance notes, process disclosures, or private editorial
+  rules in guides, README text, PR bodies, review comments, release notes, or
+  public replies. Write as the maintainer unless the user explicitly asks for a
+  disclosure.
 - Scrub gates are the publishing boundary. If a gate blocks, rewrite the content
   around the trigger words. Never weaken the scrub list, never use `--no-verify`.
 - Pushing to `main` publishes the site on Vercel. Push only when the user
