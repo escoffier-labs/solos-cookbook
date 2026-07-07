@@ -10,16 +10,16 @@ Current install path:
 
 ```bash
 pipx install brigade-cli
-brigade init --target ~/agent-kitchen --depth workspace --harnesses claude,codex,openclaw
-brigade doctor --target ~/agent-kitchen
+brigade operator quickstart --target ./my-repo --harnesses codex
+brigade operator doctor --target ./my-repo --profile local-operator
 ```
 
 Current daily repo loop:
 
 ```bash
-brigade dogfood init --target /path/to/repo
-brigade work bootstrap
-brigade work run --queue-next
+brigade work brief --target .
+brigade work verify run --target . --command "pytest -q" --capture brigade-work
+brigade work closeout
 ```
 
 Use this document as design history, not as the current command reference. See [`../tools/brigade.md`](../tools/brigade.md) for the cookbook guide.
