@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/solos-cookbook-social-preview.jpg" alt="Solomon's Guide to Cookin' with Gas banner">
+  <img src="docs/assets/solos-cookbook-social-preview.jpg" alt="Watercolor scene of Solomon prepping mirepoix with a small lobster sous-chef">
 </p>
 
 <h1 align="center">🦞 Solomon's Guide to Cookin' with Gas</h1>
@@ -17,8 +17,8 @@
   <img src="https://shieldcn.dev/badge/content-CC_BY--NC--ND_4.0-lightgrey.svg" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://shieldcn.dev/badge/platform-Linux-blue.svg?logo=linux&logoColor=white" alt="Platform: Linux">
   <img src="https://shieldcn.dev/badge/OpenClaw-stack-ef4444.svg" alt="OpenClaw stack">
-  <img src="https://shieldcn.dev/badge/guides-60-red.svg" alt="60 guides">
-  <img src="https://shieldcn.dev/badge/updated-2026--06--30-white.svg" alt="Updated 2026-06-30">
+  <img src="https://shieldcn.dev/badge/guides-61-red.svg" alt="61 guides">
+  <img src="https://shieldcn.dev/badge/updated-2026--07--06-white.svg" alt="Updated 2026-07-06">
 </p>
 
 <p align="center">
@@ -218,6 +218,7 @@ So `claude -p` is no longer off-limits. The tmux relay is still worth using when
 | Guide | Description | Platform |
 |-------|-------------|----------|
 | [Publish-Time Scrubbing](publishing/publish-time-scrubbing.md) | Deterministic scrubbers, scanner gates, media review, and publish logs before artifacts leave the private workspace | Any |
+| [PR Comment Boundary](publishing/pr-comment-boundary.md) | Preflight PR and review comments so agents do not leak private hostnames, local paths, endpoints, or raw logs | Any |
 
 ### Hardware
 

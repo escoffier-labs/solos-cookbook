@@ -207,7 +207,7 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 ## Related
 
 - [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model that the hook layering here mirrors
-- [`automation/sandbox-shims.md`](README.md) (planned) - wrapping git/network/exec for sub-agents that should not have free access; pairs with tool-call hooks
-- [`security/outbound-scrubbing.md`](../security/) (planned) - deep dive on the outbound-boundary CLI pattern, including the rule set and false-positive handling
+- [`automation/sandbox-shims.md`](sandbox-shims.md) - wrapping git/network/exec for sub-agents that should not have free access; pairs with tool-call hooks
+- [`../publishing/pr-comment-boundary.md`](../publishing/pr-comment-boundary.md) - outbound checks for PR and review comments before they leave the host
 - [content-guard](https://github.com/escoffier-labs/content-guard) - the policy-driven scanner the pre-push template depends on
 - [tokenjuice](https://github.com/vincentkoc/tokenjuice) - Claude Code `PostToolUse` reducer; useful prior art for the `additionalContext`-only constraint
