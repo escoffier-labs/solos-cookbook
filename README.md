@@ -80,11 +80,11 @@ The cookbook is the long-form guide. **[Brigade](https://github.com/escoffier-la
 
 ```bash
 pipx install brigade-cli
-brigade init --target ~/agent-kitchen --depth workspace --harnesses claude,codex,openclaw
-brigade doctor --target ~/agent-kitchen
+brigade operator quickstart --target ./my-repo --harnesses codex
+brigade operator doctor --target ./my-repo --profile local-operator
 ```
 
-It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a conservative ingester, content-guard publish gates, a bounded `brigade run` orchestrator, a `brigade daily` driver, and a `brigade work` loop for dogfooding trusted repos. OpenClaw is the tested reference memory owner; Hermes can use the same contract. Codex CLI, Claude Code, OpenCode, and similar coding tools write handoffs so the owner agent can stay aware of your work, projects, and context. Adopt the cookbook patterns piecemeal here, or let `brigade` set up the whole shape and read the cookbook to understand why each piece is the way it is.
+It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a local MCP catalog, content-guard publish gates, a bounded `brigade run` orchestrator, a `brigade daily` driver, and a `brigade work` loop for dogfooding trusted repos. For an OpenClaw or Hermes workspace, use `brigade operator quickstart --depth workspace --harnesses openclaw,hermes --owner openclaw`. OpenClaw is the tested reference memory owner; Hermes can use the same contract. Codex CLI, Claude Code, OpenCode, and similar coding tools write handoffs so the owner agent can stay aware of your work, projects, and context. Adopt the cookbook patterns piecemeal here, or let `brigade` set up the whole shape and read the cookbook to understand why each piece is the way it is.
 
 ## The stack at a glance
 
