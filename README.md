@@ -301,7 +301,7 @@ git config core.hooksPath hooks
 - [Brigade](https://github.com/escoffier-labs/brigade): the installable starter kit for synced agent memory, handoffs, and workspace bootstrap files
 - [OpenClaw](https://github.com/openclaw/openclaw): the tested reference agent and memory owner for this stack
 - [content-guard](https://github.com/escoffier-labs/content-guard): the policy-driven scanner used by the pre-push hook
-- [OpsDeck](https://github.com/solomonneas/opsdeck): self-hosted ops dashboard
+- [OpsDeck](tools/opsdeck.md): self-hosted ops dashboard
 - [n8nctrl](https://github.com/lidless-labs/n8nctrl), [jellyctrl](https://github.com/lidless-labs/jellyctrl), [mcporter](https://github.com/steipete/mcporter): MCPs and operator tools from this stack
 - [openclaw-overlay](https://github.com/solomonneas/openclaw-overlay): HUD overlay for session monitoring
 - [usage-tracker](https://github.com/escoffier-labs/usage-tracker): token usage and cost analytics
