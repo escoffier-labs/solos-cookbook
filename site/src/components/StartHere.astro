@@ -34,12 +34,13 @@ import systemOverviewSvg from '../diagrams/system-overview.svg?raw';
     the memory index, the tools and project notes, the agent and safety rules,
     and the memory cards behind them.</p>
 
-  <p>Underneath all of it is a single self-hosted host with a homelab behind it
-    for self-hosting, security tooling, and knowledge management. The agent runs
-    there, reads and writes the shared memory there, and drives the outputs from
-    there: publishing and automation. The pattern generalizes past any one
-    machine. One canonical memory owner, many coding harnesses, one shared
-    contract for what gets remembered.</p>
+  <p>Underneath all of it is a small bare-metal fleet: an always-on agent host,
+    OpenClaw nodes on other machines, a homelab, daily-driver machines, and
+    family machines that still need safe maintenance. The agent has one
+    canonical place to remember from, but it can operate across the fleet
+    through narrow, reviewable paths. The pattern generalizes past any one
+    device: one canonical memory owner, many coding harnesses, many machines,
+    one shared contract for what gets remembered.</p>
 
   <p>This is not a framework, not a product, and not a tutorial series. It is a
     record of what is actually deployed, why each piece is shaped the way it is,

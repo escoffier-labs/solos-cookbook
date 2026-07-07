@@ -18,7 +18,7 @@ The list, with a one-line reason and a paragraph of context. Skip to the ones th
 
 ### No Kubernetes
 
-I am not running Kubernetes. Not k3s, not k0s, not microk8s, not "just to learn it." The agent stack and its peripherals fit on one host (see [`why-one-host.md`](why-one-host.md)). Adding k8s to a one-host setup is not "kubernetes-lite"; it is the worst case for k8s, because you are paying the operational cost without getting any of the benefits.
+I am not running Kubernetes. Not k3s, not k0s, not microk8s, not "just to learn it." The agent control plane fits on one control host, and the rest of the owned machines have clear roles (see [`why-one-host.md`](why-one-host.md)). Adding k8s to a single-operator bare-metal fleet is not "kubernetes-lite"; it is the worst case for k8s, because you are paying the operational cost without getting any of the benefits.
 
 For the homelab side, where there are a handful of services that benefit from isolation (Adguard, n8n, a small social-automation stack), the answer is LXC containers under Proxmox. They are lighter, they boot in under a second, and they speak SSH like a real machine. When LXC becomes insufficient, I will revisit. It has not become insufficient yet.
 
@@ -50,7 +50,7 @@ A short list of technical fashions I have deliberately not adopted:
 
 | Fashion | Reason for skipping |
 |---------|--------------------|
-| Service mesh (Istio, Linkerd) | Single-host; mesh solves multi-host problems |
+| Service mesh (Istio, Linkerd) | Solves multi-service trust and routing problems this fleet does not have |
 | Event sourcing for the agent's state | The agent's state fits in JSONL files plus a few sqlite databases; "event sourcing" adds replay cost for no real query benefit |
 | GraphQL anywhere | The number of queries this stack issues is small enough that REST + a few specific endpoints is cheaper to write and easier to debug |
 | GitOps for the homelab | The homelab has maybe ten services. The cost of building a GitOps pipeline exceeds the cost of editing config files |
@@ -59,13 +59,13 @@ A short list of technical fashions I have deliberately not adopted:
 
 The pattern: every fashion was invented to solve a real problem at a scale this stack does not have. Adopting it preemptively pays the cost without gaining the benefit.
 
-### No infrastructure-as-code framework for the host
+### No infrastructure-as-code framework for the control host
 
-The single host's config is in `/etc/`, version-controlled via etckeeper. systemd units live in `~/.config/systemd/user/` and are backed up by restic. The workspace is at `~/.openclaw/workspace/` and is backed up by restic. That is the entire infrastructure-as-code story.
+The control host's config is in `/etc/`, version-controlled via etckeeper. systemd units live in `~/.config/systemd/user/` and are backed up by restic. The workspace is at `~/.openclaw/workspace/` and is backed up by restic. That is the entire infrastructure-as-code story for the agent brain.
 
-Ansible, Salt, Pulumi, Terraform, Nix - all are valuable for managing many hosts. None of them earn their keep on one host. The closest the stack gets is a few shell scripts in `~/bin/` that wrap the most-touched config edits, plus a wrapper around `openclaw update` that preserves customizations across upgrades.
+Ansible, Salt, Pulumi, Terraform, Nix - all are valuable when many hosts need the same declared shape. This fleet is not that. The machines are owned, bare metal, and role-specific: the control host, homelab services, daily-driver machines, storage, and family endpoints. The closest the stack gets is a few shell scripts in `~/bin/` that wrap the most-touched config edits, plus a wrapper around `openclaw update` that preserves customizations across upgrades.
 
-If I add a second host that needs the same shape, the cookbook will get a Nix or Ansible guide. Until then, this is YAGNI in its purest form.
+If two or more machines need the same repeatable baseline, the cookbook should get a Nix or Ansible guide. Until then, this is YAGNI in its purest form.
 
 ### No production secrets in any prompt
 

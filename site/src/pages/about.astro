@@ -8,11 +8,13 @@ import { EXTERNAL, sitePath } from '../lib/site.ts';
     <h1 class="font-display text-4xl md:text-5xl mt-3 mb-8">What this is</h1>
     <div class="prose-docs">
       <p>
-        This is a record of how one engineer runs a 24/7 multi-agent AI stack on bare metal:
-        long-lived agents (OpenClaw, Hermes) working in tandem with daily coding harnesses
-        (Codex CLI, Claude Code, OpenCode). It is not a framework and not a tutorial series.
-        Every recipe is deployed in production on real hardware, and the failures are documented
-        next to the fixes.
+        This is a record of how one engineer runs a 24/7 multi-agent AI stack across
+        bare metal: long-lived agents (OpenClaw, Hermes) working in tandem with daily
+        coding harnesses (Codex CLI, Claude Code, OpenCode), OpenClaw nodes on other
+        machines, homelab services, desktops, laptops, and family machines. It is not
+        a framework and not a tutorial series.
+        Every recipe is deployed in production on real hardware, and the failures are
+        documented next to the fixes.
       </p>
       <p>
         The core idea: keep agents aware of work happening across every harness by maintaining
@@ -24,7 +26,7 @@ import { EXTERNAL, sitePath } from '../lib/site.ts';
       <p>
         Engineers who run agents as long-lived services rather than chat sessions, who prefer
         owning their stack over renting it, and who want the post-mortems as much as the recipes.
-        Everything here assumes a single operator, a Linux host, and a healthy distrust of letting
+        Everything here assumes a single operator, owned hardware, and a healthy distrust of letting
         any model touch production unsupervised.
       </p>
       <h2>License</h2>
