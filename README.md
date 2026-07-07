@@ -250,19 +250,19 @@ So `claude -p` is no longer off-limits. The tmux relay is still worth using when
 
 ## Templates
 
-Drop-in artifacts you can lift without adopting the whole thing. See [`templates/`](templates/).
+Public-safe template packs you can lift without adopting the whole thing. For a current wired workspace, use Brigade; these folders are static references and small copyable artifacts. See [`templates/`](templates/).
 
 | Template | Used by |
 |----------|---------|
-| [`templates/cron/`](templates/cron/) | systemd timer, agent cron, n8n schedule trigger skeletons, paired with [`automation/cron-patterns.md`](automation/cron-patterns.md) |
-| [`templates/hooks/`](templates/hooks/) | git pre-push, Claude Code PostToolUse, OpenClaw sync plugin skeletons, paired with [`automation/hooks.md`](automation/hooks.md) |
-| [`templates/bootstrap/`](templates/bootstrap/) | sanitized workspace file skeletons, paired with [`knowledge/bootstrap-files.md`](knowledge/bootstrap-files.md) |
-| [`templates/skills/`](templates/skills/) | public-safe `SKILL.md` skeleton and sanitization checklist, paired with [`ai-stack/skills-development.md`](ai-stack/skills-development.md) |
-| [`templates/ai-stack/`](templates/ai-stack/) | model alias snippets, Claude Code tmux relay, ACP wrapper shape, plugin smoke check, paired with [`ai-stack/multi-model-orchestration.md`](ai-stack/multi-model-orchestration.md) |
-| [`templates/n8n/`](templates/n8n/) | workflow and failure-classifier skeletons, paired with [`automation/n8n-patterns.md`](automation/n8n-patterns.md) |
-| [`templates/scrubbers/`](templates/scrubbers/) | deterministic publish-boundary scrubber skeleton and fixtures, paired with [`publishing/publish-time-scrubbing.md`](publishing/publish-time-scrubbing.md) and [`automation/hooks.md`](automation/hooks.md) |
-| [`templates/sandbox/`](templates/sandbox/) | restricted worker command wrappers, paired with [`automation/sandbox-shims.md`](automation/sandbox-shims.md) and [`automation/hooks.md`](automation/hooks.md) |
+| [`templates/bootstrap/`](templates/bootstrap/) | public-safe bootstrap-file references, paired with [`knowledge/bootstrap-files.md`](knowledge/bootstrap-files.md); Brigade owns generated workspace installs |
+| [`templates/ai-stack/`](templates/ai-stack/) | model aliases, local routing, ACP wrapper, Claude tmux relay, browser-lane lock, plugin smoke check |
+| [`templates/cron/`](templates/cron/) | systemd timer, OpenClaw cron, and n8n schedule-trigger skeletons, paired with [`automation/cron-patterns.md`](automation/cron-patterns.md) |
+| [`templates/hooks/`](templates/hooks/) | git pre-push, Claude Code PostToolUse, OpenClaw sync hook skeletons, paired with [`automation/hooks.md`](automation/hooks.md) |
+| [`templates/sandbox/`](templates/sandbox/) | restricted worker command wrappers, paired with [`automation/sandbox-shims.md`](automation/sandbox-shims.md) |
+| [`templates/scrubbers/`](templates/scrubbers/) | deterministic publish-boundary scrubber skeleton and fixtures, paired with [`publishing/publish-time-scrubbing.md`](publishing/publish-time-scrubbing.md) |
 | [`templates/security/`](templates/security/) | env-file and incident-note placeholders, paired with [`security/secret-management.md`](security/secret-management.md) and [`security/incident-runbook.md`](security/incident-runbook.md) |
+| [`templates/skills/`](templates/skills/) | public-safe `SKILL.md` skeleton and sanitization checklist, paired with [`ai-stack/skills-development.md`](ai-stack/skills-development.md) |
+| [`templates/n8n/`](templates/n8n/) | workflow and failure-classifier skeletons, paired with [`automation/n8n-patterns.md`](automation/n8n-patterns.md) |
 
 ## Skills
 
