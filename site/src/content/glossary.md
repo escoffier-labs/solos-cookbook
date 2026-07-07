@@ -73,7 +73,7 @@ runs without anyone present, so it must fail loudly and target the right place.
 
 ## Local-first
 
-A design rule that keeps data and processing on your own machine by default,
+A design rule that keeps data and processing on machines you own by default,
 reaching out to remote services only when needed. It keeps secrets and private
 context off third-party servers.
 

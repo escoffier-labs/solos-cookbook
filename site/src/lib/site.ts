@@ -19,7 +19,7 @@ export const SITE = {
   name: 'Le Répertoire',
   tagline: "Solomon's Cookbook",
   subtitle:
-    'How one engineer runs a 24/7 multi-agent AI stack on bare metal. Opinionated. Dogfooded. Broken-and-fixed in production.',
+    'How one engineer runs a 24/7 multi-agent AI stack across bare metal. Opinionated. Dogfooded. Broken-and-fixed in production.',
   description:
     "Solomon's Guide to Cookin' with Gas: production-tested recipes for running long-lived AI agents alongside daily coding harnesses. Tested in service.",
   url: 'https://escoffierlabs.dev/cookbook',

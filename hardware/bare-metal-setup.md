@@ -1,12 +1,12 @@
-# Bare-Metal Setup
+# Bare-Metal Agent Host
 
-> One Linux box, picked once, lives for years. Spec it for the workload that already gives you grief, not the workload you imagine you'll have someday.
+> The primary Linux box in the fleet, picked once, lives for years. Spec it for the workload that already gives you grief, not the workload you imagine you'll have someday.
 
 ## What this is
 
-This is the physical layer behind everything else in the cookbook: a single x86-64 box running Ubuntu Desktop as the host OS for an always-on multi-agent AI stack, browser automation, local LLMs, and a home network of services. No virtualization at the host layer, no container OS, no remote bare metal. One machine, one disk pool, one user, one set of services.
+This is the physical layer behind the control side of the cookbook: a primary x86-64 box running Ubuntu Desktop as the host OS for an always-on multi-agent AI stack, browser automation, local LLMs, and the tools that coordinate a wider bare-metal fleet. Other machines can run OpenClaw nodes near their own tools and data, but this host keeps the canonical workspace. No virtualization at the host layer, no container OS, no remote bare metal for the agent brain. One control host, one disk pool, one user, one canonical workspace.
 
-If you are deciding whether to host this stack on a VPS, a NAS, or a Raspberry Pi cluster, read [`philosophy/why-one-host.md`](../philosophy/why-one-host.md) first. This guide assumes the decision is made.
+If you are deciding whether to host the control plane on a VPS, a NAS, or a Raspberry Pi cluster, read [`philosophy/why-one-host.md`](../philosophy/why-one-host.md) first. This guide assumes the decision is made.
 
 ## Why this way
 
@@ -31,7 +31,7 @@ The temptation is to put this on a server in a closet. Resist it. A desktop with
 
 **Before:** the stack runs on a laptop, a VPS, or a NUC bought for something else. The CPU pegs during browser automation, the disk fills up because root and data are the same partition, and reboots are scheduled around when nobody needs the machine.
 
-**After:** the stack runs on one purpose-built box that wakes from suspend in two seconds, holds the agent and the browser and a local model all warm, and has separate disks for OS-recovery and data-survival.
+**After:** the control plane runs on one purpose-built box that wakes from suspend in two seconds, holds the agent and the browser and a local model all warm, and has separate disks for OS-recovery and data-survival. Other machines can still serve as OpenClaw nodes, homelab nodes, desktops, storage, and managed endpoints.
 
 ## Implementation
 
@@ -174,4 +174,4 @@ A healthy box shows zero critical warnings, both drives present, generic Ubuntu 
 - [`kernel-tuning.md`](kernel-tuning.md) - sysctl, swap, scheduler choices for an always-on AI host
 - [`../security/linux-hardening.md`](../security/linux-hardening.md) - UFW, SSH hardening, fail2ban after the box is up
 - [`../infrastructure/backup-recovery.md`](../infrastructure/backup-recovery.md) - what you back up once data starts to land
-- [`../philosophy/why-one-host.md`](../philosophy/why-one-host.md) - the case for not distributing what one machine can do
+- [`../philosophy/why-one-host.md`](../philosophy/why-one-host.md) - the case for one canonical control host in a bare-metal fleet

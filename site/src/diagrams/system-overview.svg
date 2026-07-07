@@ -76,12 +76,12 @@
     <rect x="40" y="342" width="520" height="100" rx="8" fill="#f6f6f4" stroke="#d8d8d2" stroke-width="1" />
 
     <rect x="60" y="366" width="150" height="56" rx="6" fill="#ffffff" stroke="#d8d8d2" stroke-width="1" />
-    <text x="135" y="392" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Single host</text>
+    <text x="135" y="392" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Agent host</text>
     <text x="135" y="408" font-size="8.5" fill="#6b7280" text-anchor="middle">gateway · local APIs</text>
 
     <rect x="225" y="366" width="150" height="56" rx="6" fill="#ffffff" stroke="#d8d8d2" stroke-width="1" />
-    <text x="300" y="392" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Homelab</text>
-    <text x="300" y="408" font-size="8.5" fill="#6b7280" text-anchor="middle">VMs · containers</text>
+    <text x="300" y="392" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Bare-metal fleet</text>
+    <text x="300" y="408" font-size="8.5" fill="#6b7280" text-anchor="middle">OpenClaw nodes · PCs</text>
 
     <rect x="390" y="366" width="150" height="56" rx="6" fill="#ffffff" stroke="#d8d8d2" stroke-width="1" />
     <text x="465" y="392" font-size="10.5" fill="#1a1a1a" text-anchor="middle">Storage</text>

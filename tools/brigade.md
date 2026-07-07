@@ -33,7 +33,7 @@ Manual copying works once. It fails when the template changes, when Codex and Cl
 | Security hygiene | Scans secrets, permissions, hooks, MCP config, supply-chain patterns, and instruction risks |
 | Managed stations | Selects a repo profile of core, skills, memory, guard, security, tokens, evidence, and search, with optional pantry, notifications, and MCP sync stations |
 
-The alternative is a pile of local scripts that only work on one host. Brigade is still small enough to inspect, but structured enough to install repeatedly. The whole system is local-first and read-mostly: it never pushes, tags, publishes, mutates remotes, runs restic, installs cron, starts daemons, or edits canonical memory unless you run an explicit command that says so.
+The alternative is a pile of local scripts that only work on the first workstation they were written on. Brigade is still small enough to inspect, but structured enough to install repeatedly. The whole system is local-first and read-mostly: it never pushes, tags, publishes, mutates remotes, runs restic, installs cron, starts daemons, or edits canonical memory unless you run an explicit command that says so.
 
 ## Prerequisites
 
