@@ -1,22 +1,37 @@
-# Setup Checklist: Empty Machine to Running Stack
+# Setup Checklist: Empty Host or Node to Running Stack
 
-A terse, one-page path from a fresh box to a working agent stack. Work top to
-bottom. Each step names the template path to copy from and, where one exists,
-the matching free guide at https://escoffierlabs.dev/cookbook.
+A terse, one-page path from a fresh control host or OpenClaw node to a working
+agent stack. Work top to bottom. Each step names the template path to copy from
+and, where one exists, the matching free guide at https://escoffierlabs.dev/cookbook.
 
 Fill in every placeholder yourself. The templates ship with no secrets, no real
 hostnames, and no private IPs on purpose. Keep it that way in your own copies.
 
-1. Host prep. Provision the box, install your runtime (Node, package manager),
-   and create the workspace directory. Decide where agent state lives before
-   anything writes to it.
+1. Host prep. Provision the control host or node, install your runtime (Node,
+   package manager), and create the workspace directory. Decide which machine
+   owns canonical memory before anything writes to it.
    Guide: https://escoffierlabs.dev/cookbook/infrastructure
 
-2. Bootstrap files. Copy `bootstrap/` into your workspace and edit each file.
-   Start with `INSTALL_FOR_AGENTS.md`, then set identity and rules in
-   `IDENTITY.md`, `SOUL.md`, `SAFETY_RULES.md`, `USER.md`, `AGENTS.md`,
-   `CLAUDE.md`, `TOOLS.md`, and `MEMORY.md`. These define who the agent is and
-   what it may do.
+2. Workspace bootstrap. For a real install, prefer Brigade:
+
+   ```bash
+   pipx install brigade-cli
+   brigade operator quickstart --target ./my-repo --harnesses codex
+   ```
+
+   For an OpenClaw or Hermes workspace:
+
+   ```bash
+   brigade operator quickstart --target ~/agent-workspace \
+     --depth workspace \
+     --harnesses openclaw,hermes \
+     --owner openclaw
+   ```
+
+   Use `bootstrap/` only when you need static reference files. Start with
+   `INSTALL_FOR_AGENTS.md`, then set identity and rules in `IDENTITY.md`,
+   `SOUL.md`, `SAFETY_RULES.md`, `USER.md`, `AGENTS.md`, `CLAUDE.md`,
+   `TOOLS.md`, and `MEMORY.md`. These define who the agent is and what it may do.
    Path: `templates/bootstrap/`
    Guide: https://escoffierlabs.dev/cookbook/ai-stack
 
@@ -60,6 +75,8 @@ hostnames, and no private IPs on purpose. Keep it that way in your own copies.
    Path: `templates/n8n/`
    Guide: https://escoffierlabs.dev/cookbook/automation
 
-Done. The machine now boots, the agent loads its bootstrap files, hooks and the
-sandbox gate every action, cron drives the recurring work, scrubbers guard the
-publish boundary, and n8n runs the automations on top.
+Done. The host or node now boots, the agent loads its bootstrap files, hooks
+and the sandbox gate every action, cron drives the recurring work, scrubbers
+guard the publish boundary, and n8n runs the automations on top. If this is a
+remote OpenClaw node, durable facts still flow back to the canonical control
+host through handoffs and receipts.
