@@ -80,7 +80,7 @@ These are not MCPs - they ship as standalone tools the orchestrator or other age
 | [`agent-notify`](https://github.com/escoffier-labs/agent-notify) | Private operator notifications for agent events - long-running run completions, approvals, blockers. Go binary, ships SBOM |
 | [`cloche`](https://github.com/escoffier-labs/cloche) | Agent-neutral screenshot capture CLI (renamed from appshots). Rust, on crates.io (`cargo install cloche`) |
 | [`openclaw-overlay`](https://github.com/solomonneas/openclaw-overlay) | HUD for session monitoring - which agent is talking to which channel, what tools fired, what cron job is in flight |
-| [`opsdeck`](https://github.com/solomonneas/opsdeck) | Self-hosted ops dashboard - tasks, services, projects, memory, usage, security, architecture, and agent activity. See [`opsdeck.md`](opsdeck.md) |
+| [`opsdeck`](opsdeck.md) | Self-hosted ops dashboard - tasks, services, projects, memory, usage, security, architecture, and agent activity |
 
 ### Upstream contributions (not owned, but maintained alongside)
 
