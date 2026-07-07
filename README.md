@@ -33,11 +33,11 @@ The cookbook is the documentation home of [Escoffier Labs](https://github.com/es
 
 The problem it solves is continuity. Your coding harnesses see one repo and one task at a time. Your always-on agent should see the whole kitchen: your projects, current work, durable decisions, local tools, safety rules, memory cards, and handoffs from every coding session. This cookbook documents the patterns that keep `MEMORY.md`, `TOOLS.md`, `AGENTS.md`, `CLAUDE.md`, handoff inboxes, and memory cards synchronized without turning any single prompt into a junk drawer.
 
-In this stack, OpenClaw is the tested reference memory owner. Hermes can play the same role. Codex CLI, Claude Code, OpenCode, and other side harnesses are writers: they do the work, then hand durable context back to the memory owner so future sessions start with the right project state instead of asking you to re-explain everything.
+In this stack, OpenClaw is the tested reference memory owner. Hermes can play the same role. Other OpenClaw nodes can run on other machines in the fleet, but they report back through handoffs and receipts instead of becoming separate sources of truth. Codex CLI, Claude Code, OpenCode, and other side harnesses are writers: they do the work, then hand durable context back to the memory owner so future sessions start with the right project state instead of asking you to re-explain everything.
 
 It is **not** a framework, not a product, not a tutorial series. It is a record of what is actually deployed, why each piece is shaped the way it is, and what broke along the way. Lift any single piece. Adopt the whole thing. Or use it as a counterexample. All three are valid.
 
-The infrastructure examples come from a single-engineer bare-metal Linux setup with a homelab behind it for self-hosting, security tooling, and knowledge management. The agent-memory pattern generalizes: one canonical memory owner, many coding harnesses, one shared contract for what gets remembered.
+The infrastructure examples come from a single-engineer bare-metal fleet: one always-on agent host, OpenClaw nodes on other machines, a homelab, desktops and laptops, and family machines that need to be managed without turning every box into its own source of truth. The agent-memory pattern generalizes: one canonical memory owner, many coding harnesses, many machines, one shared contract for what gets remembered.
 
 > The starter layout documented here was extracted into an installable CLI: [**Brigade**](https://github.com/escoffier-labs/brigade) (`pipx install brigade-cli`). If you want the kitchen without reading every recipe first, start there. The cookbook explains the why, Brigade gives you the setup.
 >
@@ -105,7 +105,7 @@ flowchart TB
 
     subgraph SURFACES [" work surfaces "]
         WORK["repos · terminals · tools<br/>coding sessions"]
-        AUTO["automation · cron · n8n<br/>homelab & security checks"]
+        AUTO["automation · cron · n8n<br/>fleet & security checks"]
     end
     CODEX & CLAUDE --> WORK
     OPEN --> AUTO
@@ -224,7 +224,7 @@ So `claude -p` is no longer off-limits. The tmux relay is still worth using when
 
 | Guide | Description | Platform |
 |-------|-------------|----------|
-| [Bare-Metal Setup](hardware/bare-metal-setup.md) | Hardware spec, OS install, baseline tuning for a single-host agent stack | Ubuntu 24.04 |
+| [Bare-Metal Setup](hardware/bare-metal-setup.md) | Hardware spec, OS install, baseline tuning for the primary agent host in a bare-metal fleet | Ubuntu 24.04 |
 | [Disk Layout with LVM](hardware/disk-layout-lvm.md) | Two-disk LVM design that survives "I need to grow this" without a reinstall | Any |
 | [Kernel Tuning](hardware/kernel-tuning.md) | sysctl, swap, scheduler choices, per-user limits for an always-on AI host | Linux 6.x |
 
@@ -243,7 +243,7 @@ So `claude -p` is no longer off-limits. The tmux relay is still worth using when
 
 | Essay | Description |
 |-------|-------------|
-| [Why One Host](philosophy/why-one-host.md) | The case for not distributing what one machine can do |
+| [Why One Control Host](philosophy/why-one-host.md) | The case for one canonical agent and memory owner in a bare-metal fleet |
 | [Why Dogfood Everything](philosophy/why-dogfood-everything.md) | Ship → use → break → fix → write it down, in that order |
 | [What This Stack Is Not](philosophy/what-this-stack-is-not.md) | Hard nos: SaaS lock-in, k8s, microservices, untested fashion |
 | [Manifesto vs Framework](philosophy/manifesto-vs-framework.md) | Why this is a cookbook and not a tool |
@@ -311,4 +311,4 @@ git config core.hooksPath hooks
 - Code, scripts, and templates: [MIT](LICENSE)
 - Narrative content (guides, manifestos, prose): [CC BY-NC-ND 4.0](CONTENT-LICENSE) 🦞
 
-> 🦞 *Built by an engineer who runs this stack 24/7 on bare metal and broke everything at least once so you don't have to.*
+> 🦞 *Built by an engineer who runs this stack 24/7 across bare metal and broke everything at least once so you don't have to.*

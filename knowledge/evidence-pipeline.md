@@ -9,7 +9,7 @@
 
 ## What this covers
 
-This guide is the recipe for turning the raw agent-session logs that [`session-jsonl.md`](session-jsonl.md) teaches you to grep into a durable, searchable, citable evidence archive. `session-jsonl.md` is the "search the transcripts" answer when you have one machine and a shell. This guide is the answer when you want that search to be indexed, deduplicated, cross-source, and consumable by an agent through a stable resource URI.
+This guide is the recipe for turning the raw agent-session logs that [`session-jsonl.md`](session-jsonl.md) teaches you to grep into a durable, searchable, citable evidence archive. `session-jsonl.md` is the "search the transcripts" answer when you have a session directory and a shell. This guide is the answer when you want that search to be indexed, deduplicated, cross-source, and consumable by an agent through a stable resource URI.
 
 It covers:
 
@@ -25,7 +25,7 @@ It does not re-document every CLI subcommand. The repos' own READMEs and `docs/Q
 
 ## Why this way
 
-The naive approach to "what has my agent been doing" is `grep -r` across session directories. It works on one machine for one question. It falls apart the moment you want any of:
+The naive approach to "what has my agent been doing" is `grep -r` across session directories. It works for one directory and one question. It falls apart the moment you want any of:
 
 | You want | grep gives you | The archive gives you |
 |----------|----------------|-----------------------|
