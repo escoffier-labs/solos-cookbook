@@ -1,12 +1,12 @@
 # Brigade
 
-> Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, local work loops, a multi-agent orchestrator, an agent-facing daily driver, and security scans.
+> Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, MCP sync, local work loops, operator checks, research receipts, and security scans.
 
-_Current as of brigade-cli 0.15.0, 2026-06-30._
+_Current as of brigade-cli 0.19.0, 2026-07-07._
 
 ## What this is
 
-[`brigade`](https://github.com/escoffier-labs/brigade) is the installable and operational version of the agent-kitchen pattern described in this cookbook. It creates a public-safe workspace skeleton for OpenClaw, Claude Code, Codex, Hermes, or a generic harness, then gives you commands to verify, ingest, scan, dogfood, dispatch, and operate agent work from that workspace.
+[`brigade`](https://github.com/escoffier-labs/brigade) is the installable and operational version of the agent-kitchen pattern described in this cookbook. It creates a public-safe repo or workspace skeleton for Codex CLI, Claude Code, OpenCode, Hermes, OpenClaw, and the other file-backed harnesses listed below, then gives you commands to verify, ingest, scan, dogfood, dispatch, research, and operate agent work from that workspace.
 
 The cookbook explains why the files and workflows exist. Brigade puts them on disk, keeps local state under `.brigade/`, and gives you repeatable checks before you trust the setup. It is the operator-system layer: the tagline "run your agent brigade" is literal, since Brigade plans work across the CLIs you already have, dispatches workers, and synthesizes the result.
 
@@ -16,14 +16,14 @@ Manual copying works once. It fails when the template changes, when Codex and Cl
 
 | Need | Brigade behavior |
 |------|------------------|
-| Workspace bootstrap | Writes `AGENTS.md`, `MEMORY.md`, safety files, handoff templates, and starter cards |
+| Workspace bootstrap | Writes `AGENTS.md`, `MEMORY.md`, safety files, handoff templates, starter cards, and built-in work-loop skills |
 | Handoff routing | Creates writer-specific inboxes such as `.claude/memory-handoffs/` and `.codex/memory-handoffs/` |
 | Handoff administration | Checks multi-repo inbox source coverage with `brigade handoff doctor`, groups warnings, and imports repair work |
 | Agent dispatch | Runs an orchestrator plus bounded worker roster through `brigade run`, with local artifacts and optional handoff |
 | Daily dogfooding | Runs trusted-repo review through `brigade dogfood` and `brigade work` with local artifacts |
 | Agent-facing daily loop | `brigade daily` ranks candidate actions and runs exactly one safe, bounded step with approvals |
 | Long unattended runs | A phase execution ledger and AFK sessions make multi-phase work auditable and catch silent compression |
-| Operator surfaces | `brigade center`, `brigade repos`, `brigade context`, `brigade learn`, and `brigade projects` turn local evidence into reviewable reports and action queues |
+| Operator surfaces | `brigade operator`, `brigade center`, `brigade repos`, `brigade context`, `brigade learn`, `brigade friction`, `brigade research`, and `brigade projects` turn local evidence into reviewable reports and action queues |
 | Portable tooling | `brigade tools` registers skills, slash commands, scripts, and MCP servers and projects them into each harness's config |
 | Canonical MCP catalog | `brigade mcp` keeps one `.brigade/mcp.json` catalog and merges it into each tool's native MCP config, dry-run unless `--write` |
 | Verified learning | `brigade outcome` scores learned cards and skills by real verify-run results, so promotion and rollback are evidence-backed, not vibes |
@@ -31,7 +31,7 @@ Manual copying works once. It fails when the template changes, when Codex and Cl
 | Scanner imports | Converts memory-care, chat-sweep, handoff, and security findings into reviewable `brigade work import` items |
 | Publish safety | Installs content-guard policies, a pre-push hook shape, and a local `brigade release` publish gate |
 | Security hygiene | Scans secrets, permissions, hooks, MCP config, supply-chain patterns, and instruction risks |
-| Managed stations | Installs and health-checks optional companion tools: `memory-doctor`/`bootstrap-doctor` (memory), `content-guard` (guard), `tokenjuice` (tokens), `agentpantry` (pantry), `agent-notify` (notifications), `miseledger`/`stationtrail`/`sourceharvest` (evidence), and `code-search-api`/`code-search-mcp` (search) |
+| Managed stations | Selects a repo profile of core, skills, memory, guard, security, tokens, evidence, and search, with optional pantry, notifications, and MCP sync stations |
 
 The alternative is a pile of local scripts that only work on one host. Brigade is still small enough to inspect, but structured enough to install repeatedly. The whole system is local-first and read-mostly: it never pushes, tags, publishes, mutates remotes, runs restic, installs cron, starts daemons, or edits canonical memory unless you run an explicit command that says so.
 
@@ -58,29 +58,43 @@ Install the CLI:
 pipx install brigade-cli
 ```
 
-Initialize a full workspace:
+Use the quickstart when you want a repo or workspace wired end to end:
 
 ```bash
-brigade init --target ~/agent-kitchen --depth workspace --harnesses claude,codex,openclaw
-brigade doctor --target ~/agent-kitchen
-brigade status --target ~/agent-kitchen
+brigade operator quickstart --target ./my-repo --harnesses codex
+brigade operator doctor --target ./my-repo --profile local-operator
 ```
 
-Install depths are `workspace` (full memory, handoffs, rules, bootstrap), `repo` (lighter footprint for an existing repo), and `generic` (`--harnesses none`, minimal, no harness-specific files).
+For an OpenClaw or Hermes workspace, use workspace depth and name the owner:
+
+```bash
+brigade operator quickstart --target ~/agent-workspace \
+  --depth workspace \
+  --harnesses openclaw,hermes \
+  --owner openclaw
+```
+
+Use `--dry-run` first to preview the write plan. `brigade operator quickstart` wraps `brigade init`: it installs the template files, writes operator config, scaffolds MCP and dogfood/work-loop state, runs harness checks, and reports readiness. Use `brigade init` directly when you only want the template files or the interactive harness picker.
+
+Install depths are `repo` (minimal project footprint) and `workspace` (full home with `MEMORY.md`, `TOOLS.md`, `USER.md`, rules, and workspace cards). Pass `--full` on repo-depth installs when you want the whole kit: workflow rules, inactive pre-push hook, `INSTALL_FOR_AGENTS.md`, and the default tool packs. Pass `--harnesses none` for a generic install with no harness-specific files.
 
 Initialize managed companion tools only when you want Brigade to wire them for you:
 
 ```bash
+brigade add skills         # built-in brigade-work and ultra-work-scout skills
 brigade add memory          # memory-doctor + bootstrap-doctor
 brigade add guard           # content-guard
-brigade add tokens          # tokenjuice (third-party, Vincent Koc)
+brigade add tokens          # token-glace output compaction
 brigade add pantry          # agentpantry session-auth sync
 brigade add notifications   # agent-notify operator notifications
-brigade add evidence        # miseledger + stationtrail + sourceharvest
+brigade add evidence        # miseledger evidence ledger and source/session crawlers
 brigade add search          # code-search-api + code-search-mcp
+brigade add mcp             # canonical MCP catalog sync station
 ```
 
-The evidence station is a local-first audit trail: `stationtrail` exports agent-session logs and `sourceharvest` exports source-system records, both as `miseledger.adapter.v1` JSONL, and `miseledger` imports that into a SQLite FTS archive and emits evidence bundles over CLI, loopback HTTP, and MCP. The Go stations install with `go install github.com/escoffier-labs/<name>/cmd/<name>@latest`.
+Use `brigade profiles list` to see built-in bundles and `brigade stations list` to see which stations the repo profile selects before installing sidecars. Fresh repo installs select core, skills, memory, guard, security, tokens, evidence, and search up front; external tools still install only when you run `brigade add <station>` with the station's install step.
+
+The evidence station is a local-first audit trail: `miseledger` imports session and source records into a SQLite FTS archive and emits evidence bundles over CLI, loopback HTTP, and MCP. The Go stations install with `go install github.com/escoffier-labs/<name>/cmd/<name>@latest` when their station manifest asks for it.
 
 ### Dispatch a brigade
 
@@ -104,6 +118,7 @@ Brigade fits the current stack best as the local plan, receipt, and review layer
 brigade work task add "Review the auth refactor" --type review --acceptance "Find correctness, security, and test gaps"
 brigade work task plan <task-id>
 brigade work run <task-id>
+brigade work verify run --target . --command "pytest -q" --capture brigade-work
 brigade work acceptance
 ```
 
@@ -128,10 +143,11 @@ brigade work bootstrap
 brigade work doctor
 brigade work brief
 brigade work run
-brigade work run --queue-next
+brigade work verify run --target . --command "pytest -q" --capture brigade-work
+brigade work closeout
 ```
 
-The work loop is more than `run`: a task ledger (`brigade work task add` with types, priorities, acceptance criteria, templates, and `--from-issue`), an import inbox, a scanner registry plus `brigade work sweep`, code-review producers (`brigade work review`), explicit verification and closeout (`brigade work verify` / `brigade work closeout` / `brigade work acceptance`), and backup-health summaries (`brigade work backup`).
+The work loop is more than `run`: a task ledger (`brigade work task add` with types, priorities, acceptance criteria, templates, and `--from-issue`), an import inbox, a scanner registry plus `brigade work sweep`, code-review producers (`brigade work review`), explicit verification and closeout (`brigade work verify` / `brigade work closeout` / `brigade work acceptance`), phase records (`brigade work phases`), and backup-health summaries (`brigade work backup`).
 
 Inspect run artifacts and handoff coverage:
 
@@ -166,8 +182,12 @@ These groups turn local evidence into reviewable reports and queues without exec
 ```bash
 brigade center status                 # operator center: status, reviews, reports, readiness
 brigade center readiness plan          # one ready-or-blocked view across every subsystem
+brigade operator adopt plan            # inventory a homegrown setup before adoption
+brigade operator checkup               # run every read-only first-run doctor at once
 brigade repos scan                     # repo fleet: safe metadata only, reports, release trains
 brigade tools doctor                   # portable tool catalog: skills, commands, scripts, MCP
+brigade friction scan                  # mine local notes and handoffs for workflow friction
+brigade research run "question"        # create a cited local research report
 brigade chat sweep ingest discord-export   # normalize chat exports into memory sweeps
 brigade context plan                   # build/sync context packs from safe summaries
 brigade memory care scan               # find stale, oversized, orphaned, undersourced cards
@@ -204,9 +224,11 @@ brigade mcp doctor                # validate the catalog and report gaps
 `brigade outcome` is the verified-learning ledger: it scores learned cards and skills by what actually passed verification, so promotion and rollback rest on evidence rather than a one-time guess.
 
 ```bash
-brigade outcome capture <artifact>   # record a verify run's outcome
+brigade work verify run --target . --command "pytest -q" --capture <skill-or-card>
+brigade outcome capture <artifact>   # optional separate capture, defaults to latest verify run
 brigade outcome score                # verified scores for learned cards and skills
 brigade outcome rank                 # rank learned skills, most-proven first
+brigade outcome explain <artifact>   # show the per-signal trail behind a score
 brigade outcome reconcile            # apply verified promote/rollback decisions (dry-run by default)
 ```
 
@@ -244,7 +266,8 @@ It never pushes, tags, creates releases, comments remotely, or mutates remotes.
 ## Verification
 
 ```bash
-brigade doctor --target ~/agent-kitchen
+brigade operator doctor --target ./my-repo --profile local-operator
+brigade doctor --target ./my-repo
 brigade roster doctor
 brigade work doctor
 brigade dogfood status
