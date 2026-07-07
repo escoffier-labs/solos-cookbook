@@ -165,6 +165,11 @@ describe('resolveMdLink', () => {
     expect(resolveMdLink('../templates/', 'automation')).toBe('/cookbook/templates');
   });
 
+  it('sends template-page relative pack links to GitHub template folders', () => {
+    expect(resolveMdLink('security/', 'templates')).toBe(`${GITHUB_BLOB}/templates/security`);
+    expect(resolveMdLink('SETUP-CHECKLIST.md', 'templates')).toBe(`${GITHUB_BLOB}/templates/SETUP-CHECKLIST.md`);
+  });
+
   it('sends unknown root files to GitHub', () => {
     expect(resolveMdLink('../LICENSE', 'templates')).toBe(`${GITHUB_BLOB}/LICENSE`);
   });

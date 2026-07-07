@@ -226,9 +226,12 @@ export function resolveMdLink(href: string, category: string): string | null {
 
   const [rawPath = '', hash] = href.split('#');
   const anchor = hash ? `#${hash}` : '';
+  const templateRelative = category === 'templates' && rawPath && !rawPath.startsWith('../') && !rawPath.startsWith('/');
 
   // Resolve against the current category directory to a repo-absolute path.
-  const segments = rawPath.startsWith('../')
+  const segments = templateRelative
+    ? ['templates', ...rawPath.replace(/^\.\//, '').split('/')]
+    : rawPath.startsWith('../')
     ? rawPath.replace(/^(\.\.\/)+/, '').split('/')
     : rawPath.startsWith('./')
       ? [category, ...rawPath.slice(2).split('/')]
@@ -273,7 +276,7 @@ export function resolveMdLink(href: string, category: string): string | null {
 
 /**
  * Rewrite relative `.md` links in markdown source to site routes,
- * skipping fenced code blocks. Inline links only — the corpus uses
+ * skipping fenced code blocks. Inline links only, the corpus uses
  * standard `[text](target)` syntax throughout.
  */
 export function rewriteMdLinks(markdown: string, category: string): string {
