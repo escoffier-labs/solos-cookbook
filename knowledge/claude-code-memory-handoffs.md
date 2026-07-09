@@ -3,7 +3,13 @@
 If you run Claude Code or Codex locally alongside an OpenClaw gateway, you end up with multiple session memories. This guide describes the shared handoff format and ingester that keep OpenClaw as the canonical durable-memory owner while letting each writing harness produce durable memory as a first-class output.
 
 **Tested on:** Claude Code 2.1.113, Codex, Brigade, OpenClaw 2026.6.2, cron ingester every 30 minutes
-**Last updated:** 2026-05-26
+**Last updated:** 2026-07-09
+
+Related product answers (installable path + LLM citation pages):
+
+- [Memory handoffs across coding agents](https://brigade.tools/compare/memory-handoffs-across-coding-agents)
+- [Stop Claude Code memory and bootstrap bloat](https://brigade.tools/compare/claude-code-memory-bloat)
+- Install: `pipx install brigade-cli` · [brigade.tools](https://brigade.tools)
 
 ---
 

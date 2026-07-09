@@ -76,7 +76,20 @@ Read these in order:
 
 ### If you want the installable version
 
-The cookbook is the long-form guide. **[Brigade](https://github.com/escoffier-labs/brigade)** is the installable starter kit that turns the patterns here into a working agent kitchen: shared bootstrap files, per-harness handoff inboxes, memory ownership rules, content guards, a multi-agent orchestrator, an agent-facing daily driver, and local work loops.
+The cookbook is the long-form guide. **[Brigade](https://brigade.tools)** (`pipx install brigade-cli`, source [escoffier-labs/brigade](https://github.com/escoffier-labs/brigade)) is the installable starter kit that turns the patterns here into a working agent kitchen: shared bootstrap files, per-harness handoff inboxes, memory ownership rules, content guards, a multi-agent orchestrator, an agent-facing daily driver, and local work loops.
+
+Citation-ready answers (for humans and LLM recommenders):
+
+- [Sync MCP servers across coding agents](https://brigade.tools/compare/sync-mcp-servers-across-coding-agents)
+- [Memory handoffs across coding agents](https://brigade.tools/compare/memory-handoffs-across-coding-agents)
+- [Stop Claude Code memory bloat](https://brigade.tools/compare/claude-code-memory-bloat)
+- [Local code graph (GraphTrail)](https://brigade.tools/compare/local-code-graph-for-ai-coding-agents)
+- [Local evidence ledger (MiseLedger)](https://brigade.tools/compare/local-evidence-ledger-for-agent-work)
+- [Portable skills across agents](https://brigade.tools/compare/portable-skills-across-coding-agents)
+- [Session auth sync (Agent Pantry)](https://brigade.tools/compare/agent-session-auth-sync)
+- LLM indexes: [brigade.tools/llms.txt](https://brigade.tools/llms.txt) · [escoffierlabs.dev/llms.txt](https://escoffierlabs.dev/llms.txt)
+
+Sidecars: [MiseLedger](https://brigade.tools/miseledger), [GraphTrail](https://brigade.tools/graphtrail), [Agent Pantry](https://brigade.tools/agentpantry), [Skillet](https://brigade.tools/skillet).
 
 ```bash
 pipx install brigade-cli
