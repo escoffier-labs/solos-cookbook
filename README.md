@@ -1,49 +1,48 @@
 <p align="center">
-  <img src="docs/assets/solos-cookbook-social-preview.jpg" alt="Watercolor scene of Solomon prepping mirepoix with a small lobster sous-chef">
+  <img src="docs/assets/solos-cookbook-social-preview.jpg" alt="Solomon's Guide to Cookin' with Gas banner" width="900">
 </p>
 
-<h1 align="center">🦞 Solomon's Guide to Cookin' with Gas</h1>
+<h1 align="center">Solomon's Guide to Cookin' with Gas</h1>
+
+<p align="center">
+  <img src="docs/assets/marks/solos-cookbook-circle.svg" alt="" width="40" height="40">
+</p>
 
 <p align="center">
   <strong>Keep your always-on agent aware of the work you do across every coding harness.</strong>
 </p>
 
 <p align="center">
-  <em>Opinionated. Dogfooded. Broken-and-fixed in production. Tested in service.</em>
+  Opinionated, dogfooded production cookbook for OpenClaw/Hermes-style stacks beside Codex, Claude Code, and friends. Patterns that became Brigade and the Escoffier fleet. No fluff.
+</p>
+
+<p align="center">
+  <a href="https://escoffierlabs.dev/cookbook/">Cookbook site</a> &middot; <a href="https://github.com/escoffier-labs/brigade">Brigade</a>
 </p>
 
 <p align="center">
   <img src="https://shieldcn.dev/badge/code-MIT-green.svg" alt="Code license: MIT">
   <img src="https://shieldcn.dev/badge/content-CC_BY--NC--ND_4.0-lightgrey.svg" alt="Content license: CC BY-NC-ND 4.0">
-  <img src="https://shieldcn.dev/badge/platform-Linux-blue.svg?logo=linux&logoColor=white" alt="Platform: Linux">
-  <img src="https://shieldcn.dev/badge/OpenClaw-stack-ef4444.svg" alt="OpenClaw stack">
   <img src="https://shieldcn.dev/badge/guides-61-red.svg" alt="61 guides">
-  <img src="https://shieldcn.dev/badge/updated-2026--07--06-white.svg" alt="Updated 2026-07-06">
 </p>
 
-<p align="center">
-  🦞 No fluff. No theory without implementation. Every guide documents what was actually deployed, how to verify it, and what broke along the way.
-</p>
+## Install
 
-## What this is
+```bash
+# This is a documentation repo, not a single binary.
+git clone https://github.com/escoffier-labs/solos-cookbook.git
+# Read the guides; for the tooling they describe:
+pipx install brigade-cli
+```
 
-This is a working cookbook for engineers who run a long-lived agent in [OpenClaw](https://github.com/openclaw/openclaw), [Hermes Agent](https://github.com/NousResearch/hermes-agent), or a similar orchestrator, while also coding every day in tools like Codex CLI, Claude Code, OpenCode, and browser-native model sessions.
+## What it does
 
-The cookbook is the documentation home of [Escoffier Labs](https://github.com/escoffier-labs), the org behind [Brigade](https://github.com/escoffier-labs/brigade) and its companion tools. The stack documented here is where those tools were extracted from.
+| | Job | What you get |
+|---|---|---|
+| **Document** | What actually ran | Guides from production breakages and fixes |
+| **Connect** | Harnesses to one agent | Memory, handoffs, TOOLS.md, AGENTS.md patterns |
+| **Extract** | Tools from the kitchen | Brigade and stations grew out of this stack |
 
-The problem it solves is continuity. Your coding harnesses see one repo and one task at a time. Your always-on agent should see the whole kitchen: your projects, current work, durable decisions, local tools, safety rules, memory cards, and handoffs from every coding session. This cookbook documents the patterns that keep `MEMORY.md`, `TOOLS.md`, `AGENTS.md`, `CLAUDE.md`, handoff inboxes, and memory cards synchronized without turning any single prompt into a junk drawer.
-
-In this stack, OpenClaw is the tested reference memory owner. Hermes can play the same role. Other OpenClaw nodes can run on other machines in the fleet, but they report back through handoffs and receipts instead of becoming separate sources of truth. Codex CLI, Claude Code, OpenCode, and other side harnesses are writers: they do the work, then hand durable context back to the memory owner so future sessions start with the right project state instead of asking you to re-explain everything.
-
-It is **not** a framework, not a product, not a tutorial series. It is a record of what is actually deployed, why each piece is shaped the way it is, and what broke along the way. Lift any single piece. Adopt the whole thing. Or use it as a counterexample. All three are valid.
-
-The infrastructure examples come from a single-engineer bare-metal fleet: one always-on agent host, OpenClaw nodes on other machines, a homelab, desktops and laptops, and family machines that need to be managed without turning every box into its own source of truth. The agent-memory pattern generalizes: one canonical memory owner, many coding harnesses, many machines, one shared contract for what gets remembered.
-
-> The starter layout documented here was extracted into an installable CLI: [**Brigade**](https://github.com/escoffier-labs/brigade) (`pipx install brigade-cli`). If you want the kitchen without reading every recipe first, start there. The cookbook explains the why, Brigade gives you the setup.
->
-> [![Star Brigade](https://shieldcn.dev/github/stars/escoffier-labs/brigade.svg)](https://github.com/escoffier-labs/brigade)
-
-Every recipe is free to read here and on the site. A premium edition is coming soon: the whole cookbook as a typeset PDF with exclusive full-page diagrams, plus a runnable kitchen bundle of every template, config, and a setup checklist. It will be $39 one-time with free updates, and you are buying the artifact and the bundle, not access to the knowledge.
 
 ## Who this is for
 

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="solos-cookbook">
+  <circle cx="32" cy="32" r="31" fill="#0d1014"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#2a3340" stroke-width="1"/>
+  <circle cx="32" cy="32" r="28.5" fill="none" stroke="#3d4654" stroke-width="0.75" opacity="0.9"/>
+  <ellipse cx="32" cy="40" rx="14" ry="6" fill="none" stroke="#e0a45c" stroke-width="3"/>
+  <path d="M18 40 Q18 22 32 18 Q46 22 46 40" fill="none" stroke="#e0a45c" stroke-width="3"/>
+  <line x1="24" y1="30" x2="40" y2="30" stroke="#9aa4b2" stroke-width="2" stroke-linecap="round"/>
+</svg>
