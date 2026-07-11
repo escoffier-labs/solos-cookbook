@@ -100,35 +100,11 @@ It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a loc
 
 ## The stack at a glance
 
-```mermaid
-flowchart TB
-    OWNER["🦞 <b>OpenClaw / Hermes</b><br/><i>canonical agent · durable memory owner</i>"]
-    MEM["<b>MEMORY.md · TOOLS.md · AGENTS.md</b><br/>rules · memory cards · project context · handoffs"]
-    OWNER -->|maintains| MEM
+<p align="center">
+  <img src="docs/assets/stack-workflow.svg" alt="Agent stack workflow: repositories and automation feed writer harnesses, portable handoffs, and one canonical memory owner" width="900">
+</p>
 
-    subgraph WRITERS [" writer harnesses "]
-        CODEX["<b>Codex CLI</b><br/>/ Codex"]
-        CLAUDE["<b>Claude Code</b><br/>/ tmux relay · ACP"]
-        OPEN["<b>OpenCode</b><br/>/ browser"]
-    end
-
-    CODEX & CLAUDE & OPEN == durable handoffs ==> MEM
-    MEM -. memory ingest .-> CODEX & CLAUDE & OPEN
-
-    subgraph SURFACES [" work surfaces "]
-        WORK["repos · terminals · tools<br/>coding sessions"]
-        AUTO["automation · cron · n8n<br/>fleet & security checks"]
-    end
-    CODEX & CLAUDE --> WORK
-    OPEN --> AUTO
-
-    classDef owner fill:#ef4444,stroke:#b91c1c,color:#fff;
-    classDef mem fill:#fff7ed,stroke:#ea580c,color:#7c2d12;
-    classDef surface fill:#f1f5f9,stroke:#94a3b8,color:#334155;
-    class OWNER owner;
-    class MEM mem;
-    class WORK,AUTO surface;
-```
+<p align="center"><em>Many writers share one owner through portable, reviewable handoffs.</em></p>
 
 ## Recommended Provider Stack
 
