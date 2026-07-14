@@ -9,294 +9,107 @@
 </p>
 
 <p align="center">
-  <strong>Keep your always-on agent aware of the work you do across every coding harness.</strong>
+  <strong>Production notes for running long-lived agents beside daily coding tools.</strong>
 </p>
 
 <p align="center">
-  Opinionated, dogfooded production cookbook for OpenClaw/Hermes-style stacks beside Codex, Claude Code, and friends. Patterns that became Brigade and the Escoffier fleet. No fluff.
-</p>
-
-<p align="center">
-  <a href="https://escoffierlabs.dev/cookbook/">Cookbook site</a> &middot; <a href="https://github.com/escoffier-labs/brigade">Brigade</a>
+  <a href="https://escoffierlabs.dev/cookbook/">Read the cookbook</a> &middot;
+  <a href="https://escoffierlabs.dev/cookbook/recipes">Browse all recipes</a> &middot;
+  <a href="https://escoffierlabs.dev/cookbook/edition">2026 Edition</a>
 </p>
 
 <p align="center">
   <img src="https://shieldcn.dev/badge/code-MIT-green.svg" alt="Code license: MIT">
   <img src="https://shieldcn.dev/badge/content-CC_BY--NC--ND_4.0-lightgrey.svg" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://shieldcn.dev/badge/guides-61-red.svg" alt="61 guides">
+  <img src="https://shieldcn.dev/badge/updated-2026--07--13-gold.svg" alt="Updated July 13, 2026">
 </p>
 
-## Install
+This repository is the source for [Le Répertoire](https://escoffierlabs.dev/cookbook/), a cookbook built from systems that were deployed, broken, repaired, and checked again. It covers OpenClaw and Hermes memory ownership, Codex and Claude Code handoffs, automation, self-hosted infrastructure, security, publishing, and the hardware underneath the stack.
 
-```bash
-# This is a documentation repo, not a single binary.
-git clone https://github.com/escoffier-labs/solos-cookbook.git
-# Read the guides; for the tooling they describe:
-pipx install brigade-cli
-```
+The website is the reading interface. The repository holds the markdown sources and copyable templates.
 
-## What it does
+## Start here
 
-| | Job | What you get |
-|---|---|---|
-| **Document** | What actually ran | Guides from production breakages and fixes |
-| **Connect** | Harnesses to one agent | Memory, handoffs, TOOLS.md, AGENTS.md patterns |
-| **Extract** | Tools from the kitchen | Brigade and stations grew out of this stack |
+Pick the path that matches the problem in front of you:
 
+| You need to | Start with |
+|---|---|
+| Keep one durable memory across coding tools | [Memory architecture](knowledge/memory-architecture.md) |
+| Route work across several models | [Multi-model orchestration](ai-stack/multi-model-orchestration.md) |
+| Decide where scheduled work belongs | [Cron patterns](automation/cron-patterns.md) |
+| Recover the stack after a bad host failure | [Backup and recovery](infrastructure/backup-recovery.md) |
+| Lock down a host that agents can touch | [Linux hardening](security/linux-hardening.md) |
+| Stop private infrastructure details at publication time | [Publish-time scrubbing](publishing/publish-time-scrubbing.md) |
 
-## Who this is for
+For the memory system, read these in order:
 
-Use this cookbook if you want:
+1. [Memory token optimization](knowledge/memory-token-optimization.md)
+2. [Memory architecture](knowledge/memory-architecture.md)
+3. [Memory handoffs](knowledge/claude-code-memory-handoffs.md)
+4. [Self-improving agents](ai-stack/self-improving-agents.md)
 
-- an OpenClaw or Hermes agent that knows what changed across your repos, not just what happened in its own chat window
-- Codex CLI, Claude Code, OpenCode, and similar tools to write durable handoffs instead of creating isolated session memories
-- `MEMORY.md`, `TOOLS.md`, `AGENTS.md`, safety rules, and project context to stay maintained by the agent workflow, not by manual copy/paste
-- local-first automation, security checks, content scrubbing, backups, and memory care around an agent that can actually touch your systems
-- an installable starter layout via [Brigade](https://github.com/escoffier-labs/brigade), with the cookbook as the explanation layer
+## Chapters
 
-## Quick start
+| Chapter | Recipes | Covers |
+|---|---:|---|
+| [AI agent stack](ai-stack/) | 15 | Model routing, sessions, context, OAuth, local fallbacks |
+| [Automation](automation/) | 8 | Cron, hooks, n8n, channels, publishing jobs |
+| [Self-hosted infrastructure](infrastructure/) | 9 | Backups, service isolation, host topology, recovery |
+| [Security](security/) | 7 | Host hardening, secrets, incident response, agent controls |
+| [Knowledge management](knowledge/) | 7 | Memory ownership, handoffs, evidence, Obsidian, transcripts |
+| [Hardware and host](hardware/) | 3 | Bare metal, disks, kernel tuning |
+| [Tools](tools/) | 6 | Brigade, Skillet, MCP catalogs, redeploys, OpsDeck |
+| [Publishing](publishing/) | 2 | Scrub gates and review boundaries |
+| [Philosophy](philosophy/) | 4 | Scope, tradeoffs, and operating principles |
 
-There is nothing to install for the cookbook itself - it is a collection of standalone guides. Pick the one that solves a problem you have right now:
+The [templates](templates/) directory contains public-safe bootstrap files, hook examples, service snippets, scrubber rules, and setup checklists. Copy only the pieces you understand, then replace every placeholder before use.
 
-- **[automation/cron-patterns.md](automation/cron-patterns.md)**: decide which layer (systemd, agent cron, n8n) each scheduled task in your stack actually belongs in
-- **[ai-stack/multi-model-orchestration.md](ai-stack/multi-model-orchestration.md)**: wire one orchestrator across many models with the right model per task
-- **[security/linux-hardening.md](security/linux-hardening.md)**: UFW, SSH hardening, fail2ban, and defense in depth for the host
-- **[infrastructure/backup-recovery.md](infrastructure/backup-recovery.md)**: restic to NAS (twice daily) + cloud (weekly), Drive quota gotchas, KeePass canonical sync, snapshot mounts
+## Cookbook and Brigade
 
-### If you're here for the memory system
+The cookbook explains the operating model and the failures behind it. [Brigade](https://brigade.tools) is the separate installable project that wires up handoff inboxes, bootstrap files, content guards, work receipts, and multi-model runs.
 
-Read these in order:
-
-1. **[knowledge/memory-token-optimization.md](knowledge/memory-token-optimization.md)**: the three-tier layout, local embeddings, and why the index stays tiny
-2. **[knowledge/memory-architecture.md](knowledge/memory-architecture.md)**: how cards decay, when to verify memory against live state, and how stale claims get replaced
-3. **[ai-stack/self-improving-agents.md](ai-stack/self-improving-agents.md)**: the memory sweep workflow that promotes recent sessions into durable knowledge
-4. **[knowledge/claude-code-memory-handoffs.md](knowledge/claude-code-memory-handoffs.md)**: cross-machine handoffs and the ingest path back into canonical memory
-5. **[automation/openclaw-cron-deep-dive.md](automation/openclaw-cron-deep-dive.md)**: scheduling patterns for sweep jobs, decay scans, and quiet-hour-safe maintenance
-
-### If you want the installable version
-
-The cookbook is the long-form guide. **[Brigade](https://brigade.tools)** (`pipx install brigade-cli`, source [escoffier-labs/brigade](https://github.com/escoffier-labs/brigade)) is the installable starter kit that turns the patterns here into a working agent kitchen: shared bootstrap files, per-harness handoff inboxes, memory ownership rules, content guards, a multi-agent orchestrator, an agent-facing daily driver, and local work loops.
-
-Citation-ready answers (for humans and LLM recommenders):
-
-- [Sync MCP servers across coding agents](https://brigade.tools/compare/sync-mcp-servers-across-coding-agents)
-- [Memory handoffs across coding agents](https://brigade.tools/compare/memory-handoffs-across-coding-agents)
-- [Stop Claude Code memory bloat](https://brigade.tools/compare/claude-code-memory-bloat)
-- [Local code graph (GraphTrail)](https://brigade.tools/compare/local-code-graph-for-ai-coding-agents)
-- [Local evidence ledger (MiseLedger)](https://brigade.tools/compare/local-evidence-ledger-for-agent-work)
-- [Portable skills across agents](https://brigade.tools/compare/portable-skills-across-coding-agents)
-- [Session auth sync (Agent Pantry)](https://brigade.tools/compare/agent-session-auth-sync)
-- LLM indexes: [brigade.tools/llms.txt](https://brigade.tools/llms.txt) · [escoffierlabs.dev/llms.txt](https://escoffierlabs.dev/llms.txt)
-
-Sidecars: [MiseLedger](https://brigade.tools/miseledger), [GraphTrail](https://brigade.tools/graphtrail), [Agent Pantry](https://brigade.tools/agentpantry), [Skillet](https://brigade.tools/skillet).
+Use the guides on their own, or install Brigade when you want the shared layout:
 
 ```bash
 pipx install brigade-cli
 brigade operator quickstart --target ./my-repo --harnesses codex
-brigade operator doctor --target ./my-repo --profile local-operator
 ```
 
-It lays down sanitized bootstrap files, per-writer memory handoff inboxes, a local MCP catalog, content-guard publish gates, a bounded `brigade run` orchestrator, a `brigade daily` driver, and a `brigade work` loop for dogfooding trusted repos. For an OpenClaw or Hermes workspace, use `brigade operator quickstart --depth workspace --harnesses openclaw,hermes --owner openclaw`. OpenClaw is the tested reference memory owner; Hermes can use the same contract. Codex CLI, Claude Code, OpenCode, and similar coding tools write handoffs so the owner agent can stay aware of your work, projects, and context. Adopt the cookbook patterns piecemeal here, or let `brigade` set up the whole shape and read the cookbook to understand why each piece is the way it is.
+The cookbook does not need Brigade to be useful, and this repository is not a second Brigade distribution.
 
-## The stack at a glance
+## 2026 Edition
 
-<p align="center">
-  <img src="docs/assets/stack-workflow.svg" alt="Agent stack workflow: repositories and automation feed writer harnesses, portable handoffs, and one canonical memory owner" width="900">
-</p>
+All 61 recipes remain free on the website. The planned paid edition is a $39 designed PDF with a linked table of contents, chapter openers, print typography, full-page diagrams, a setup checklist, and a glossary.
 
-<p align="center"><em>Many writers share one owner through portable, reviewable handoffs.</em></p>
+Payment will use Stripe. Checkout stays disabled until the final PDF, file delivery, receipt email, refund terms, and a test purchase are ready. A purchase will include every 2026 Edition revision published through June 30, 2027. A later named edition may be a separate purchase.
 
-## Recommended Provider Stack
+[Preview the 2026 Edition](https://escoffierlabs.dev/cookbook/edition).
 
-The guides assume a specific provider mix. You can substitute, but if you want a known-good baseline:
+## Local site
 
-- **The $200 stack is the normal recommendation.** Use Codex Pro as the main agent + coder lane when your OpenClaw agent is active every day, doing cron work, repo work, and second-pass review. One flat subscription covers the hot path, and Codex OAuth slots cleanly into OpenClaw's primary-model path.
-- **A $100-ish stack can work if usage is conservative.** If your agent is not busy, you are not sharing the subscription with heavy coding sessions, and most background work stays on local/Ollama/browser lanes, you can run a smaller setup. Expect to manage rate limits more actively.
-- **Claude Opus via Claude Code: escalation only.** Intel, design, architecture review, and second-opinion code review. As of late June 2026 `claude -p` automation works again (Anthropic reverted the June print-mode change), so it is fine for simple scripted calls; the Claude Code tmux relay is still the better lane for recoverable, attachable review sessions, and ACPX stays for setups that explicitly need ACP.
-- **Ollama (free): embeddings, commit messages, triage.** Local, fast, no round-trip.
+Node 22.12 or newer is required.
 
-### Claude Code via tmux: the June 2026 lesson
+```bash
+git clone https://github.com/escoffier-labs/solos-cookbook.git
+cd solos-cookbook
+npm --prefix site ci
+npm --prefix site run dev
+```
 
-The Claude lesson has its own guide now: [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md).
-
-The short version: you can drive Claude Code from OpenClaw or Codex through an interactive tmux session with `tmux send-keys`, `tmux paste-buffer`, and `tmux capture-pane`, keeping it in its first-party harness.
-
-What changed, and the current state:
-
-1. In April 2026, direct Claude subscription OAuth through third-party harnesses stopped being a reliable OpenClaw model backend. That still holds: do not wire `anthropic:claude-cli` as a model backend.
-2. In June 2026, `claude -p` / print-mode automation briefly drew from Claude's separate **Usage** bucket (and 401'd on this stack). Anthropic reverted that in late June 2026, so `claude -p` works again and is fine for scripted automation.
-
-So `claude -p` is no longer off-limits. The tmux relay is still worth using when you want a recoverable, human-attachable session with visible permission prompts, or a resilient one-shot bridge. ACPX remains documented for setups that explicitly need an ACP endpoint. See [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) for OpenClaw/Codex commands and [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) for the ACPX compatibility runbook.
-
-## Guides
-
-### AI agent stack
-
-| Guide | Description | Platform |
-|-------|-------------|----------|
-| [Multi-Model Orchestration](ai-stack/multi-model-orchestration.md) | Run GPT 5.5, Claude Code review, browser-LLM skills, and Ollama in one setup with the right model per task | Any |
-| [claude-cli → ACP Migration](ai-stack/claude-cli-to-acp-migration.md) | Move Opus off the main-agent slot after Anthropic's April 2026 subscription-OAuth block | Anthropic |
-| [Claude Code via ACP](ai-stack/acp-claude-code.md) | Running Claude Code as an ACP-driven compatibility lane after Anthropic's April 2026 harness block | Any |
-| [Claude Code via tmux Relay](ai-stack/claude-code-tmux-relay.md) | Drive first-party Claude Code from OpenClaw through tmux for recoverable second-opinion review (a robust alternative to `claude -p`) | Any |
-| [Sub-Agent Patterns](ai-stack/sub-agent-patterns.md) | Spawn patterns, model assignment, ACP escalation, error handling, and the wrapper script | Any |
-| [GPT 5.5 Orchestration](ai-stack/gpt-55-orchestration.md) | Tool-call narration guard, strict-agentic detection gaps, silent-tool-loop triage, action-verb tuning | Any |
-| [Self-Improving Agents](ai-stack/self-improving-agents.md) | Correction capture, behavioral-guard plugins (tool-narration-guard, tokenjuice), memory sweeps, and promotion rules | Any |
-| [Session Management](ai-stack/session-management.md) | Why single-chat apps bottleneck your agent, Discord channel layouts, cron isolation, and the hybrid approach | Any |
-| [Skills Development](ai-stack/skills-development.md) | Write custom skills, structure for discoverability, real-world examples, and skill management | Any |
-| [Prompt Caching](ai-stack/prompt-caching.md) | Cache hygiene across Anthropic and OpenAI, so you avoid silent cost/quota leaks | Any |
-| [Compaction & Context Tuning](ai-stack/compaction-and-context-tuning.md) | Compaction, memory flush, context pruning, and session search for long-running agents | Any |
-| [Browser LLM Stack](ai-stack/browser-llm-stack.md) | Chromium lanes, persistent login profiles, noVNC inspection, and flock-locked browser-native model workflows | Any |
-| [Local LLM Fallback](ai-stack/local-llm-fallback.md) | Ollama lanes for embeddings, commit drafts, cron triage, and bounded utility work without degrading the main chain | Any |
-| [OAuth & Token Lifecycle](ai-stack/oauth-token-lifecycle.md) | Subscription OAuth across providers: rotating-token reuse, multi-file sync, api-key fallback shadowing, and the 402 red herring | Any |
-| [Model Retirement & Fallbacks](ai-stack/model-retirement-and-fallbacks.md) | Where model ids hide, the cron-and-agent sweep to run on every retirement, and fallback chains that fail somewhere sane | Any |
-
-### Automation
-
-| Guide | Description | Platform |
-|-------|-------------|----------|
-| [Cron Patterns](automation/cron-patterns.md) | The three-layer cron stack: systemd timers vs agent cron vs n8n schedule triggers, where each scheduled task belongs | Any |
-| [OpenClaw Cron Deep-Dive](automation/openclaw-cron-deep-dive.md) | Heartbeat batching, thinking-budget aliases, explicit delivery routing, quiet hours, and real-incident gotchas | OpenClaw |
-| [Multi-Channel Setup](automation/multi-channel-setup.md) | Discord, Telegram, Signal routing, session isolation, ACP threads, and access control | Any |
-| [Hooks](automation/hooks.md) | Three-layer hook model: boundary (git pre-push, outbound-scrub CLIs), tool-call (PreToolUse/PostToolUse, OpenClaw `before_tool_call`/`tool_result_persist`), lifecycle (SessionStart, `before_prompt_build`, `message_sending`) | Any |
-| [n8n Patterns](automation/n8n-patterns.md) | Three interfaces (n8nctrl, REST API, direct sqlite), Code node sandbox + task-runner constant-folding trap, failure-classifier topology | n8n |
-| [Social Publishing Stack](automation/social-publishing-stack.md) | Self-hosted Postiz + n8n publishing plumbing in one container, agent-driven over MCP with env-gated writes, the rate-limit guard, per-network token expiry. The pipes, not the content | n8n |
-| [Sandbox Shims](automation/sandbox-shims.md) | PATH wrappers for read-only git, denied network tools, package-manager controls, and restricted worker lanes | Any |
-| [Failure Classifier](automation/failure-classifier.md) | One n8n error workflow for the whole fleet: bucket taxonomy, fingerprint dedup, escalation routing, taxonomy tuning | n8n |
-
-### Infrastructure
-
-| Guide | Description | Platform |
-|-------|-------------|----------|
-| [Backup & Recovery](infrastructure/backup-recovery.md) | Restic to NAS (twice daily) + Google Drive (weekly), Drive quota/over-sync gotchas, KeePass canonical sync, snapshot mounts, disaster recovery | Any |
-| [Upgrade Hygiene](infrastructure/upgrade-hygiene.md) | Surviving `openclaw update`: systemd regeneration, dist patches, OAuth sync, schema drift | Any |
-| [OpenClaw Host Topology](infrastructure/openclaw-host-topology.md) | Audit the production host shape: services, config, agents, plugins, cron, memory, browser automation, and health checks | OpenClaw |
-| [Homelab Topology](infrastructure/homelab-topology.md) | The hypervisor map: LXC vs VM split, container inventory, resource allocation on a small box, backup wiring | Proxmox |
-| [Service Isolation](infrastructure/service-isolation.md) | One service per unprivileged container: blast-radius thinking, resource caps, ephemeral build containers, when a VM is justified | Proxmox |
-| [Proxmox Agent Lab](infrastructure/proxmox-agent-lab.md) | Proxmox as the agent-stack substrate: service vs ephemeral CTs, the RAM budget, PBS backups, safe agent control via proxmox-mcp, proxguard CIS audits | Proxmox |
-| [AdGuard DNS Sinkhole](infrastructure/adguard-dns-sinkhole.md) | Network DNS sinkhole on a home lab with a synced standby, managed by an agent through adguardctrl tiers | Any |
-| [NAS & Network Mounts](infrastructure/nas-and-backups.md) | CIFS automount that never hangs boot, soft mounts, guest vs credential auth, bind-mount traps, PBS-on-NAS resilience | Any |
-| [Desktop Integration](infrastructure/desktop-integration.md) | The daily-driver desktop as a peer: SSH into Windows, SMB shares both ways, an SCP inbox, remote OBS control | Windows 11 + Linux |
-
-### Knowledge management
-
-| Guide | Description | Platform |
-|-------|-------------|----------|
-| [Memory & Token Optimization](knowledge/memory-token-optimization.md) | Three-tier memory architecture, local embedding search, memory sweep cadence, and 50-100x token reduction | Any |
-| [Claude Code and Codex Memory Handoffs](knowledge/claude-code-memory-handoffs.md) | Cross-machine sync format and scheduled ingest path that keeps OpenClaw the canonical memory owner | Any |
-| [Memory Architecture](knowledge/memory-architecture.md) | Operating model: memory as point-in-time claims, trust hierarchy, write/verify/decay loops, and stale-card handling | Any |
-| [Bootstrap Files](knowledge/bootstrap-files.md) | What each durable agent file owns: AGENTS, CLAUDE, SOUL, USER, TOOLS, MEMORY, and safety files | Any |
-| [Obsidian Sync Without Conflict Roulette](knowledge/obsidian-sync.md) | One canonical vault, one sync layer, and strict writer rules for bidirectional sync that stays boring | Any |
-| [Session JSONL as Memory Source, Not Noise](knowledge/session-jsonl.md) | Search transcript logs for evidence, then promote only durable facts into memory | OpenClaw |
-| [The MiseLedger Evidence Pipeline](knowledge/evidence-pipeline.md) | StationTrail and SourceHarvest export local history into one adapter contract; MiseLedger imports it into a searchable SQLite evidence archive with FTS and untrusted-context evidence bundles | Any |
-
-### Security
-
-| Guide | Description | Platform |
-|-------|-------------|----------|
-| [Linux Hardening](security/linux-hardening.md) | UFW, SSH hardening, fail2ban, service binding, and defense-in-depth for an OpenClaw host | Ubuntu 24.04 |
-| [WSL2 Hardening](security/wsl-hardening.md) | Windows Firewall, RDP/SSH/SMB lockdown, port proxy hygiene, sleep prevention, and dual-OS defense | Windows 11 + WSL2 |
-| [Agent Security](security/agent-security-hardening.md) | API gateway isolation, RBAC, sandboxing, circuit breakers, and a real post-mortem from a sub-agent nuking a database | Any |
-| [Secret Management](security/secret-management.md) | Env files, systemd `EnvironmentFile`, browser profiles, rotation, and keeping secrets out of repos and memory | Any |
-| [Agent Incident Runbook](security/incident-runbook.md) | Freeze automation, preserve evidence, rotate or restore, and turn agent failures into durable controls | Any |
-| [Wazuh Triage](security/wazuh-triage.md) | RCA first, fix second, narrowest suppression last: keeping a self-hosted SIEM high-signal on an agent host | Wazuh |
-| [MCP Incident Response](security/mcp-incident-response.md) | The agent-driven SOC loop: Wazuh alert to TheHive case to Cortex analysis to MISP enrichment to ATT&CK mapping, all over your own MCP servers | Any |
-
-### Publishing
-
-| Guide | Description | Platform |
-|-------|-------------|----------|
-| [Publish-Time Scrubbing](publishing/publish-time-scrubbing.md) | Deterministic scrubbers, scanner gates, media review, and publish logs before artifacts leave the private workspace | Any |
-| [PR Comment Boundary](publishing/pr-comment-boundary.md) | Preflight PR and review comments so agents do not leak private hostnames, local paths, endpoints, or raw logs | Any |
-
-### Hardware
-
-| Guide | Description | Platform |
-|-------|-------------|----------|
-| [Bare-Metal Setup](hardware/bare-metal-setup.md) | Hardware spec, OS install, baseline tuning for the primary agent host in a bare-metal fleet | Ubuntu 24.04 |
-| [Disk Layout with LVM](hardware/disk-layout-lvm.md) | Two-disk LVM design that survives "I need to grow this" without a reinstall | Any |
-| [Kernel Tuning](hardware/kernel-tuning.md) | sysctl, swap, scheduler choices, per-user limits for an always-on AI host | Linux 6.x |
-
-### Tools
-
-| Guide | Description | Platform |
-|-------|-------------|----------|
-| [MCP Catalog](tools/mcp-catalog.md) | Every MCP server published from this stack, what each one wraps, who uses it | Any |
-| [Brigade](tools/brigade.md) | Installable agent workspace bootstrap, a multi-agent orchestrator, per-writer handoffs, an agent-facing daily driver, scanners, and local publish gates | Any |
-| [Skillet](tools/skillet.md) | Installable agent skills: line-check repo audits with leverage-sorted backlogs, bug-hunt, security-sweep, publish gates, releases, handoffs | Any |
-| [OpsDeck](tools/opsdeck.md) | Self-hosted ops dashboard, 20 routes over projects, services, memory, usage, security, and agent operations | Any |
-| [Repo Redeploy](tools/repo-redeploy.md) | One cron job that watches your own MCP/CLI repos and redeploys them across hosts | Any |
-| [MCP READMEs: All Five Clients](tools/mcp-readme-five-clients.md) | Every MCP repo ships setup blocks for Claude Desktop, Claude Code, OpenClaw, Hermes, Codex CLI | Any |
-
-### Philosophy
-
-| Essay | Description |
-|-------|-------------|
-| [Why One Control Host](philosophy/why-one-host.md) | The case for one canonical agent and memory owner in a bare-metal fleet |
-| [Why Dogfood Everything](philosophy/why-dogfood-everything.md) | Ship → use → break → fix → write it down, in that order |
-| [What This Stack Is Not](philosophy/what-this-stack-is-not.md) | Hard nos: SaaS lock-in, k8s, microservices, untested fashion |
-| [Manifesto vs Framework](philosophy/manifesto-vs-framework.md) | Why this is a cookbook and not a tool |
-
-## Templates
-
-Public-safe template packs you can lift without adopting the whole thing. For a current wired workspace, use Brigade; these folders are static references and small copyable artifacts. See [`templates/`](templates/).
-
-| Template | Used by |
-|----------|---------|
-| [`templates/bootstrap/`](templates/bootstrap/) | public-safe bootstrap-file references, paired with [`knowledge/bootstrap-files.md`](knowledge/bootstrap-files.md); Brigade owns generated workspace installs |
-| [`templates/ai-stack/`](templates/ai-stack/) | model aliases, local routing, ACP wrapper, Claude tmux relay, browser-lane lock, plugin smoke check |
-| [`templates/cron/`](templates/cron/) | systemd timer, OpenClaw cron, and n8n schedule-trigger skeletons, paired with [`automation/cron-patterns.md`](automation/cron-patterns.md) |
-| [`templates/hooks/`](templates/hooks/) | git pre-push, Claude Code PostToolUse, OpenClaw sync hook skeletons, paired with [`automation/hooks.md`](automation/hooks.md) |
-| [`templates/sandbox/`](templates/sandbox/) | restricted worker command wrappers, paired with [`automation/sandbox-shims.md`](automation/sandbox-shims.md) |
-| [`templates/scrubbers/`](templates/scrubbers/) | deterministic publish-boundary scrubber skeleton and fixtures, paired with [`publishing/publish-time-scrubbing.md`](publishing/publish-time-scrubbing.md) |
-| [`templates/security/`](templates/security/) | env-file and incident-note placeholders, paired with [`security/secret-management.md`](security/secret-management.md) and [`security/incident-runbook.md`](security/incident-runbook.md) |
-| [`templates/skills/`](templates/skills/) | public-safe `SKILL.md` skeleton and sanitization checklist, paired with [`ai-stack/skills-development.md`](ai-stack/skills-development.md) |
-| [`templates/n8n/`](templates/n8n/) | workflow and failure-classifier skeletons, paired with [`automation/n8n-patterns.md`](automation/n8n-patterns.md) |
-
-## Skills
-
-Public, sanitized skills copied from the real stack live in [`skills/`](skills/). These are reusable patterns, not private machine dumps.
-
-## Guide format
-
-Every guide follows the same skeleton. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full template:
-
-1. **What this is** and who it's for
-2. **Why this way**: tradeoffs vs the obvious alternatives
-3. **Prerequisites**
-4. **Before / After**
-5. **Implementation** with real commands
-6. **Verification** commands you can run right now
-7. **Gotchas** from real deployments
-8. **Templates + Related** cross-links
-
-Reference implementation: [`automation/cron-patterns.md`](automation/cron-patterns.md).
+The markdown at the repository root is the source of truth. The Astro app in `site/` renders it.
 
 ## Contributing
 
-PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). Two non-obvious rules:
+Corrections and verification reports are welcome. New guides need runnable verification commands and a `## Gotchas` section. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
-1. **No personal hostnames or IPs in committed text.** Use generic terms.
-2. **Every guide ends with a Gotchas section.** If nothing broke, the guide is incomplete.
-
-A pre-push hook ships at [`hooks/pre-push`](hooks/pre-push) that runs [content-guard](https://github.com/escoffier-labs/content-guard) over the working tree to catch leaks before they hit the remote. Activate after cloning:
+This is a public repository. Use RFC 5737 documentation addresses and generic hostnames in examples. The tracked pre-push hook checks committed content for private infrastructure details:
 
 ```bash
 git config core.hooksPath hooks
 ```
 
-## Related projects
-
-- [Brigade](https://github.com/escoffier-labs/brigade): the installable starter kit for synced agent memory, handoffs, and workspace bootstrap files
-- [OpenClaw](https://github.com/openclaw/openclaw): the tested reference agent and memory owner for this stack
-- [content-guard](https://github.com/escoffier-labs/content-guard): the policy-driven scanner used by the pre-push hook
-- [OpsDeck](tools/opsdeck.md): self-hosted ops dashboard
-- [n8nctrl](https://github.com/lidless-labs/n8nctrl), [jellyctrl](https://github.com/lidless-labs/jellyctrl), [mcporter](https://github.com/steipete/mcporter): MCPs and operator tools from this stack
-- [openclaw-overlay](https://github.com/solomonneas/openclaw-overlay): HUD overlay for session monitoring
-- [usage-tracker](https://github.com/escoffier-labs/usage-tracker): token usage and cost analytics
-
 ## License
 
 - Code, scripts, and templates: [MIT](LICENSE)
-- Narrative content (guides, manifestos, prose): [CC BY-NC-ND 4.0](CONTENT-LICENSE) 🦞
-
-> 🦞 *Built by an engineer who runs this stack 24/7 across bare metal and broke everything at least once so you don't have to.*
+- Narrative guides and essays: [CC BY-NC-ND 4.0](CONTENT-LICENSE)

@@ -8,13 +8,57 @@ import ThemeToggle from './ThemeToggle.astro';
     <span class="brand-subtitle">{SITE.tagline}</span>
   </a>
   {NAV_LINKS.map((l) => <a href={l.href} class="hidden sm:inline" style="color: var(--text-muted);">{l.label}</a>)}
+  <details class="mobile-nav sm:hidden">
+    <summary aria-label="Open navigation">Menu</summary>
+    <div class="mobile-nav-panel">
+      {NAV_LINKS.map((l) => <a href={l.href}>{l.label}</a>)}
+    </div>
+  </details>
   <span class="flex-1"></span>
   <a href={EXTERNAL.github} class="github-link inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border"
     style="border-color: var(--hairline); background: var(--bg-panel);">
     <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--accent)" aria-hidden="true">
       <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
     </svg>
-    <span>Star on GitHub</span>
+    <span class="hidden md:inline">Star on GitHub</span>
   </a>
   <ThemeToggle />
 </nav>
+
+<style>
+  .site-nav { position: relative; }
+  @media (max-width: 375px) {
+    .site-nav {
+      gap: 0.65rem;
+      padding-inline: 0.75rem;
+    }
+    .github-link { padding-inline: 0.55rem; }
+  }
+  .mobile-nav summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    list-style: none;
+    user-select: none;
+  }
+  .mobile-nav summary::-webkit-details-marker { display: none; }
+  .mobile-nav-panel {
+    position: absolute;
+    z-index: 20;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    padding: 1px;
+    border-block: 1px solid var(--hairline);
+    background: var(--hairline);
+    box-shadow: 0 18px 36px color-mix(in srgb, #000 34%, transparent);
+  }
+  .mobile-nav-panel a {
+    padding: 0.9rem 1.2rem;
+    background: var(--bg-panel);
+    color: var(--text);
+    text-decoration: none;
+  }
+</style>

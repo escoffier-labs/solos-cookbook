@@ -1,5 +1,7 @@
 ---
 // site/src/components/BookCover.astro
+import { EDITION } from '../lib/edition.ts';
+
 const today = new Date().toISOString().slice(0, 10);
 ---
 <section class="cover">
@@ -39,14 +41,14 @@ const today = new Date().toISOString().slice(0, 10);
   </svg>
   <h1 class="cover-title">Solomon's Guide to<br/>Cookin' with Gas</h1>
   <p class="cover-sub">How one engineer runs a 24/7 multi-agent AI stack across bare metal.</p>
-  <p class="cover-edition">Premium Edition &middot; {today}</p>
+  <p class="cover-edition">{EDITION.name} &middot; {today}</p>
 </section>
 <section class="colophon">
-  <p>Copyright (c) 2026 Solomon Neas. All rights reserved.</p>
-  <p>This Premium Edition is a typeset compilation of the cookbook published free
-     at <strong>escoffierlabs.dev/cookbook</strong>. The free web edition is
-     licensed CC BY-NC-ND 4.0; this compiled edition is not. Please do not
-     redistribute it.</p>
-  <p>Tools referenced here are open source under their own licenses (see the
-     repository at github.com/escoffier-labs/solos-cookbook).</p>
+  <p>Copyright (c) 2026 Solomon Neas.</p>
+  <p>This {EDITION.name} is a typeset compilation of the cookbook published free
+     at <strong>escoffierlabs.dev/cookbook</strong>. Narrative text is licensed
+     CC BY-NC-ND 4.0. Code and templates are MIT licensed. The PDF layout and
+     edition design are all rights reserved.</p>
+  <p>Third-party tools retain their own licenses. Source and full license text:
+     github.com/escoffier-labs/solos-cookbook.</p>
 </section>

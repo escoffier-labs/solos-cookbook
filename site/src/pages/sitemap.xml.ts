@@ -9,6 +9,7 @@ export async function GET({ site }: { site?: URL }) {
     '/',
     '/recipes',
     '/about',
+    '/edition',
     '/templates',
     ...chapters.map((c) => `/${c.data.category}/`),
     ...guides.map((g) => `/${g.data.category}/${g.data.slug}/`),

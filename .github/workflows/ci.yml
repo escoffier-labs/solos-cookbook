@@ -4,14 +4,12 @@ on:
   push:
     paths-ignore:
       - 'docs/**'
-      - '*.md'
       - 'LICENSE'
       - '.gitignore'
     branches: [main]
   pull_request:
     paths-ignore:
       - 'docs/**'
-      - '*.md'
       - 'LICENSE'
       - '.gitignore'
   schedule:
@@ -37,19 +35,6 @@ jobs:
       - run: ./scripts/verify
         env:
           SCRUB_HOSTNAMES: ${{ secrets.SCRUB_HOSTNAMES }}
-
-  bundle:
-    # The premium kitchen-bundle is a paid artifact built outside the public-site
-    # verify gate; this confirms it builds and contains the right files (and no
-    # node_modules). zip/unzip are preinstalled on ubuntu-latest.
-    if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test scripts/build-bundle.test.mjs
 
   external-links:
     # Non-blocking by design: a flaky third-party site must never fail

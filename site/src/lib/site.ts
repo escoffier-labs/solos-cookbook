@@ -29,6 +29,7 @@ export const SITE = {
 export const NAV_LINKS = [
   { label: 'Recipes', href: sitePath('/recipes') },
   { label: 'Chapters', href: sitePath('/#chapters') },
+  { label: 'Edition', href: sitePath('/edition') },
   { label: 'Templates', href: sitePath('/templates') },
   { label: 'About', href: sitePath('/about') },
 ];
