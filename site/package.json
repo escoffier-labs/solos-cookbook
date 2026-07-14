@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "node scripts/scrub-check.mjs",
+    "prebuild": "npm run check:products && node scripts/scrub-check.mjs",
     "build": "astro build",
     "build:book": "BUILD_BOOK=1 npm run build",
     "build:pdf": "npm run build:book && BUILD_BOOK=1 vitest run scripts/book-structure.test.mjs && node scripts/build-pdf.mjs",
@@ -16,6 +16,7 @@
     "test": "vitest run",
     "check": "astro check",
     "check:content": "node scripts/scrub-check.mjs",
+    "check:products": "node scripts/product-lifecycle-check.mjs",
     "check:structure": "node scripts/structure-check.mjs",
     "check:links": "node scripts/link-check.mjs",
     "check:links:external": "node scripts/link-check.mjs --external",

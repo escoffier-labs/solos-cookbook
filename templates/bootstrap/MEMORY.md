@@ -24,8 +24,8 @@ A handful of stable facts the agent should always have at hand. Replace these wi
 
 - **Role / day job:** <one line>
 - **Active focus:** <one line - the thing they actually care about this month>
-- **Writing rules:** <e.g. no em dashes, no AI-attribution trailers, citation standard>
-- **Hard publish gate:** <e.g. content-guard scan required before any public push>
+- **Writing rules:** <e.g. house punctuation, citation standard, preferred terminology>
+- **Hard publish gate:** <e.g. Brigade guard required before any public push>
 
 ## Agent Architecture
 

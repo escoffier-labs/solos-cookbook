@@ -14,7 +14,6 @@
 # (hostnames, usernames, internal subnets). That file is NEVER committed to a
 # public repo - it stays local so the denylist itself does not leak.
 #
-# Bypass only if you know what you are doing: git push --no-verify
 set -euo pipefail
 
 if ! command -v brigade >/dev/null 2>&1; then
@@ -35,7 +34,7 @@ STDIN_REFS="$(cat)"
 # Apply the private policy's allow_values (known-public literals such as a
 # public author email or an example port) to EVERY scan, including the public
 # one. This is how a history scan of an old commit clears those literals: no
-# inline `content-guard: allow` marker can exist in a past diff, and the values
+# inline allow marker can exist in a past diff, and the values
 # stay in the private file rather than a shipped public policy.
 ALLOW_FROM=()
 [[ -f "$EXTRA_POLICY" ]] && ALLOW_FROM=(--allow-values-from "$EXTRA_POLICY")
@@ -72,7 +71,7 @@ if [[ "$FAIL" -ne 0 ]]; then
     echo "pre-push: For a known-public literal that trips a [history] hit (no inline marker can"
     echo "pre-push: reach an old diff), add the exact string to allow_values in your private policy"
     echo "pre-push:   ${EXTRA_POLICY}"
-    echo "pre-push: Bypass only if you know what you are doing: git push --no-verify"
+    echo "pre-push: Fix the reported content before pushing. Do not bypass this hook."
   } >&2
   exit 1
 fi

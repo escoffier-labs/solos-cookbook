@@ -2,7 +2,7 @@
 
 > Treat PR comments as public artifacts. Scrub them before they leave the local workspace.
 
-**Tested on:** GitHub PR review comments, outbound markdown drafts, content-guard public repo policy
+**Tested on:** GitHub PR review comments, outbound markdown drafts, Brigade guard public-repo policy
 **Last updated:** 2026-07-06
 
 ## What this is
@@ -28,7 +28,7 @@ The boundary should be simple:
 
 - A draft file for the outbound comment, for example `/tmp/pr-comment.md`
 - A mechanical leak sweep such as `rg`
-- A policy scanner such as [content-guard](https://github.com/escoffier-labs/content-guard)
+- Brigade's embedded guard or another policy scanner with a public-repo ruleset
 - A habit of posting comments from `--body-file` after review, not from an unscanned terminal buffer
 
 ## Before / After
@@ -106,9 +106,7 @@ Expected result: no matches.
 Then run the policy scanner if it is installed:
 
 ```bash
-PYTHONPATH="$CONTENT_GUARD_DIR/src" \
-  python3 -m content_guard scan "$comment_file" \
-  --policy "$CONTENT_GUARD_DIR/policies/public-repo.json"
+brigade scrub --target "$comment_file" --policy public-repo --no-receipt
 ```
 
 Expected result: no blockers, warnings reviewed.
@@ -180,12 +178,10 @@ Preview the exact post command without sending it:
 printf 'gh pr comment <number> --body-file %q\n' /tmp/pr-comment.md
 ```
 
-If content-guard is available, scan the file:
+Scan the file with Brigade guard:
 
 ```bash
-PYTHONPATH="$CONTENT_GUARD_DIR/src" \
-  python3 -m content_guard scan /tmp/pr-comment.md \
-  --policy "$CONTENT_GUARD_DIR/policies/public-repo.json"
+brigade scrub --target /tmp/pr-comment.md --policy public-repo --no-receipt
 ```
 
 Expected result: no blockers, warnings reviewed.
