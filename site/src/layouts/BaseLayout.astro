@@ -4,10 +4,13 @@ import Analytics from '@vercel/analytics/astro';
 import SiteNav from '../components/SiteNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { SITE, EXTERNAL, sitePath } from '../lib/site.ts';
+import { buildPageMetadata, type PageKind } from '../lib/metadata.ts';
 
 const {
   title = `${SITE.name} - production-tested recipes for AI agent stacks`,
   description = SITE.description,
+  pageKind = 'website',
+  dateModified,
 } = Astro.props;
 
 const siteUrl = Astro.site ?? new URL('https://escoffierlabs.dev');
@@ -25,16 +28,15 @@ const keywords = [
   'bare metal AI stack',
   'AGENTS.md',
 ].join(', ');
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: SITE.name,
+const { openGraphType, structuredData } = buildPageMetadata({
+  kind: pageKind as PageKind,
+  title,
   description,
-  url: SITE.url,
-  author: { '@type': 'Person', name: 'Solomon Neas', url: 'https://solomonneas.dev' },
+  url: canonicalUrl,
+  image: imageUrl,
   license: EXTERNAL.contentLicense,
-  keywords,
-};
+  dateModified,
+});
 ---
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -49,7 +51,7 @@ const structuredData = {
     <link rel="canonical" href={canonicalUrl} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={openGraphType} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:site_name" content={SITE.name} />
     <meta property="og:image" content={imageUrl} />
@@ -58,6 +60,7 @@ const structuredData = {
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:image:alt" content="Solomon's Cookbook - recipes for AI agent stacks" />
     <link rel="icon" href={sitePath('/favicon.svg')} />
     <Analytics />
     <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />

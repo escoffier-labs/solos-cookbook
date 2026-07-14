@@ -32,7 +32,7 @@ const outDir = path.join(SITE, '..', 'dist-book');
 const output = path.join(outDir, 'cookbook.pdf');
 
 if (!existsSync(input)) {
-  console.error('Build the site first: npm run build');
+  console.error('Build the print route first: npm run build:book');
   process.exit(1);
 }
 mkdirSync(outDir, { recursive: true });

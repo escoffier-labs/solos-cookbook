@@ -107,3 +107,9 @@ memory/handoff-inbox/
 .mcp/
 scripts/*.md
 # <<< brigade gitignore block <<<
+
+# Local verification and rendering state
+/.graphtrail/
+/site/.graphtrail/
+/site/memory/
+/tmp/

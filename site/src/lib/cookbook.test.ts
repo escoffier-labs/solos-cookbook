@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseGuide, parseCategoryReadme, resolveMdLink, rewriteMdLinks, toRoman, GITHUB_BLOB } from './cookbook.ts';
+import { CATEGORIES, parseGuide, parseCategoryReadme, resolveMdLink, rewriteMdLinks, toRoman, GITHUB_BLOB } from './cookbook.ts';
 import { sitePath } from './site.ts';
 
 describe('parseGuide', () => {
@@ -156,8 +156,9 @@ describe('resolveMdLink', () => {
     expect(resolveMdLink('../automation/', 'security')).toBe('/cookbook/automation');
   });
 
-  it('routes skills SKILL.md links to skill pages', () => {
-    expect(resolveMdLink('../skills/content-scrubber/SKILL.md', 'publishing')).toBe('/cookbook/skills/content-scrubber');
+  it('keeps non-reader artifacts on GitHub instead of creating site routes', () => {
+    expect(resolveMdLink('../skills/content-scrubber/SKILL.md', 'publishing')).toBe(`${GITHUB_BLOB}/skills/content-scrubber/SKILL.md`);
+    expect(resolveMdLink('../plans/installable-agent-kitchen.md', 'tools')).toBe(`${GITHUB_BLOB}/plans/installable-agent-kitchen.md`);
   });
 
   it('sends templates deep links to GitHub and the dir to /templates/', () => {
@@ -172,6 +173,22 @@ describe('resolveMdLink', () => {
 
   it('sends unknown root files to GitHub', () => {
     expect(resolveMdLink('../LICENSE', 'templates')).toBe(`${GITHUB_BLOB}/LICENSE`);
+  });
+});
+
+describe('publication boundary', () => {
+  it('contains only the nine reader-facing cookbook chapters', () => {
+    expect(CATEGORIES.map((category) => category.dir)).toEqual([
+      'ai-stack',
+      'automation',
+      'infrastructure',
+      'security',
+      'knowledge',
+      'hardware',
+      'tools',
+      'publishing',
+      'philosophy',
+    ]);
   });
 });
 
