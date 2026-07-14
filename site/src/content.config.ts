@@ -28,26 +28,6 @@ const guidesLoader: Loader = {
     ctx.store.clear();
     for (const { dir, chapter, number } of CATEGORIES) {
       const dirPath = path.join(REPO_ROOT, dir);
-      if (dir === 'skills') {
-        // skills/<name>/SKILL.md, each with real YAML frontmatter.
-        const entries = await readdir(dirPath, { withFileTypes: true });
-        for (const entry of entries.filter((e) => e.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
-          const raw = await readFile(path.join(dirPath, entry.name, 'SKILL.md'), 'utf-8');
-          const slug = entry.name;
-          const parsed = parseGuide(raw, { dir, slug });
-          await loadEntry(ctx, `${dir}/${slug}`, {
-            title: parsed.title,
-            description: parsed.description,
-            category: dir,
-            slug,
-            chapter,
-            chapterNumber: number,
-            testedOn: parsed.testedOn,
-            lastUpdated: parsed.lastUpdated,
-          }, parsed.body, dir);
-        }
-        continue;
-      }
       const files = (await readdir(dirPath))
         .filter((f) => f.endsWith('.md') && f !== 'README.md')
         .sort();
@@ -75,8 +55,7 @@ const chaptersLoader: Loader = {
   load: async (ctx) => {
     ctx.store.clear();
     for (const { dir, chapter, number } of CATEGORIES) {
-      // Not every category ships a README (plans/ doesn't); synthesize an empty chapter.
-      const raw = await readFile(path.join(REPO_ROOT, dir, 'README.md'), 'utf-8').catch(() => `# ${chapter}\n`);
+      const raw = await readFile(path.join(REPO_ROOT, dir, 'README.md'), 'utf-8');
       const parsed = parseCategoryReadme(raw);
       await loadEntry(ctx, dir, {
         title: parsed.title || chapter,

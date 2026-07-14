@@ -1,0 +1,176 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { checkoutLink, EDITION } from '../lib/edition.ts';
+import { sitePath } from '../lib/site.ts';
+import systemOverviewSvg from '../diagrams/system-overview.svg?raw';
+import memoryOwnershipSvg from '../diagrams/memory-ownership.svg?raw';
+import securityTiersSvg from '../diagrams/security-tiers.svg?raw';
+
+const checkout = checkoutLink(
+  import.meta.env.PUBLIC_STRIPE_PAYMENT_LINK,
+  import.meta.env.PUBLIC_STRIPE_CHECKOUT_READY,
+);
+---
+<BaseLayout
+  title={`${EDITION.name} - Solomon's Cookbook`}
+  description={`A designed PDF edition of Solomon's Cookbook, with revisions through ${EDITION.updatesThrough}.`}
+>
+  <main>
+    <header class="edition-hero px-6 md:px-10 py-16 md:py-24">
+      <div class="edition-grid max-w-6xl mx-auto">
+        <div class="edition-copy">
+          <span class="kicker">Escoffier Labs print series</span>
+          <h1 class="font-display font-semibold">Solomon's Cookbook<br />{EDITION.name}</h1>
+          <p class="edition-lede">
+            A book-shaped version of the public cookbook: edited for a linear read,
+            typeset for print, and packaged as a PDF you can keep offline.
+          </p>
+          <div class="edition-actions">
+            {checkout ? (
+              <a class="edition-buy" href={checkout}>Buy with Stripe · {EDITION.price}</a>
+            ) : (
+              <span class="edition-buy edition-buy-disabled" aria-disabled="true">Stripe checkout coming soon</span>
+            )}
+            <a class="edition-read" href={sitePath('/recipes')}>Read all recipes free</a>
+          </div>
+          <p class="edition-note">
+            One purchase includes every {EDITION.name} revision published through
+            {EDITION.updatesThrough}. A later named edition may be a separate purchase.
+          </p>
+        </div>
+
+        <figure class="book-object" aria-label="Preview of the 2026 Edition cover and interior diagram">
+          <div class="book-shadow"></div>
+          <div class="book-cover">
+            <span class="book-overline">Le Répertoire</span>
+            <strong>Solomon's Guide<br />to Cookin' with Gas</strong>
+            <span class="book-rule"></span>
+            <span class="book-edition">{EDITION.name}</span>
+          </div>
+          <div class="book-page" set:html={systemOverviewSvg}></div>
+        </figure>
+      </div>
+    </header>
+
+    <section class="px-6 md:px-10 py-14 max-w-6xl mx-auto">
+      <div class="chapter-rule mb-8"><span class="kicker">What the file adds</span></div>
+      <div class="feature-grid">
+        <article>
+          <span class="feature-number">01</span>
+          <h2>Edited sequence</h2>
+          <p>Start Here, a linked table of contents, 9 chapter openers, the complete recipe set, a setup checklist, and a glossary.</p>
+        </article>
+        <article>
+          <span class="feature-number">02</span>
+          <h2>Print typography</h2>
+          <p>Fraunces display type, compact code treatment, running headers, page references, and spacing tuned for paper instead of a browser.</p>
+        </article>
+        <article>
+          <span class="feature-number">03</span>
+          <h2>Versioned updates</h2>
+          <p>The download follows the named edition. Revisions inside its update window are included without an open-ended lifetime promise.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="plate-section px-6 md:px-10 py-14">
+      <div class="max-w-6xl mx-auto">
+        <div class="chapter-rule mb-8"><span class="kicker">Inside the book</span></div>
+        <div class="plate-grid">
+          <figure>
+            <div class="plate" set:html={memoryOwnershipSvg}></div>
+            <figcaption>Memory ownership</figcaption>
+          </figure>
+          <figure>
+            <div class="plate" set:html={securityTiersSvg}></div>
+            <figcaption>Security tiers</figcaption>
+          </figure>
+        </div>
+        <p class="public-note">
+          These diagrams, the markdown source, and every template remain in the public repository.
+          The paid file covers editing, layout, offline use, and the fixed edition record.
+        </p>
+      </div>
+    </section>
+
+    <section class="px-6 md:px-10 py-16 max-w-4xl mx-auto">
+      <div class="terms-card">
+        <div>
+          <span class="kicker">Purchase terms</span>
+          <h2 class="font-display">{EDITION.price}, once</h2>
+        </div>
+        <dl>
+          <div><dt>Format</dt><dd>Designed PDF</dd></div>
+          <div><dt>Included revisions</dt><dd>Through {EDITION.updatesThrough}</dd></div>
+          <div><dt>Checkout</dt><dd>Stripe</dd></div>
+        </dl>
+        {checkout ? (
+          <a class="edition-buy" href={checkout}>Buy the {EDITION.name}</a>
+        ) : (
+          <p class="launch-copy">Checkout will open after the final PDF, delivery email, refund terms, and a test purchase have passed review.</p>
+        )}
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .edition-hero {
+    overflow: hidden;
+    border-bottom: 1px solid var(--hairline);
+    background:
+      radial-gradient(circle at 82% 28%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 30rem),
+      linear-gradient(155deg, var(--bg) 0%, var(--bg-panel) 100%);
+  }
+  .edition-grid { display: grid; grid-template-columns: 1.04fr 0.96fr; gap: 4rem; align-items: center; }
+  .edition-copy h1 { margin: 0.7rem 0 1.2rem; font-size: clamp(3rem, 6.4vw, 5.9rem); line-height: 0.96; letter-spacing: -0.045em; }
+  .edition-lede { max-width: 39rem; color: var(--text-muted); font-size: 1.14rem; line-height: 1.7; }
+  .edition-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; margin: 2rem 0 1rem; }
+  .edition-buy { display: inline-block; border-radius: 0.55rem; padding: 0.86rem 1.2rem; background: var(--accent); color: var(--bg); font-weight: 720; text-decoration: none; }
+  .edition-buy:hover { filter: brightness(1.08); }
+  .edition-buy-disabled { cursor: default; background: var(--bg-panel-2); color: var(--text-muted); border: 1px solid var(--hairline); }
+  .edition-read { color: var(--text); text-underline-offset: 0.25rem; }
+  .edition-note { max-width: 39rem; color: var(--text-muted); font-size: 0.85rem; line-height: 1.6; }
+  .book-object { position: relative; min-height: 34rem; margin: 0; perspective: 1100px; }
+  .book-cover, .book-page { position: absolute; border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--hairline)); box-shadow: 0 24px 70px color-mix(in srgb, #000 38%, transparent); }
+  .book-cover { z-index: 2; left: 6%; top: 2%; width: 58%; aspect-ratio: 0.72; display: flex; flex-direction: column; padding: 2.2rem 1.8rem; transform: rotateY(-8deg) rotateZ(-2deg); background: #111b29; color: #f0eadc; }
+  .book-cover::before { content: ""; position: absolute; inset: 0.65rem; border: 1px solid rgba(212, 160, 23, 0.38); pointer-events: none; }
+  .book-overline, .book-edition { position: relative; font-family: "JetBrains Mono Variable", monospace; color: #d4a017; text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.64rem; }
+  .book-cover strong { position: relative; margin-top: 5.5rem; font-family: "Fraunces Variable", Georgia, serif; font-size: clamp(1.5rem, 3.2vw, 2.55rem); line-height: 1.08; font-weight: 560; }
+  .book-rule { position: relative; width: 3rem; height: 1px; margin: 1.5rem 0 auto; background: #d4a017; }
+  .book-page { right: 2%; bottom: 2%; width: 65%; padding: 1.4rem; transform: rotateY(5deg) rotateZ(3deg); background: #f6f1e7; }
+  .book-page :global(svg) { display: block; width: 100%; height: auto; }
+  .book-shadow { position: absolute; right: 5%; bottom: -2%; width: 84%; height: 24%; border-radius: 50%; background: #000; opacity: 0.24; filter: blur(28px); }
+  .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border: 1px solid var(--hairline); background: var(--hairline); }
+  .feature-grid article { padding: 2rem; background: var(--bg-panel); }
+  .feature-number { font-family: "JetBrains Mono Variable", monospace; color: var(--accent); font-size: 0.75rem; }
+  .feature-grid h2 { margin: 1.2rem 0 0.6rem; font-family: "Fraunces Variable", Georgia, serif; font-size: 1.55rem; }
+  .feature-grid p { color: var(--text-muted); line-height: 1.65; }
+  .plate-section { border-block: 1px solid var(--hairline); background: var(--bg-panel); }
+  .plate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .plate-grid figure { margin: 0; }
+  .plate { padding: 1.3rem; border: 1px solid var(--hairline); background: #f6f1e7; }
+  .plate :global(svg) { display: block; width: 100%; height: auto; }
+  .plate-grid figcaption { margin-top: 0.65rem; color: var(--text-muted); font-family: "JetBrains Mono Variable", monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  .public-note { max-width: 48rem; margin: 2rem auto 0; text-align: center; color: var(--text-muted); line-height: 1.65; }
+  .terms-card { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 2rem 3rem; align-items: end; padding: 2.2rem; border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--hairline)); border-radius: 0.8rem; background: var(--bg-panel); }
+  .terms-card h2 { margin: 0.5rem 0 0; font-size: 2.5rem; }
+  .terms-card dl { margin: 0; }
+  .terms-card dl div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.65rem 0; border-bottom: 1px solid var(--hairline); }
+  .terms-card dt { color: var(--text-muted); }
+  .terms-card dd { margin: 0; text-align: right; }
+  .terms-card > .edition-buy, .launch-copy { grid-column: 1 / -1; }
+  .launch-copy { margin: 0; color: var(--text-muted); line-height: 1.6; }
+  @media (max-width: 800px) {
+    .edition-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+    .book-object { min-height: 29rem; }
+    .feature-grid, .plate-grid { grid-template-columns: 1fr; }
+    .terms-card { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .book-object { min-height: 24rem; }
+    .book-cover { width: 64%; padding: 1.5rem 1.2rem; }
+    .book-cover strong { margin-top: 3.6rem; }
+    .book-page { width: 70%; padding: 0.8rem; }
+  }
+</style>

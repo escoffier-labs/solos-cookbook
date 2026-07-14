@@ -4,14 +4,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ChapterNav from '../components/ChapterNav.astro';
 import RecipeCard from '../components/RecipeCard.astro';
 import { SITE, EXTERNAL, sitePath } from '../lib/site.ts';
+import { EDITION } from '../lib/edition.ts';
 import stackTopologySvg from '../diagrams/stack-topology.svg?raw';
 import securityTiersSvg from '../diagrams/security-tiers.svg?raw';
-
-// Creem checkout for the premium edition. Set PUBLIC_PREMIUM_CHECKOUT_URL once
-// the product is live; until then it stays a placeholder and the buy CTA renders
-// as "coming soon" rather than dead-ending on an unresolvable host.
-const PREMIUM_CHECKOUT_URL = import.meta.env.PUBLIC_PREMIUM_CHECKOUT_URL ?? 'https://CREEM_PRODUCT_URL';
-const PREMIUM_LIVE = PREMIUM_CHECKOUT_URL.startsWith('https://') && !PREMIUM_CHECKOUT_URL.includes('CREEM_PRODUCT_URL');
 
 const guides = await getCollection('guides');
 const chapters = await getCollection('chapters');
@@ -71,51 +66,46 @@ const recent = guides
       <div class="premium-panel">
         <div class="premium-copy">
           <span class="kicker">The plated edition</span>
-          <h2 class="font-display font-semibold premium-title">The Premium Edition</h2>
+          <h2 class="font-display font-semibold premium-title">The {EDITION.name}</h2>
           <p class="premium-lede">
-            All recipes are free to read on this site. This is the typeset, designed
-            edition with exclusive diagrams, plus the whole kitchen as a runnable bundle.
+            The same free cookbook, edited and typeset as a book for offline reading.
+            The diagrams and templates remain available in the public repository.
           </p>
 
           <ul class="premium-list">
             <li>
-              <span class="premium-list-head">The typeset PDF</span>
-              <span class="premium-list-body">790+ pages, cover to colophon, set in
-                Fraunces and built for offline reading away from the terminal.</span>
+              <span class="premium-list-head">A proper book file</span>
+              <span class="premium-list-body">Cover, contents, chapter openers,
+                running headers, page numbers, and code that is laid out for print.</span>
             </li>
             <li>
-              <span class="premium-list-head">Exclusive hero diagrams</span>
-              <span class="premium-list-body">Full-page plates of the stack, memory
-                ownership, harness handoff, and security tiers, drawn for print and not
-                published on the web.</span>
+              <span class="premium-list-head">Full-page diagrams</span>
+              <span class="premium-list-body">The stack, memory ownership, handoffs,
+                automation, and security tiers in the Escoffier Labs print palette.</span>
             </li>
             <li>
-              <span class="premium-list-head">The runnable kitchen bundle</span>
-              <span class="premium-list-body">Every template and config from the book,
-                plus a setup checklist, packaged to drop straight into your own kitchen.</span>
+              <span class="premium-list-head">A bounded update window</span>
+              <span class="premium-list-body">Every {EDITION.name} revision published
+                through {EDITION.updatesThrough} is included with the purchase.</span>
             </li>
           </ul>
 
           <div class="premium-buy">
             <div class="premium-price">
-              <span class="premium-amount">$39</span>
-              <span class="premium-terms">one-time<span class="premium-terms-dot"></span>free updates</span>
+              <span class="premium-amount">{EDITION.price}</span>
+              <span class="premium-terms">one-time<span class="premium-terms-dot"></span>{EDITION.name}</span>
             </div>
-            {PREMIUM_LIVE ? (
-              <a href={PREMIUM_CHECKOUT_URL} class="premium-cta">Get the premium edition</a>
-            ) : (
-              <span class="premium-cta premium-cta-soon" aria-disabled="true">Coming soon</span>
-            )}
+            <a href={sitePath('/edition')} class="premium-cta">See the edition</a>
           </div>
           <p class="premium-fineprint">
-            The recipes stay free here. You are buying the artifact and the bundle, not access to the knowledge.
+            The recipes stay free here. The purchase is for the edited, designed artifact.
           </p>
         </div>
 
-        <figure class="premium-teaser" aria-label="A preview of two of the exclusive full-page diagrams from the premium edition">
+        <figure class="premium-teaser" aria-label="A preview of two full-page diagrams from the print edition">
           <div class="premium-plate premium-plate-front" set:html={stackTopologySvg} />
           <div class="premium-plate premium-plate-back" aria-hidden="true" set:html={securityTiersSvg} />
-          <figcaption class="premium-teaser-cap">Two of the exclusive full-page plates</figcaption>
+          <figcaption class="premium-teaser-cap">Two full-page plates from the book</figcaption>
         </figure>
       </div>
     </section>

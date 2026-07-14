@@ -27,7 +27,12 @@ interface Props {
 }
 const { title, description, chapter, chapterNumber, category, testedOn, lastUpdated, headings, prev, next } = Astro.props;
 ---
-<BaseLayout title={`${title} - Solomon's Cookbook`} description={description}>
+<BaseLayout
+  title={`${title} - Solomon's Cookbook`}
+  description={description}
+  pageKind="article"
+  dateModified={lastUpdated?.slice(0, 10)}
+>
   <main class="px-6 md:px-10 py-10 flex gap-10 max-w-6xl mx-auto">
     <article class="prose-docs min-w-0 flex-1">
       <a href={sitePath(`/${category}/`)} class="chapter-kicker" style="text-decoration: none;">

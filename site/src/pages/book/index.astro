@@ -5,6 +5,7 @@ import BookCover from '../../components/BookCover.astro';
 import StartHere from '../../components/StartHere.astro';
 import Appendix from '../../components/Appendix.astro';
 import { toRoman } from '../../lib/cookbook.ts';
+import { shouldBuildBook } from '../../lib/edition.ts';
 import '../../styles/print.css';
 import memoryOwnershipSvg from '../../diagrams/memory-ownership.svg?raw';
 import multiHarnessHandoffSvg from '../../diagrams/multi-harness-handoff.svg?raw';
@@ -12,6 +13,10 @@ import stackTopologySvg from '../../diagrams/stack-topology.svg?raw';
 import securityTiersSvg from '../../diagrams/security-tiers.svg?raw';
 import automationFlowSvg from '../../diagrams/automation-flow.svg?raw';
 import publishingPipelineSvg from '../../diagrams/publishing-pipeline.svg?raw';
+
+if (!shouldBuildBook(import.meta.env.BUILD_BOOK)) {
+  return Astro.redirect('/cookbook/edition');
+}
 
 const CHAPTER_DIAGRAMS: Record<string, string> = {
   'ai-stack': memoryOwnershipSvg,
@@ -49,6 +54,7 @@ for (const chapter of orderedChapters) {
   <head>
     <meta charset="utf-8" />
     <title>Solomon's Guide to Cookin' with Gas</title>
+    <meta name="robots" content="noindex, nofollow" />
   </head>
   <body>
     <BookCover />

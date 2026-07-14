@@ -30,8 +30,6 @@ export const CATEGORIES: Category[] = [
   { dir: 'tools', chapter: 'Tools', number: 7 },
   { dir: 'publishing', chapter: 'Publishing', number: 8 },
   { dir: 'philosophy', chapter: 'Philosophy', number: 9 },
-  { dir: 'plans', chapter: 'Plans', number: 10 },
-  { dir: 'skills', chapter: 'Skills', number: 11 },
 ];
 
 export const GITHUB_BLOB = 'https://github.com/escoffier-labs/solos-cookbook/blob/main';
@@ -258,11 +256,6 @@ export function resolveMdLink(href: string, category: string): string | null {
   }
 
   if (rest.length === 0) return sitePath(`/${first}/`);
-
-  // skills/<name>/SKILL.md → /skills/<name>/
-  if (first === 'skills' && rest.length === 2 && rest[1] === 'SKILL.md') {
-    return sitePath(`/skills/${rest[0]}/${anchor}`);
-  }
 
   const file = rest.join('/');
   if (file === 'README.md') return sitePath(`/${first}/${anchor}`);
