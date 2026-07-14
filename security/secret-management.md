@@ -2,8 +2,8 @@
 
 > Secrets belong in narrow local stores with boring permissions, not in prompts, repos, screenshots, or memory.
 
-**Tested on:** Linux user services, systemd `EnvironmentFile`, local agent config, browser-profile workflows, content-guard publish checks
-**Last updated:** 2026-05-11
+**Tested on:** Linux user services, systemd `EnvironmentFile`, local agent config, browser-profile workflows, Brigade guard publish checks
+**Last updated:** 2026-07-13
 
 ## What this is
 
@@ -32,7 +32,7 @@ The model can reason about secret names and placeholders. It should not handle r
 - Linux host with systemd user services or comparable service manager
 - A password manager, secrets manager, or encrypted vault for durable source-of-truth secrets
 - `chmod`, `install`, `systemctl`, `jq`, and `rg`
-- A content scanner such as [content-guard](https://github.com/escoffier-labs/content-guard)
+- Brigade's embedded guard or another content scanner with a public-repo policy
 - A clear distinction between private workspace files and public repo files
 
 ## Before / After
@@ -53,7 +53,7 @@ After:
 - systemd services load secrets through `EnvironmentFile`.
 - Agents refer to secret handles, not secret values.
 - Browser profiles and OAuth state are treated as credentials.
-- Publish-time scrubbers and content-guard run before artifacts leave the host.
+- Publish-time scrubbers and Brigade guard run before artifacts leave the host.
 
 ## Implementation
 
@@ -88,7 +88,7 @@ Example layout:
 ```text
 ~/.config/agent-secrets/
   openclaw.env
-  content-guard.env
+  brigade.env
   browser-lanes.env
 
 ~/.config/agent-browser/
@@ -133,7 +133,7 @@ Keep the env file simple:
 ```dotenv
 OPENCLAW_PROVIDER_TOKEN=<secret>
 OPENCLAW_WEBHOOK_URL=<secret>
-CONTENT_GUARD_POLICY=<local-policy-path>
+BRIGADE_GUARD_POLICY=<local-policy-path>
 ```
 
 Do not put the env file in the repo. The repo can include a template with placeholders, but the real file belongs on the machine.
@@ -214,9 +214,7 @@ Before publishing:
 
 ```bash
 templates/scrubbers/scrub-content.sh staging/public/
-PYTHONPATH="$CONTENT_GUARD_DIR/src" \
-  python3 -m content_guard scan staging/public/ \
-  --policy "$CONTENT_GUARD_DIR/policies/public-repo.json"
+brigade scrub --target staging/public/ --policy public-content --no-receipt
 ```
 
 For repos, keep the pre-push gate enabled:
@@ -262,7 +260,7 @@ Expected result: `600` for secret env files.
 Check service config uses `EnvironmentFile`:
 
 ```bash
-systemctl --user cat openclaw-gateway.service | rg 'EnvironmentFile|OPENCLAW_|CONTENT_GUARD_' || true
+systemctl --user cat openclaw-gateway.service | rg 'EnvironmentFile|OPENCLAW_|BRIGADE_' || true
 ```
 
 Expected result: service reads a local env file or environment references, not hardcoded secret values.
@@ -276,12 +274,10 @@ rg -n "TOKEN=|API_KEY=|SECRET=|Authorization:|Bearer |BEGIN (RSA|OPENSSH|PRIVATE
 
 Expected result: no real secret values. Template placeholders are fine if they are obviously placeholders.
 
-Run content-guard:
+Run Brigade guard:
 
 ```bash
-PYTHONPATH="$CONTENT_GUARD_DIR/src" \
-  python3 -m content_guard scan "$PWD" \
-  --policy "$CONTENT_GUARD_DIR/policies/public-repo.json"
+brigade scrub --target "$PWD" --policy public-repo
 ```
 
 Expected result: no blockers. Warnings should be reviewed or rewritten with placeholders.
@@ -306,7 +302,7 @@ Expected result: no blockers. Warnings should be reviewed or rewritten with plac
 
 - [`../templates/security/service.env.example`](../templates/security/service.env.example) - env-file placeholder shape for systemd `EnvironmentFile`
 - [`../templates/scrubbers/`](../templates/scrubbers/) - publish-boundary scrubber templates
-- [`../templates/hooks/pre-push`](../templates/hooks/pre-push) - final git boundary guard using content-guard
+- [`../templates/hooks/pre-push`](../templates/hooks/pre-push) - final git boundary guard using Brigade guard
 
 ## Related
 

@@ -70,7 +70,7 @@ Run `git grep` for your hostnames before opening a PR.
 
 ## Pre-push hook
 
-This repo ships a tracked pre-push hook at `hooks/pre-push` that runs [content-guard](https://github.com/escoffier-labs/content-guard) over the working tree against `policies/public-repo.json`. It blocks pushes that contain RFC 1918 IPs, secrets, internal hostnames, etc.
+This repo ships a tracked pre-push hook at `hooks/pre-push` that runs Brigade's embedded guard over tracked files and pushed history. It blocks pushes that contain RFC 1918 IPs, secrets, internal hostnames, and other private identifiers.
 
 To activate after cloning:
 
@@ -78,9 +78,13 @@ To activate after cloning:
 git config core.hooksPath hooks
 ```
 
-Bypass only when you understand what you're doing: `git push --no-verify`.
+If the hook blocks a push, rewrite the offending content or add a narrow allow comment only for a genuinely public example value. Do not bypass the hook.
 
-If content-guard isn't on your machine, the hook will tell you where to put it (or override `CONTENT_GUARD_DIR`).
+The hook requires `brigade-cli`, which includes the scanner and public-repo policy:
+
+```bash
+pipx install brigade-cli
+```
 
 ## Gotchas section is mandatory
 

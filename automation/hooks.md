@@ -42,7 +42,7 @@ The universal rule: the further from the LLM turn the hook runs, the more reliab
 - A Linux host with git (any modern distro)
 - An orchestrator with at least a tool-call hook surface, or a willingness to live with boundary + lifecycle only
 - Comfort with editing JSON config and writing small scripts
-- A scanner like [content-guard](https://github.com/escoffier-labs/content-guard) for the boundary layer (or roll your own - the pattern is regex + policy file)
+- Brigade's embedded guard for the boundary layer, or another scanner that exits nonzero on blockers
 
 ## Before / After
 
@@ -84,7 +84,7 @@ The two boundary hooks worth running on a stack like this:
 git config core.hooksPath hooks
 ```
 
-The hook in this repo runs [content-guard](https://github.com/escoffier-labs/content-guard) against `policies/public-repo.json`. It blocks pushes that contain RFC 1918 IPs, secrets, or internal hostnames. Bypass with `git push --no-verify` only when you understand exactly what you're allowing through.
+The hook in this repo runs `brigade guard git` with the embedded public-repo policy. It scans tracked files and the content introduced by commits being pushed. If it blocks, fix the content or add a narrow allow comment for a genuinely public example. Do not bypass the hook.
 
 **Stage-boundary CLI** that scrubs staged artifacts before they move downstream. The shape that works on this stack is a sed-rules script with a preview mode and an apply mode:
 
@@ -200,7 +200,7 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 
 ## Templates
 
-- [`templates/hooks/pre-push`](../templates/hooks/pre-push) - git pre-push wrapper that runs content-guard against the working tree
+- [`templates/hooks/pre-push`](../templates/hooks/pre-push) - git pre-push wrapper that runs Brigade guard against tracked files
 - [`templates/hooks/claude-code-posttooluse.json`](../templates/hooks/claude-code-posttooluse.json) - Claude Code `~/.claude/settings.json` snippet for a `PostToolUse` hook (with the `additionalContext`-only caveat baked into the comment)
 - [`templates/hooks/openclaw-sync-hook.ts`](../templates/hooks/openclaw-sync-hook.ts) - OpenClaw plugin skeleton for a synchronous `tool_result_persist` substitution hook, with the Promise-return warning called out
 
@@ -209,5 +209,5 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 - [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model that the hook layering here mirrors
 - [`automation/sandbox-shims.md`](sandbox-shims.md) - wrapping git/network/exec for sub-agents that should not have free access; pairs with tool-call hooks
 - [`../publishing/pr-comment-boundary.md`](../publishing/pr-comment-boundary.md) - outbound checks for PR and review comments before they leave the host
-- [content-guard](https://github.com/escoffier-labs/content-guard) - the policy-driven scanner the pre-push template depends on
+- [Brigade guard](https://brigade.tools/docs/commands/guard) - the embedded policy scanner used by the pre-push template
 - [tokenjuice](https://github.com/vincentkoc/tokenjuice) - Claude Code `PostToolUse` reducer; useful prior art for the `additionalContext`-only constraint

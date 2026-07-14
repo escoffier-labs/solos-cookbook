@@ -32,9 +32,8 @@ Full runbook: `memory/cards/token-glace-output-compaction.md`.
 
 ## Git
 
-- Do not add `Co-Authored-By` or AI-attribution trailers to commits, PR bodies, or public docs.
 - Use conventional commits.
-- Never bypass pre-push hooks (`--no-verify`) unless the user has explicitly accepted the risk.
+- Never bypass pre-push hooks. Fix the blocker or stop and report it.
 - Never push to `main` directly on shared repos. Feature branch + PR.
 
 ## Chat surfaces

@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 npm --prefix site run check:content   # scrub gate only, fastest for content edits
+npm --prefix site run check:products  # retired product names and links
 npm --prefix site run check:structure # guide skeleton lint (Verification/Gotchas headings)
 npm --prefix site run check:links     # internal link check (external probe is a non-blocking CI lane)
 npm --prefix site test                # vitest suite

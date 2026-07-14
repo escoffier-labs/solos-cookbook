@@ -42,6 +42,6 @@ export const EXTERNAL = {
   contentLicense: 'https://github.com/escoffier-labs/solos-cookbook/blob/main/CONTENT-LICENSE',
   brigade: 'https://brigade.tools',
   brigadeRepo: 'https://github.com/escoffier-labs/brigade',
-  contentGuard: 'https://github.com/escoffier-labs/content-guard',
+  brigadeGuard: 'https://brigade.tools/docs/commands/guard',
   openclaw: 'https://github.com/openclaw/openclaw',
 };

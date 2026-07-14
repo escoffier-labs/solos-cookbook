@@ -76,7 +76,7 @@ A few specific reasons:
 
 Same reasoning, sharper. The guides do not compose into a single product. The MCP catalog ships as separate tools because they *are* separate tools (each wrapping one service). The dashboard ships as its own repo because it is one thing. There is no "the cookbook tool" because the cookbook is information, not behavior.
 
-Where the cookbook does point at single tools (`content-guard`, `usage-tracker`, the MCP servers in [`../tools/mcp-catalog.md`](../tools/mcp-catalog.md)), those are independent. Each has its own README, its own versioning, its own release cadence. The cookbook references them; it does not own them.
+Where the cookbook does point at single tools (`usage-tracker`, the MCP servers in [`../tools/mcp-catalog.md`](../tools/mcp-catalog.md)), those are independent. Each has its own README, its own versioning, and its own release cadence. The cookbook references them. It does not own them. Shared workspace operations and publish scanning live in Brigade.
 
 ## What this implies for contributions
 

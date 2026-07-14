@@ -2,8 +2,8 @@
 
 > Scrub at the moment artifacts leave the private workspace, not after they are already public.
 
-**Tested on:** deterministic scrubber templates, content-guard public repo policy, git pre-push boundary checks
-**Last updated:** 2026-05-11
+**Tested on:** deterministic scrubber templates, Brigade guard public-repo policy, git pre-push boundary checks
+**Last updated:** 2026-07-13
 
 ## What this is
 
@@ -30,7 +30,7 @@ This is a workflow, not a prompt. The model may help write, but deterministic to
 ## Prerequisites
 
 - A deterministic scrubber such as [`../templates/scrubbers/scrub-content.sh`](../templates/scrubbers/scrub-content.sh)
-- A scanner such as [content-guard](https://github.com/escoffier-labs/content-guard)
+- Brigade's embedded guard or another policy scanner that exits nonzero on blockers
 - A staging directory, git branch, draft folder, or export bundle that represents the outbound artifact
 - A replacement policy for each leak class
 - Someone willing to review the scrubbed diff before publishing
@@ -49,7 +49,7 @@ After:
 
 - Every public artifact passes through a staging boundary.
 - Regex replacements are previewed before being applied.
-- content-guard blocks hard leaks and reports warnings.
+- Brigade guard blocks hard leaks and reports warnings.
 - Human review checks meaning, tone, and false positives.
 - The final artifact is safe enough to commit, publish, attach, or send.
 
@@ -124,9 +124,7 @@ Then review the git diff or file diff again. A scrubber that destroys meaning is
 The scrubber normalizes known patterns. The scanner catches the rest.
 
 ```bash
-PYTHONPATH="$CONTENT_GUARD_DIR/src" \
-  python3 -m content_guard scan "$PWD" \
-  --policy "$CONTENT_GUARD_DIR/policies/public-repo.json"
+brigade scrub --target "$PWD" --policy public-repo
 ```
 
 Use three scanner result classes:
@@ -198,12 +196,10 @@ awk -F '\t' 'NF && $1 !~ /^#/ && NF != 2 { print "bad rule:", NR; bad=1 } END { 
   templates/scrubbers/rules.example.tsv
 ```
 
-Run content-guard against the repo:
+Run Brigade guard against the repo:
 
 ```bash
-PYTHONPATH="$CONTENT_GUARD_DIR/src" \
-  python3 -m content_guard scan "$PWD" \
-  --policy "$CONTENT_GUARD_DIR/policies/public-repo.json"
+brigade scrub --target "$PWD" --policy public-repo
 ```
 
 Check the git hook is active:
@@ -217,7 +213,7 @@ For a staged artifact, the minimum publish gate is:
 
 ```bash
 templates/scrubbers/scrub-content.sh staging/public/
-PYTHONPATH="$CONTENT_GUARD_DIR/src" python3 -m content_guard scan staging/public/ --policy "$CONTENT_GUARD_DIR/policies/public-repo.json"
+brigade scrub --target staging/public/ --policy public-content --no-receipt
 ```
 
 Expected result: no blockers, warnings reviewed, and no unreviewed private identifiers in the final diff.

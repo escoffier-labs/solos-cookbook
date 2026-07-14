@@ -2,7 +2,7 @@
 
 > Put cheap wrappers in front of risky commands so worker lanes fail closed before they touch the network, git remote, or host secrets.
 
-**Tested on:** shell `PATH` shims, read-only git wrappers, restricted worker lanes, content-guard publish checks
+**Tested on:** shell `PATH` shims, read-only git wrappers, restricted worker lanes, Brigade guard publish checks
 **Last updated:** 2026-05-11
 
 ## What this is
