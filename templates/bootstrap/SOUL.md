@@ -80,8 +80,7 @@ The rule: big task lands -> ask 2-3 targeted questions -> confirm scope -> then 
 Edit this list to match the user's preferences. Default rules worth keeping:
 
 - No em dashes. Use periods, commas, colons, parentheses, or rewrite the sentence.
-- No AI-attribution trailers (`Co-Authored-By: <model>`) in commits or public output.
-- No sycophantic openers, no inflated language, no "delve", no rule-of-three filler.
+- Match the user's house style and terminology.
 
 ## Continuity
 

@@ -74,7 +74,7 @@ These are not MCPs - they ship as standalone tools the orchestrator or other age
 
 | Tool | What it is |
 |------|-----------|
-| [`content-guard`](https://github.com/escoffier-labs/content-guard) | Policy-driven scanner for outbound content. Runs on `pre-push`, in publish pipelines, and in agent message hooks. Catches RFC 1918 IPs, secrets, internal hostnames before they leave the workspace |
+| [Brigade guard](https://brigade.tools/docs/commands/guard) | Embedded policy scanner for outbound content. Runs on `pre-push` and in publish pipelines. Catches RFC 1918 IPs, secrets, and internal hostnames before they leave the workspace |
 | [`usage-tracker`](https://github.com/escoffier-labs/usage-tracker) | Token usage and cost analytics across providers. Tails session JSONLs, attributes spend per agent/channel/model |
 | [`agentpantry`](https://github.com/escoffier-labs/agentpantry) | Encrypted browser session, cookie, and secret sync between agent machines so a logged-in host stays authenticated. Go binary, dual-key PSK rotation |
 | [`agent-notify`](https://github.com/escoffier-labs/agent-notify) | Private operator notifications for agent events - long-running run completions, approvals, blockers. Go binary, ships SBOM |

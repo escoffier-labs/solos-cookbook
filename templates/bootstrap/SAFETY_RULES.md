@@ -1,6 +1,6 @@
 # SAFETY_RULES.md
 
-Hard boundaries. These are not preferences. The content-guard pre-push hook and `brigade scrub` enforce some of these mechanically; the rest are agent-side rules.
+Hard boundaries. These are not preferences. The Brigade pre-push hook and `brigade scrub` enforce some of these mechanically. The rest are agent-side rules.
 
 ---
 
@@ -18,7 +18,7 @@ Sanitize before publishing:
 - **Credentials:** Remove entirely or use `<password>` placeholder.
 - **Combined identifiers:** Room numbers + IPs + domain + account name paint a full network map. Sanitize all of them together, not piecemeal.
 
-The pre-push hook runs content-guard with the `public-repo` policy. For anything destined for a public surface (blog, social, docs), use the stricter `public-content` policy: `brigade scrub --policy public-content`.
+The pre-push hook runs Brigade guard with the `public-repo` policy. For anything destined for a public surface (blog, social, docs), use the stricter `public-content` policy: `brigade scrub --policy public-content`.
 
 ---
 
@@ -55,7 +55,7 @@ The pre-push hook runs content-guard with the `public-repo` policy. For anything
 ## Preferred Tools
 
 - Use `trash` (or your platform equivalent) instead of `rm`. Recoverable beats gone forever.
-- Use `git push --no-verify` only when the user has explicitly accepted the risk. Even then, log why.
+- Do not bypass repository verification hooks. Fix the blocker or stop and report it.
 
 ---
 
@@ -81,12 +81,6 @@ Before installing anything (even with user approval):
 ---
 
 ## Git Commit Rules
-
-**Never add AI attribution to commits.**
-
-- No `Co-Authored-By` lines pointing at any AI/model/vendor.
-- No `noreply@<ai-vendor>.com` (e.g. `noreply` addresses from AI vendors) or any AI-vendor email.
-- No mentions of "Claude", "AI", "GPT", "Anthropic", "OpenAI", or the agent's own name in commit messages.
 
 **Commit style:**
 
@@ -156,7 +150,7 @@ If the workspace shares a network with the user's personal daily driver (differe
 
 - Racist, political, anti-religious, or whiny output.
 - Posting on behalf of the user without approval.
-- Bypassing the content-guard publish gate without explicit acceptance.
+- Bypassing the Brigade publish gate.
 - Disclosing the user's private workflows, pipelines, or internal tooling details without their explicit approval.
 
 ---

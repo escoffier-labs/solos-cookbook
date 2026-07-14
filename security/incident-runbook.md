@@ -164,7 +164,7 @@ Do not paste the old secret into the incident note. Refer to it by handle and pr
 2. Preserve a private copy for evidence.
 3. Decide whether the leaked value is sensitive enough to rotate.
 4. Replace public content with placeholders.
-5. Run scrubber and content-guard.
+5. Run the scrubber and Brigade guard.
 6. Republish the corrected artifact.
 7. Check caches, releases, attachments, and downstream mirrors.
 
@@ -247,7 +247,7 @@ Every incident should produce at least one control:
 |------------|-----------------|
 | destructive endpoint reachable | remove endpoint, split admin API, require approval |
 | broad token | narrow scope, shorten lifetime, rotate |
-| secret in public artifact | scrub rule, content-guard policy, publish checklist |
+| secret in public artifact | scrub rule, Brigade guard policy, publish checklist |
 | runaway cron | lock, timeout, backoff, circuit breaker |
 | browser profile collision | per-lane `flock`, one profile per workflow |
 | memory accepted false claim | evidence requirement, quarantine path, review gate |
@@ -274,9 +274,7 @@ Check for new public leaks:
 
 ```bash
 templates/scrubbers/scrub-content.sh staging/public/ 2>/dev/null || true
-PYTHONPATH="$CONTENT_GUARD_DIR/src" \
-  python3 -m content_guard scan "$PWD" \
-  --policy "$CONTENT_GUARD_DIR/policies/public-repo.json"
+brigade scrub --target "$PWD" --policy public-repo
 ```
 
 Check for tracked env or secret files:
@@ -292,7 +290,7 @@ systemctl --user status <service-name>.service
 journalctl --user -u <service-name>.service --since "10 minutes ago"
 ```
 
-Expected result: affected automation is either still paused intentionally or has passed a low-risk smoke test, content-guard has no blockers, and the incident note names the root-cause control.
+Expected result: affected automation is either still paused intentionally or has passed a low-risk smoke test, Brigade guard has no blockers, and the incident note names the root-cause control.
 
 ## Gotchas
 

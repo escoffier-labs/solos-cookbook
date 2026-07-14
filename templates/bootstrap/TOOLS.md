@@ -85,10 +85,10 @@ Stagger crawler repair, memory ingest, and updater cron jobs. Avoid placing memo
 ```bash
 brigade scrub --target . --dry-run               # repo policy
 brigade scrub --target . --policy public-content # stricter, for blog/social
-git push                                            # pre-push hook runs content-guard
+git push                                            # pre-push hook runs Brigade guard
 ```
 
-Bypass `git push --no-verify` only if you have explicitly accepted the risk.
+If a push is blocked, fix the reported content. Do not bypass the hook.
 
 ## Local Services
 

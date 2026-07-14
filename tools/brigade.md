@@ -2,7 +2,7 @@
 
 > Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, MCP sync, local work loops, operator checks, research receipts, and security scans.
 
-_Current as of brigade-cli 0.19.0, 2026-07-07._
+_Current as of brigade-cli 0.21.1, 2026-07-13._
 
 ## What this is
 
@@ -29,7 +29,7 @@ Manual copying works once. It fails when the template changes, when Codex and Cl
 | Verified learning | `brigade outcome` scores learned cards and skills by real verify-run results, so promotion and rollback are evidence-backed, not vibes |
 | Reviewed runbooks | `brigade runbook` plans, runs, resumes, and closes out reviewed runbooks with receipts |
 | Scanner imports | Converts memory-care, chat-sweep, handoff, and security findings into reviewable `brigade work import` items |
-| Publish safety | Installs content-guard policies, a pre-push hook shape, and a local `brigade release` publish gate |
+| Publish safety | Provides embedded guard policies, a pre-push hook shape, and a local `brigade release` publish gate |
 | Security hygiene | Scans secrets, permissions, hooks, MCP config, supply-chain patterns, and instruction risks |
 | Managed stations | Selects a repo profile of core, skills, memory, guard, security, tokens, evidence, and search, with optional pantry, notifications, and MCP sync stations |
 
@@ -41,7 +41,6 @@ The alternative is a pile of local scripts that only work on the first workstati
 - `pipx`
 - At least one harness CLI you actually use, such as `codex` or `claude`
 - Optional: `ollama` for local worker lanes in a roster
-- Optional: `content-guard` for publish gates
 - Optional: OpenClaw workspace if OpenClaw is your memory owner
 
 ## Before / After
@@ -83,12 +82,12 @@ Initialize managed companion tools only when you want Brigade to wire them for y
 ```bash
 brigade add skills         # built-in brigade-work and ultra-work-scout skills
 brigade add memory          # memory-doctor + bootstrap-doctor
-brigade add guard           # content-guard
+brigade add guard           # embedded policy scanner and publish gate
 brigade add tokens          # token-glace output compaction
 brigade add pantry          # agentpantry session-auth sync
 brigade add notifications   # agent-notify operator notifications
 brigade add evidence        # miseledger evidence ledger and source/session crawlers
-brigade add search          # code-search-api + code-search-mcp
+brigade add search          # GraphTrail + code-search-api with its bundled MCP bridge
 brigade add mcp             # canonical MCP catalog sync station
 ```
 
@@ -252,10 +251,10 @@ brigade security scan --target . --import-findings
 
 ### Release readiness
 
-`brigade release` is the local publish gate. It reviews work closeout, verification, code review, scanner state, security health, handoff health, content-guard results, install smoke receipts, git state, and docs/changelog/roadmap touch warnings, then builds candidate bundles with a manual-only publish plan:
+`brigade release` is the local publish gate. It reviews work closeout, verification, code review, scanner state, security health, handoff health, guard results, install smoke receipts, git state, and docs/changelog/roadmap touch warnings, then builds candidate bundles with a manual-only publish plan:
 
 ```bash
-brigade release doctor                  # local publish checks (runs content-guard when available)
+brigade release doctor                  # local publish checks, including the embedded guard
 brigade release run                     # write a release-readiness receipt
 brigade release candidate build         # build a local candidate bundle
 brigade release candidate audit <id>     # check for stale evidence, missing refs, privacy issues

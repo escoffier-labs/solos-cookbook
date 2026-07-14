@@ -2,22 +2,22 @@
 
 > The skills rack: installable agent skills for auditing, improving, and shipping repos. The flagship is line-check, a repo audit that ends in a leverage-sorted improvement backlog instead of a wall of findings.
 
-_Current as of skillet 0.4.0, 2026-06-27._
+_Current as of skillet 0.6.0, 2026-07-13._
 
 ## What this is
 
 [`skillet`](https://github.com/escoffier-labs/skillet) is a public collection of agent skills extracted from the workflows in this cookbook. Where [Brigade](brigade.md) gives your agent kitchen its shape (memory, handoffs, guards), skillet gives the cooks their techniques: repeatable procedures any SKILL.md-capable harness can load on demand.
 
-Twenty-nine skills ship in 0.4.0, organized by job. Any SKILL.md-capable harness loads them on demand:
+Thirty-two skills ship in 0.6.0, organized by job. Any SKILL.md-capable harness loads them on demand:
 
 | Family | Skills |
 |--------|--------|
 | Design and build | `mise` (idea to approved spec), `recipe` (spec to plan), `demi`, `taste` (test-first), `fire` (execute a plan task by task), `stations` (fan out parallel work), `worktree` |
-| Debug and verify | `refire` (root-cause before any fix), `check` (prove it works before claiming it) |
+| Debug and verify | `refire` (root-cause before any fix), `check` (prove it works before claiming it), `graphtrail` (structural code queries), `thermometer` (performance baselines) |
 | Review and ship | `pass` (the pre-PR gate), `review`, `sendback`, `release-cut`, `expedite` |
-| Audit and direction | `line-check` (the flagship repo audit), `bug-hunt`, `security-sweep`, `special` |
+| Audit and direction | `line-check` (the flagship repo audit), `bug-hunt`, `security-sweep`, `stocktake` (dependency and runtime inventory), `special` |
 | Simplify | `reduce` |
-| Writing and publishing | `grill`, `plate`, `publish-readiness`, `reel-check`, `seo-fleet` |
+| Writing and publishing | `grill`, `plate`, `publish-readiness`, `reel-check`, `garnish` (site metadata and indexing) |
 | Memory | `memory-handoff`, `brigade-handoffs` |
 | Pressure and meta | `pressure-test`, `skillify`, `using-skillet` |
 
@@ -60,14 +60,14 @@ Confirm the clone ships every skill as a discoverable `SKILL.md`:
 ```bash
 git clone https://github.com/escoffier-labs/skillet
 ls skillet/skillet/skills/*/SKILL.md | wc -l
-# 29
+# 32
 
 ls skillet/skillet/skills
-# brigade-handoffs  bug-hunt  check  demi  expedite  fire  grill
-# line-check  memory-handoff  mise  pass  plate  pressure-test
-# publish-readiness  recipe  reduce  reel-check  refire  release-cut
-# review  security-sweep  sendback  seo-fleet  skillify  special
-# stations  taste  using-skillet  worktree
+# brigade-handoffs  bug-hunt  check  demi  expedite  fire  garnish
+# graphtrail  grill  line-check  memory-handoff  mise  pass  plate
+# pressure-test  publish-readiness  recipe  reduce  reel-check  refire
+# release-cut  review  security-sweep  sendback  skillify  special
+# stations  stocktake  taste  thermometer  using-skillet  worktree
 ```
 
 In Claude Code, after the marketplace install, run `/plugin` and confirm `skillet` appears in the installed list; its skills then show up as `skillet:line-check` and friends.

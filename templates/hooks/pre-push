@@ -1,40 +1,40 @@
 #!/usr/bin/env bash
-# pre-push: block push if a content scanner finds blocking violations.
+# pre-push: block a push when Brigade guard finds policy violations.
 # Drop this file in <repo>/hooks/pre-push, then activate once with:
 #   git config core.hooksPath hooks
-#
-# Bypass only if you understand exactly what you are allowing through:
-#   git push --no-verify
-#
-# Replace <SCANNER_DIR>, <SCANNER_INVOCATION>, and <POLICY_PATH> with the
-# scanner you actually use. The shape below assumes content-guard
-# (https://github.com/escoffier-labs/content-guard) but any CLI that returns
-# non-zero on policy violations works.
 set -euo pipefail
 
-# --- where the scanner lives ------------------------------------------------
-SCANNER_DIR="${CONTENT_GUARD_DIR:-$HOME/repos/<SCANNER_DIR>}"
-POLICY="${CONTENT_GUARD_POLICY:-$SCANNER_DIR/policies/public-repo.json}"
-
-if [[ ! -d "$SCANNER_DIR" ]]; then
-  echo "pre-push: scanner not found at $SCANNER_DIR" >&2
-  echo "pre-push: clone it, or set CONTENT_GUARD_DIR to its real path" >&2
+if ! command -v brigade >/dev/null 2>&1; then
+  echo "pre-push: brigade not found on PATH" >&2
+  echo "pre-push: install with: pipx install brigade-cli" >&2
   exit 1
 fi
 
-if [[ ! -f "$POLICY" ]]; then
-  echo "pre-push: policy file not found: $POLICY" >&2
-  exit 1
-fi
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
 
-# --- run the scanner against the working tree -------------------------------
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-echo "pre-push: scanning $REPO_ROOT against $(basename "$POLICY")"
+zero="0000000000000000000000000000000000000000"
+failed=0
+refs="$(cat)"
 
-if ! PYTHONPATH="$SCANNER_DIR/src" python3 -m content_guard scan "$REPO_ROOT" --policy "$POLICY"; then
+echo "pre-push: scanning tracked files with Brigade guard"
+brigade guard git --all-tracked || failed=1
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  [[ -z "${local_sha:-}" || "$local_sha" == "$zero" ]] && continue
+  if [[ "$remote_sha" == "$zero" ]]; then
+    range="$local_sha"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+  echo "pre-push: scanning content introduced in $range"
+  brigade guard git --history --range "$range" || failed=1
+done <<<"$refs"
+
+if [[ "$failed" -ne 0 ]]; then
   echo >&2
-  echo "pre-push: BLOCKED. scanner found violations." >&2
-  echo "pre-push: fix the leak, or add an inline allow-tag on the offending line:" >&2
+  echo "pre-push: BLOCKED. Fix the reported content before pushing." >&2
+  echo "pre-push: A narrow allow comment may be used only for public example data:" >&2
   echo "pre-push:   <!-- content-guard: allow <rule-id> -->" >&2
   exit 1
 fi

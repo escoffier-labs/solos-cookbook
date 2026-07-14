@@ -6,6 +6,7 @@ Before reporting any change complete, run from the repo root and confirm it pass
 ./scripts/verify
 ```
 It runs, in order: `npm --prefix site run check:content` (scrub gate),
+`npm --prefix site run check:products` (retired-product gate),
 `npm --prefix site run check:structure` (guide skeleton lint: every guide
 needs `## Verification` and `## Gotchas`), `npm --prefix site run check:links`
 (internal link check; the external probe `check:links:external` runs only in a
@@ -32,7 +33,7 @@ e.g. `export SCRUB_HOSTNAMES=host1,host2` (comma-separated; format in
   public replies. Write as the maintainer unless the user explicitly asks for a
   disclosure.
 - Scrub gates are the publishing boundary. If a gate blocks, rewrite the content
-  around the trigger words. Never weaken the scrub list, never use `--no-verify`.
+  around the trigger words. Never weaken the scrub list or bypass verification hooks.
 - Pushing to `main` publishes the site on Vercel. Push only when the user
   explicitly asks.
 - Never weaken, skip, or delete a failing check or test. If blocked, report
@@ -77,9 +78,9 @@ e.g. `export SCRUB_HOSTNAMES=host1,host2` (comma-separated; format in
   - `site/scripts/scrub-check.mjs` runs as `prebuild`, so `astro build` fails
     locally and on Vercel on private-looking content. It scans all root guide
     directories plus `README.md` and `CONTRIBUTING.md`.
-  - Tracked pre-push hook `hooks/pre-push` runs content-guard from
-    `~/repos/content-guard` against its `policies/public-repo.json`. Activate
-    once with `git config core.hooksPath hooks`.
+  - Tracked pre-push hook `hooks/pre-push` runs Brigade's embedded guard over
+    tracked files and pushed history. Activate once with
+    `git config core.hooksPath hooks`.
 - True false positive (example IPs, hostname tables): add inline
   `<!-- content-guard: allow <rule-id> -->` on that line. Prefer rewording.
 - Writing about scrubbing triggers the scrubber. Expect allow tags in scrub
