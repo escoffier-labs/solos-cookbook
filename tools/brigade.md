@@ -2,7 +2,7 @@
 
 > Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, MCP sync, local work loops, operator checks, research receipts, and security scans.
 
-_Current as of brigade-cli 0.21.1, 2026-07-13._
+_Current as of brigade-cli 0.22.0, 2026-07-15._
 
 ## What this is
 
@@ -81,7 +81,7 @@ Initialize managed companion tools only when you want Brigade to wire them for y
 
 ```bash
 brigade add skills         # built-in brigade-work and ultra-work-scout skills
-brigade add memory          # memory-doctor + bootstrap-doctor
+brigade add memory          # embedded memory maintenance + optional bootstrap-doctor
 brigade add guard           # embedded policy scanner and publish gate
 brigade add tokens          # token-glace output compaction
 brigade add pantry          # agentpantry session-auth sync
@@ -93,11 +93,31 @@ brigade add mcp             # canonical MCP catalog sync station
 
 Use `brigade profiles list` to see built-in bundles and `brigade stations list` to see which stations the repo profile selects before installing sidecars. Fresh repo installs select core, skills, memory, guard, security, tokens, evidence, and search up front; external tools still install only when you run `brigade add <station>` with the station's install step.
 
+Check a sidecar's declared surfaces before installing it:
+
+```bash
+brigade stations verify ../graphtrail
+brigade stations verify ../graphtrail/station.json --json
+brigade stations verify ../graphtrail --check-managed
+```
+
+`stations verify` never runs the manifest's install command. On POSIX it runs declared read-only commands, bounded support probes, or manifest-local skill-roster verification from the sidecar directory. It replaces `HOME` and the XDG paths with temporary directories but inherits the rest of the environment, so this is process containment, not an OS sandbox. Each probe has a finite timeout and a 64 KiB combined-output ceiling. Use `--check-managed` when coordinated fleet checks should fail on drift from Brigade's managed catalog.
+
+The main station health commands are also available directly:
+
+```bash
+brigade memory status
+brigade search doctor
+brigade tokens doctor
+brigade evidence doctor
+brigade pantry doctor
+```
+
 The evidence station is a local-first audit trail: `miseledger` imports session and source records into a SQLite FTS archive and emits evidence bundles over CLI, loopback HTTP, and MCP. The Go stations install with `go install github.com/escoffier-labs/<name>/cmd/<name>@latest` when their station manifest asks for it.
 
 ### Dispatch a brigade
 
-Set up a multi-agent roster when you want Brigade to dispatch work through installed CLIs. One rostered model plans the work, Brigade runs the assigned workers through their own CLIs, then the orchestrator synthesizes the answer. It is intentionally bounded: two orchestrator calls plus the worker calls in the plan.
+Set up a multi-agent roster when you want Brigade to dispatch work through installed CLIs. One rostered model plans the work, Brigade runs the assigned workers through their own CLIs, then the orchestrator synthesizes the answer. Brigade makes one initial planning call. If that plan does not parse, it makes one parse-correction call. If the accepted plan still misses route coverage, it may make one coverage-correction call. The orchestrator makes one synthesis call after the worker calls.
 
 ```bash
 brigade roster init
@@ -105,9 +125,22 @@ brigade roster doctor
 brigade run "review this repo and suggest the next implementation step" --read-only --show-plan
 brigade run "plan the migration" --dry-run     # print planned assignments, stop before dispatch
 brigade run "review this repo" --handoff        # write a Memory Handoff for a successful run
+brigade run "review this repo" --wait=300       # wait up to five minutes for the target lock
 ```
 
-Roster adapters are `codex`, `claude`, and `ollama:<model>`. Brigade shells out to those tools and keeps no provider keys.
+Direct roster adapters include `claude`, `codex`, `opencode`, `antigravity`, `pi`, `cursor`, `aider`, `goose`, `continue`, `copilot`, `qwen`, `kimi`, `adal`, `openhands`, `grok`, `amp`, and `crush`. Local Ollama seats use `ollama:<model>`. A `codex-cloud:<env-id>` seat submits a task to Codex Cloud and returns its summary and diff without applying it. Brigade shells out to authenticated tools and keeps no provider keys.
+
+Brigade derives a deterministic route from the task, changed paths, and an optional template hint. Inspect it before a run or correct one bad heuristic without disabling the router:
+
+```bash
+brigade route "rewrite the quickstart" --template docs
+brigade route "change the login flow" --route-signal +auth-surface --json
+brigade run "prepare the release" --approve-ship --show-plan
+```
+
+`--route-signal +name` forces a signal and `--route-signal ~name` suppresses one. Forced signals still pull dependent checks. A requested ship stage stays held until `--approve-ship` is present. Use `--no-route` only when you intend to bypass route composition and plan-coverage checking.
+
+Cursor workers can opt into the reviewed ACP transport with `transport = "acpx"` and `transport_version = "0.12.0"`. ACP seats are worker-only, so keep the orchestrator on a direct adapter.
 
 ### Plan-first and cross-review loop
 
@@ -207,7 +240,7 @@ brigade work import triage --target .
 brigade work import promote <import-id>
 ```
 
-### Canonical MCP config, outcomes, and runbooks
+### Canonical MCP config, receipts, outcomes, and runbooks
 
 `brigade mcp` is the dedicated MCP surface: keep one canonical catalog and project it into each harness's native config instead of hand-editing four config files. Writes are gated, so it fits the same local-first boundary as everything else.
 
@@ -220,6 +253,16 @@ brigade mcp sync --write          # actually write the harness configs
 brigade mcp doctor                # validate the catalog and report gaps
 ```
 
+Verify receipt digests before relying on old run evidence. Signing is optional and uses a local key:
+
+```bash
+brigade receipts verify --target .
+brigade receipts keygen --target .
+brigade receipts export miseledger --target . --new-only --import
+```
+
+The export uses the receipt digest as its content identity when present. Legacy receipts fall back to the receipt file's SHA-256, then a canonical JSON digest if the file cannot be hashed. `--new-only` tracks that resulting raw hash, so repeated imports deduplicate instead of copying the same run again.
+
 `brigade outcome` is the verified-learning ledger: it scores learned cards and skills by what actually passed verification, so promotion and rollback rest on evidence rather than a one-time guess.
 
 ```bash
@@ -227,9 +270,12 @@ brigade work verify run --target . --command "pytest -q" --capture <skill-or-car
 brigade outcome capture <artifact>   # optional separate capture, defaults to latest verify run
 brigade outcome score                # verified scores for learned cards and skills
 brigade outcome rank                 # rank learned skills, most-proven first
+brigade outcome rank --by-capability # rank for the current harness, model family, platform, and Python
 brigade outcome explain <artifact>   # show the per-signal trail behind a score
 brigade outcome reconcile            # apply verified promote/rollback decisions (dry-run by default)
 ```
+
+New records carry the artifact's content fingerprint and a coarse runtime-context fingerprint. Editing a skill bundle or a transitively linked card moves earlier fingerprinted records into the stale cohort and excludes them from the current score. Pre-fingerprint records remain included. `--by-capability` uses the current runtime cohort without changing the default promotion ratchet.
 
 `brigade runbook` runs reviewed runbooks with receipts (`plan`, `run`, `resume`, `closeout`), so a multi-step local procedure is auditable the same way `brigade work` and `brigade release` are.
 
@@ -271,11 +317,12 @@ brigade roster doctor
 brigade work doctor
 brigade dogfood status
 brigade handoff doctor
+brigade receipts verify --target .
 brigade security scan --target . --policy public-repo
 git status --short --ignored .brigade .codex .claude
 ```
 
-Expected result: doctor checks pass, roster doctor either validates installed CLIs or reports clear missing tools, dogfood status reports configured artifact and handoff paths, handoff doctor shows covered inboxes or actionable warnings, the security scan either passes or writes reviewable findings, and local Brigade state is ignored by git except for intentional template files.
+Expected result: doctor checks pass, roster doctor either validates installed CLIs or reports clear missing tools, dogfood status reports configured artifact and handoff paths, handoff doctor shows covered inboxes or actionable warnings, receipt verification reports valid or clearly marked legacy artifacts, the security scan either passes or writes reviewable findings, and local Brigade state is ignored by git except for intentional template files.
 
 ## Gotchas
 
@@ -287,7 +334,9 @@ Expected result: doctor checks pass, roster doctor either validates installed CL
 
 **Dogfood defaults are Codex-shaped.** New dogfood configs default handoffs to `.codex/memory-handoffs/` because the built-in dogfood roster is Codex-driven. Pass `--handoff-inbox` if your canonical memory owner ingests `.claude/memory-handoffs/` or another path. Trusted-workspace runs also default to Codex's `danger-full-access` so shell inspection works; pass `--native-read-only-sandbox` when the host supports the tighter setting.
 
-**`brigade run --read-only` is strongest with Codex.** Brigade passes Codex's native read-only sandbox flag. Other adapters receive prompt-level read-only instructions only, so use OS-level permissions or a disposable checkout when the repo is not trusted.
+**`brigade run --read-only` is adapter-specific.** Some adapters use a native sandbox, plan mode, or a restricted tool list. Others receive a prompt instruction or no enforceable local restriction. Brigade warns when an assigned seat has soft or absent enforcement. Use the warning, `brigade roster doctor`, and the adapter's own isolation controls before running against an untrusted checkout.
+
+**Direct Cursor plan mode has model-specific output gaps.** Composer and Grok models can finish a read-only direct run without returning findings as assistant text. Use the reviewed ACP transport and its pinned `transport_version` for those Cursor worker seats.
 
 **Run artifacts are local state.** `.brigade/runs/`, `.brigade/work/`, `.brigade/security/`, and machine-local config should stay ignored. Commit templates and public policy files, not the evidence bundle from your own workstation.
 
