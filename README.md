@@ -14,8 +14,7 @@
 
 <p align="center">
   <a href="https://escoffierlabs.dev/cookbook/">Read the cookbook</a> &middot;
-  <a href="https://escoffierlabs.dev/cookbook/recipes">Browse all recipes</a> &middot;
-  <a href="https://escoffierlabs.dev/cookbook/edition">2026 Edition</a>
+  <a href="https://escoffierlabs.dev/cookbook/recipes">Browse all recipes</a>
 </p>
 
 <p align="center">
@@ -77,14 +76,6 @@ brigade operator quickstart --target ./my-repo --harnesses codex
 ```
 
 The cookbook does not need Brigade to be useful, and this repository is not a second Brigade distribution.
-
-## 2026 Edition
-
-All 61 recipes remain free on the website. The planned paid edition is a $39 designed PDF with a linked table of contents, chapter openers, print typography, full-page diagrams, a setup checklist, and a glossary.
-
-Payment will use Stripe. Checkout stays disabled until the final PDF, file delivery, receipt email, refund terms, and a test purchase are ready. A purchase will include every 2026 Edition revision published through June 30, 2027. A later named edition may be a separate purchase.
-
-[Preview the 2026 Edition](https://escoffierlabs.dev/cookbook/edition).
 
 ## Local site
 

@@ -4,7 +4,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { CATEGORIES } from '../src/lib/cookbook.ts';
-import { shouldBuildBook } from '../src/lib/edition.ts';
+import { shouldBuildBook } from '../src/lib/print.ts';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..');
 const BOOK_HTML = path.join(import.meta.dirname, '../dist/book/index.html');

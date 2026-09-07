@@ -19,8 +19,7 @@
     "check:products": "node scripts/product-lifecycle-check.mjs",
     "check:structure": "node scripts/structure-check.mjs",
     "check:links": "node scripts/link-check.mjs",
-    "check:links:external": "node scripts/link-check.mjs --external",
-    "check:stripe": "node scripts/stripe-preflight.mjs"
+    "check:links:external": "node scripts/link-check.mjs --external"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.2.9",

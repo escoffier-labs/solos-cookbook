@@ -5,7 +5,7 @@ import BookCover from '../../components/BookCover.astro';
 import StartHere from '../../components/StartHere.astro';
 import Appendix from '../../components/Appendix.astro';
 import { toRoman } from '../../lib/cookbook.ts';
-import { shouldBuildBook } from '../../lib/edition.ts';
+import { shouldBuildBook } from '../../lib/print.ts';
 import '../../styles/print.css';
 import memoryOwnershipSvg from '../../diagrams/memory-ownership.svg?raw';
 import multiHarnessHandoffSvg from '../../diagrams/multi-harness-handoff.svg?raw';
@@ -15,7 +15,7 @@ import automationFlowSvg from '../../diagrams/automation-flow.svg?raw';
 import publishingPipelineSvg from '../../diagrams/publishing-pipeline.svg?raw';
 
 if (!shouldBuildBook(import.meta.env.BUILD_BOOK)) {
-  return Astro.redirect('/cookbook/edition');
+  return Astro.redirect('/cookbook/recipes');
 }
 
 const CHAPTER_DIAGRAMS: Record<string, string> = {
