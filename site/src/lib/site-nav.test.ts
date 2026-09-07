@@ -12,7 +12,8 @@ describe('mobile navigation', () => {
     expect(source).toContain('{NAV_LINKS.map');
   });
 
-  it('includes the edition in the shared navigation model', () => {
-    expect(NAV_LINKS).toContainEqual({ label: 'Edition', href: '/cookbook/edition' });
+  it('keeps recipes accessible without advertising the retired paid page', () => {
+    expect(NAV_LINKS).toContainEqual({ label: 'Recipes', href: '/cookbook/recipes' });
+    expect(NAV_LINKS.some(({ href }) => href === '/cookbook/edition')).toBe(false);
   });
 });
