@@ -191,8 +191,7 @@ From the MCP client:
 ```
 
 ```bash
-docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite \
-  "SELECT id, name, json_extract(settings, \"$.errorWorkflow\") FROM workflow_entity WHERE active = 1;"'
+docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite "SELECT id, name, json_extract(settings, \"$.errorWorkflow\") FROM workflow_entity WHERE active = 1;"' # <!-- content-guard: allow home-path -->
 # Every active publishing workflow should have an errorWorkflow id set.
 ```
 

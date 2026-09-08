@@ -15,14 +15,14 @@ The option strings below are the actual value of this guide. Copy them exactly. 
 
 ## The fstab Pattern
 
-Two real lines from a live host, IPs and usernames sanitized but every mount option kept verbatim:
+Two real lines from a live host, IPs, usernames, and paths sanitized but every mount option kept verbatim:
 
 ```fstab
 # Guest-auth NAS, read tier for the agent host
 //192.0.2.70/share /mnt/nas cifs guest,uid=1000,gid=1000,file_mode=0644,dir_mode=0755,nofail,x-systemd.automount,x-systemd.idle-timeout=300 0 0
 
 # Credentials-file desktop share
-//192.0.2.61/D /mnt/desktop/d cifs credentials=/home/you/.smbcreds-desktop,uid=1000,gid=1000,file_mode=0644,dir_mode=0755,nofail,x-systemd.automount,x-systemd.idle-timeout=300 0 0
+//192.0.2.61/D /mnt/desktop/d cifs credentials=/etc/smbcreds-desktop,uid=1000,gid=1000,file_mode=0644,dir_mode=0755,nofail,x-systemd.automount,x-systemd.idle-timeout=300 0 0
 ```
 
 ### Why each option is there
@@ -41,13 +41,13 @@ Two real lines from a live host, IPs and usernames sanitized but every mount opt
 For the authenticated desktop share:
 
 ```bash
-sudo tee /home/you/.smbcreds-desktop >/dev/null <<'EOF'
+sudo tee /etc/smbcreds-desktop >/dev/null <<'EOF'
 username=youruser
 password=yourpassword
 domain=WORKGROUP
 EOF
-sudo chown root:root /home/you/.smbcreds-desktop
-sudo chmod 600 /home/you/.smbcreds-desktop
+sudo chown root:root /etc/smbcreds-desktop
+sudo chmod 600 /etc/smbcreds-desktop
 ```
 
 Point `credentials=` at it, the same path the fstab line above uses. Mode `600`, root-owned. If the path in fstab is wrong or unreadable the mount fails closed, which with `nofail` is silent, so verify with the commands in [Verification](#verification).
@@ -164,7 +164,7 @@ df -h --output=target,pcent /mnt/nas /mnt/desktop/* 2>/dev/null
 
 echo ""
 echo "=== Credentials file is locked down ==="
-sudo stat -c '%a %U %n' /home/you/.smbcreds-desktop 2>/dev/null || echo "no creds file (guest-only setup)"
+sudo stat -c '%a %U %n' /etc/smbcreds-desktop 2>/dev/null || echo "no creds file (guest-only setup)"
 
 echo ""
 echo "=== Offline-peer safety: nofail present on every cifs line ==="

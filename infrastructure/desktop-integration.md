@@ -66,7 +66,7 @@ The desktop shares two drives over SMB (a fast internal volume and a large exter
 Stash the SMB credentials in a root-only file, never inline in `/etc/fstab`:
 
 ```bash
-# /home/you/.smbcreds-desktop  (chmod 600)
+# /etc/smbcreds-desktop  (chmod 600)
 username=you
 password=REDACTED
 ```
@@ -74,8 +74,8 @@ password=REDACTED
 Then two fstab lines, one per share:
 
 ```fstab
-//192.0.2.61/D  /mnt/desktop/d  cifs  credentials=/home/you/.smbcreds-desktop,uid=1000,gid=1000,file_mode=0644,dir_mode=0755,nofail,x-systemd.automount,x-systemd.idle-timeout=300  0 0
-//192.0.2.61/H  /mnt/desktop/h  cifs  credentials=/home/you/.smbcreds-desktop,uid=1000,gid=1000,file_mode=0644,dir_mode=0755,nofail,x-systemd.automount,x-systemd.idle-timeout=300  0 0
+//192.0.2.61/D  /mnt/desktop/d  cifs  credentials=/etc/smbcreds-desktop,uid=1000,gid=1000,file_mode=0644,dir_mode=0755,nofail,x-systemd.automount,x-systemd.idle-timeout=300  0 0
+//192.0.2.61/H  /mnt/desktop/h  cifs  credentials=/etc/smbcreds-desktop,uid=1000,gid=1000,file_mode=0644,dir_mode=0755,nofail,x-systemd.automount,x-systemd.idle-timeout=300  0 0
 ```
 
 What the options buy you:

@@ -194,10 +194,7 @@ Set it on every active workflow at once. Get the classifier's workflow id, then 
 ```bash
 # n8n stopped. Set classifier as errorWorkflow on every active workflow.
 CLASSIFIER_ID="<classifier-workflow-id>"
-docker exec n8n sh -c "sqlite3 /home/node/.n8n/database.sqlite \
-  \"UPDATE workflow_entity
-    SET settings = json_set(coalesce(settings,'{}'), '\$.errorWorkflow', '$CLASSIFIER_ID')
-    WHERE active = 1 AND id != '$CLASSIFIER_ID';\""
+docker exec n8n sh -c "sqlite3 /home/node/.n8n/database.sqlite \"UPDATE workflow_entity SET settings = json_set(coalesce(settings,'{}'), '\$.errorWorkflow', '$CLASSIFIER_ID') WHERE active = 1 AND id != '$CLASSIFIER_ID';\"" # <!-- content-guard: allow home-path -->
 ```
 
 Do not set the classifier as its own `errorWorkflow`. If the classifier throws, you want it to fail loudly to the executions list, not recurse.
@@ -309,22 +306,15 @@ This is the structured input a downstream agent triage step reads. Routine self-
 
 ```bash
 # 1. Every active workflow has the classifier as its errorWorkflow.
-docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite \
-  "SELECT id, name, json_extract(settings, \"$.errorWorkflow\") AS ew
-   FROM workflow_entity WHERE active = 1;"'
+docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite "SELECT id, name, json_extract(settings, \"$.errorWorkflow\") AS ew FROM workflow_entity WHERE active = 1;"' # <!-- content-guard: allow home-path -->
 # Every row (except the classifier itself) should show the classifier id.
 # A null ew means a recent PUT stripped it: re-set via sqlite or import.
 
 # 2. How many distinct failure fingerprints is the classifier tracking?
-docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite \
-  "SELECT staticData FROM workflow_entity WHERE name LIKE \"%Classif%\" LIMIT 1;"' \
-  | jq '.failures | length'
+docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite "SELECT staticData FROM workflow_entity WHERE name LIKE \"%Classif%\" LIMIT 1;"' | jq '.failures | length' # <!-- content-guard: allow home-path -->
 
 # 3. Which fingerprints are escalating right now?
-docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite \
-  "SELECT staticData FROM workflow_entity WHERE name LIKE \"%Classif%\" LIMIT 1;"' \
-  | jq '.failures | to_entries | map(select(.value.count24h >= 10))
-        | map({fp: .key, count24h: .value.count24h})'
+docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite "SELECT staticData FROM workflow_entity WHERE name LIKE \"%Classif%\" LIMIT 1;"' | jq '.failures | to_entries | map(select(.value.count24h >= 10)) | map({fp: .key, count24h: .value.count24h})' # <!-- content-guard: allow home-path -->
 ```
 
 To smoke-test the cascade end to end, remember the rule from [`n8n-patterns.md`](n8n-patterns.md): `errorWorkflow` fires only on trigger-mode runs (Schedule, Webhook, Cron). It does NOT fire on `n8n execute --id` or manual editor runs. Use an Execute Workflow Trigger as the entry node of a throwaway test workflow so the error cascade actually fires the classifier.
