@@ -125,12 +125,14 @@ Use `config.patch` for all edits below. Never `config.apply` unless you mean to 
 
 ### 2b. Register the Plugin Load Path
 
+Replace `/absolute/path/to/agent-home` with your account's absolute home directory:
+
 ```json
 {
   "plugins": {
     "load": {
       "paths": [
-        "/home/YOUR_USER/.openclaw/vendor/acpx/node_modules/@openclaw/acpx"
+        "/absolute/path/to/agent-home/.openclaw/vendor/acpx/node_modules/@openclaw/acpx"
       ]
     }
   }

@@ -82,9 +82,9 @@ Add the plugin and a model alias to `~/.openclaw/openclaw.json`:
     "entries": {
       "acpx": {
         "enabled": true,
-        "command": "/home/you/.openclaw/vendor/acpx/node_modules/.bin/acpx",
+        "command": "/absolute/path/to/agent-home/.openclaw/vendor/acpx/node_modules/.bin/acpx",
         "agent": {
-          "command": "/home/you/.local/bin/claude",
+          "command": "/absolute/path/to/agent-home/.local/bin/claude",
           "args": ["--print", "--output-format", "stream-json", "--input-format", "stream-json"]
         }
       }
@@ -99,7 +99,7 @@ Add the plugin and a model alias to `~/.openclaw/openclaw.json`:
 }
 ```
 
-Use the absolute path to `acpx` and `claude`. Under systemd, `PATH` is minimal and shell lookup will silently fail.
+Replace `/absolute/path/to/agent-home` with your account's absolute home directory in both command paths. Under systemd, `PATH` is minimal and shell lookup will silently fail.
 
 Restart the gateway:
 

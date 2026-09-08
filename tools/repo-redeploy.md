@@ -161,7 +161,7 @@ deploy_playwright_cli() {
 Append to user crontab:
 
 ```cron
-*/10 * * * * /home/agentuser/bin/repo-redeploy.sh
+*/10 * * * * "$HOME/bin/repo-redeploy.sh"
 ```
 
 Or, preferred, drop a systemd timer. Skeleton in [`../templates/cron/systemd-timer.timer`](../templates/cron/systemd-timer.timer). The timer is preferable because it inherits the user session's environment cleanly and shows up in `systemctl --user list-timers`.

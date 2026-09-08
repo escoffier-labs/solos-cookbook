@@ -100,12 +100,12 @@ Things worth keeping unsuppressed even though they are frequent on an agent host
 
 When you are suppressing many specific values of the same kind (known-good file paths, expected process names, allowlisted source IPs), do not write one custom rule per value. Use a CDB list: a flat key/value file Wazuh loads into memory and matches against with `<list>`.
 
-Create the list, one entry per line, `key:value` (value optional):
+Create the list, one entry per line, `key:value` (value optional). Replace `/absolute/path/to/agent-home` with the monitored account's absolute home directory:
 
 ```
 # /var/ossec/etc/lists/agent-expected-paths
-/home/you/.openclaw/workspace/nightshift/.sandbox-bin:
-/home/you/bin:
+/absolute/path/to/agent-home/.openclaw/workspace/nightshift/.sandbox-bin:
+/absolute/path/to/agent-home/bin:
 ```
 
 Compile and reference it. Add to `ossec.conf`:

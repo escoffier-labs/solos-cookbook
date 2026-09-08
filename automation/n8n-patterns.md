@@ -237,16 +237,14 @@ After wiring, you should be able to enumerate the n8n surface in three commands:
 
 ```bash
 # 1. Active workflows + their errorWorkflow setting
-docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite \
-  "SELECT id, name, json_extract(settings, \"$.errorWorkflow\") FROM workflow_entity WHERE active = 1;"'
+docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite "SELECT id, name, json_extract(settings, \"$.errorWorkflow\") FROM workflow_entity WHERE active = 1;"' # <!-- content-guard: allow home-path -->
 # Every active workflow should have an errorWorkflow id set.
 
 # 2. n8nctrl tool surface (from your MCP client)
 # Claude Code: ask the agent "list n8n-ops tools"; OpenClaw: openclaw mcp list-tools
 
 # 3. Recent failure classification (if classifier wired)
-docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite \
-  "SELECT staticData FROM workflow_entity WHERE name LIKE \"%Error%\" LIMIT 1;"' | jq '.failures | length'
+docker exec n8n sh -c 'sqlite3 /home/node/.n8n/database.sqlite "SELECT staticData FROM workflow_entity WHERE name LIKE \"%Error%\" LIMIT 1;"' | jq '.failures | length' # <!-- content-guard: allow home-path -->
 # Number of distinct fingerprints tracked.
 ```
 

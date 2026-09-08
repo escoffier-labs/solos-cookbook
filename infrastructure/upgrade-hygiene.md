@@ -36,8 +36,8 @@ OpenClaw's compiled output ships dozens of `dist/*-<hash>.js` chunks that get lo
 
 ```
 [tools] diffs failed: Cannot find module
-'/home/you/openclaw/dist/markdown-Du8_98GG.js'
-imported from /home/you/openclaw/dist/extensions/diffs/index.js
+'/opt/openclaw/dist/markdown-Du8_98GG.js'
+imported from /opt/openclaw/dist/extensions/diffs/index.js
 ```
 
 The actual file on disk is `markdown-SzrEM4HD.js`. Same module, new hash, written by the update. The running process never reloaded its index, so the old import path is still cached.
@@ -125,7 +125,7 @@ systemctl --user is-active openclaw-gateway || {
 Schedule it via cron and pipe the output to a log you actually read:
 
 ```cron
-0 4 * * * /home/you/bin/openclaw-update.sh >> /home/you/.openclaw/workspace/logs/openclaw-update.log 2>&1
+0 4 * * * "$HOME/bin/openclaw-update.sh" >> "$HOME/.openclaw/workspace/logs/openclaw-update.log" 2>&1
 ```
 
 ## Auth Profile Sync
