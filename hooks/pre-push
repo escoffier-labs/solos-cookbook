@@ -28,8 +28,23 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 RUN() { brigade guard git "$@"; }
 ZERO="0000000000000000000000000000000000000000"
+REMOTE_URL="${2:-${1:-}}"
 FAIL=0
 STDIN_REFS="$(cat)"
+
+# A new remote branch has no remote sha to diff against, so its history scan
+# covers only commits the remote does not already have on a branch or tag.
+# Pull request refs are not counted: they can point at commits that are no
+# longer on any branch. With no branches or tags on the remote, the whole
+# ancestry is scanned.
+ADVERTISED=""
+if grep -qE "[[:space:]]${ZERO}\$" <<<"$STDIN_REFS"; then
+  if ! ADVERTISED="$(GIT_TERMINAL_PROMPT=0 git ls-remote --heads --tags "$REMOTE_URL" 2>&1)"; then
+    echo "pre-push: [history] cannot list branches and tags on ${REMOTE_URL}:" >&2
+    printf 'pre-push:   %s\n' "$ADVERTISED" >&2
+    exit 1
+  fi
+fi
 
 # Apply the private policy's allow_values (known-public literals such as a
 # public author email or an example port) to EVERY scan, including the public
@@ -46,9 +61,23 @@ scan_with() {
   RUN --all-tracked "${pol[@]+"${pol[@]}"}" "${ALLOW_FROM[@]+"${ALLOW_FROM[@]}"}" || FAIL=1
   while read -r _lref lsha _rref rsha; do
     [[ -z "${lsha:-}" || "$lsha" == "$ZERO" ]] && continue   # branch deletion
-    if [[ "$rsha" == "$ZERO" ]]; then range="$lsha"; else range="$rsha..$lsha"; fi
-    echo "pre-push: [history] scanning introduced content in $range"
-    RUN --history --range "$range" "${pol[@]+"${pol[@]}"}" "${ALLOW_FROM[@]+"${ALLOW_FROM[@]}"}" || FAIL=1
+    if [[ "$rsha" == "$ZERO" ]]; then
+      if ! revs="$(printf '%s\n' "$ADVERTISED" | awk 'NF { print "^" $1 }' |
+        git rev-list --ignore-missing "$lsha" --stdin)"; then
+        echo "pre-push: [history] cannot list new commits for $lsha" >&2
+        FAIL=1
+        continue
+      fi
+      count="$(grep -c . <<<"$revs" || true)"
+      echo "pre-push: [history] scanning introduced content in $count new commit(s) for $lsha"
+      [[ "$count" -eq 0 ]] && continue
+      printf '%s\n' "$revs" |
+        RUN --history --revs-stdin "${pol[@]+"${pol[@]}"}" "${ALLOW_FROM[@]+"${ALLOW_FROM[@]}"}" || FAIL=1
+    else
+      range="$rsha..$lsha"
+      echo "pre-push: [history] scanning introduced content in $range"
+      RUN --history --range "$range" "${pol[@]+"${pol[@]}"}" "${ALLOW_FROM[@]+"${ALLOW_FROM[@]}"}" || FAIL=1
+    fi
   done < <(printf '%s\n' "$STDIN_REFS")
 }
 
