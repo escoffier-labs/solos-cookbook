@@ -27,7 +27,7 @@ Grouped by what the underlying service does. Versions move; see each repo for cu
 | MCP | Wraps | What the agent does with it |
 |-----|-------|----------------------------|
 | [`jellyctrl`](https://github.com/lidless-labs/jellyctrl) (`jellyfin-mcp` on npm) | Jellyfin media server | List libraries, scan, list sessions, control playback, manage playlists/collections, manage users, run scheduled tasks, Quick Connect auth |
-| [`media-cli`](https://github.com/solomonneas/media-cli) | Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyseerr, Tdarr (the "arr" media stack) | A single bash script (binary `media`), not an MCP. The agent shells out to it (`media movies search`, `media movies add`, `media downloads active`), locally or over SSH. Public now: `npm i -g @solomonneas/media-cli` or curl the script. Pairs with [`jellyctrl`](https://github.com/lidless-labs/jellyctrl) for Jellyfin playback; see [`repo-redeploy.md`](repo-redeploy.md) for how it stays current |
+| [`media-cli`](https://www.npmjs.com/package/@solomonneas/media-cli) | Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, Jellyseerr, Tdarr (the "arr" media stack) | A single bash script (binary `media`), not an MCP. The agent shells out to it (`media movies search`, `media movies add`, `media downloads active`), locally or over SSH. Public now: `npm i -g @solomonneas/media-cli` or curl the script. Pairs with [`jellyctrl`](https://github.com/lidless-labs/jellyctrl) for Jellyfin playback; see [`repo-redeploy.md`](repo-redeploy.md) for how it stays current |
 
 ### Social & publishing
 
