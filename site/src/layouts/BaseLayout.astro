@@ -11,6 +11,7 @@ const {
   description = SITE.description,
   pageKind = 'website',
   dateModified,
+  markdownAlt,
 } = Astro.props;
 
 const siteUrl = Astro.site ?? new URL('https://escoffierlabs.dev');
@@ -49,6 +50,7 @@ const { openGraphType, structuredData } = buildPageMetadata({
     <meta name="keywords" content={keywords} />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href={canonicalUrl} />
+    {markdownAlt && <link rel="alternate" type="text/markdown" href={markdownAlt} />}
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content={openGraphType} />

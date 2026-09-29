@@ -15,6 +15,13 @@ export function sitePath(path = '/'): string {
   return `${BASE_PATH}${withoutTrailingSlash}${suffix}`;
 }
 
+export const TITLE_SUFFIX = " - Solomon's Cookbook";
+
+export function pageTitle(title: string): string {
+  const full = `${title}${TITLE_SUFFIX}`;
+  return full.length <= 60 ? full : title;
+}
+
 export const SITE = {
   name: 'Le Répertoire',
   tagline: "Solomon's Cookbook",
