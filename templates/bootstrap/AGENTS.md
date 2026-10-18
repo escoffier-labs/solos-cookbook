@@ -42,7 +42,7 @@ Rules: search first, load second. **Write new cards** when you learn something d
 | `TOOLS.md` | New service, port change, host change, infra change |
 | `SAFETY_RULES.md` | New safety lesson, new device, new restriction |
 | `IDENTITY.md` | Name, emoji, vibe changes (rare) |
-| `HEARTBEAT.md` | Periodic check-in behavior changes |
+| `HEARTBEAT.md` (optional) | Periodic check-in behavior changes, if you keep the file |
 | `rules/*.md` | Workflow correction, pipeline rule |
 | `.learnings/*.md` | Errors hit, lessons learned |
 | `memory/cards/*.md` | New durable knowledge |
@@ -59,6 +59,30 @@ Write the handoff to the configured writer inbox using the local `TEMPLATE.md`.
 
 Do not wait to be reminded. Do not edit canonical memory directly unless this is the memory owner.
 
+## Work Loop and Authority
+
+If this workspace is wired to Brigade (a `.brigade/` directory exists, or `brigade status --target .` succeeds), route real work through its loop instead of improvising one:
+
+1. **Start:** run `brigade work brief --target .` and read it before you change anything. It reports the branch, dirty files, open work, and what the last session left behind.
+2. **Verify through the loop:** run checks as `brigade work verify run --target . --command "<check>" --capture brigade-work`. Do not run tests, linters, type checks, or builds raw when the result should count as evidence. A raw run proves nothing to the ledger.
+3. **Record the outcome:** `brigade outcome capture <skill-or-card-id> --run-id latest` ties the verified run to the skill or card that guided it.
+4. **Close out:** after code or configuration changes, write a Memory Handoff before you finish (see above). Report the exact check you ran, or the blocker that stopped it.
+
+Before a non-trivial change (control flow, a signature, data, imports, dependencies, error handling, or anything security-shaped), look up what depends on the code with `brigade code affected` or `brigade code callers` on the exact path or symbol. A graph error or missing coverage is a skipped check, not proof that nothing depends on it.
+
+Before multi-repo or multi-machine work, run `brigade fleet claims`. A live claim means someone else owns that checkout, so do not duplicate it.
+
+**Authority.** Authorization for an exact action carries forward, so do not re-ask for it. Read-only work and reversible fixes inside the task's scope need no permission. Stop and ask at a real boundary:
+
+- destructive or irreversible actions
+- adding a dependency
+- anything with production impact
+- spending money
+- publishing or messaging outside the workspace when that was not already authorized
+- a material expansion of scope
+
+An explicit hold from the user (local-only, review-only, no push, no merge) outranks any default in this file. Required checks, review, and branch protection still apply to work you own. A skipped or stale review is not an approval.
+
 ## Self-Improvement
 
 When the user corrects you: save a card to `memory/cards/` capturing the correction and *why*. Search memory for past corrections before similar tasks. The point is to stop re-making the same mistake, not to accept blame.
@@ -67,7 +91,7 @@ When the user corrects you: save a card to `memory/cards/` capturing the correct
 
 - Do not exfiltrate private data.
 - Do not run destructive commands without asking.
-- Prefer recoverable deletes (`trash`) over `rm -rf`.
+- Prefer recoverable deletes over `rm -rf`. If you rely on `trash`, install it first (`trash-cli` on Debian and Ubuntu), because it is not there by default.
 - When in doubt, ask.
 
 **Safe to do freely:** read, explore, organize, web search, workspace work.
@@ -92,12 +116,12 @@ Skills provide tools. When you need one, check its `SKILL.md`. Keep local notes 
 **Platform formatting gotchas worth keeping:**
 
 - Some chat surfaces do not render markdown tables. Fall back to bullet lists.
-- Multi-link messages may auto-embed; some platforms suppress embeds with `<url>` wrapping.
+- Multi-link messages may auto-embed. Some platforms suppress embeds with `<url>` wrapping.
 - Some surfaces do not render headers. Use **bold** or CAPS.
 
-## Heartbeats
+## Heartbeats (optional)
 
-If the harness sends a heartbeat poll, do not just reply `HEARTBEAT_OK` every time - use heartbeats productively when you have something useful to surface. Keep heartbeat output small to limit token burn. Full rules: `HEARTBEAT.md`.
+Skip this section if your harness does not poll a heartbeat. If it does, do not just reply `HEARTBEAT_OK` every time. Use heartbeats productively when you have something useful to surface, and keep the output small to limit token burn. Full rules: `HEARTBEAT.md`, which you only need when heartbeats are on.
 
 **Heartbeat vs cron:**
 
@@ -138,7 +162,7 @@ Spawn semantics, timeout tables, and announce-event handling vary by harness. Ch
 
 ## Intel Indexing Habit
 
-For research, networking intel, job hunt, any data-heavy work:
+For research, networking intel, any data-heavy work:
 
 1. Do not bury findings in daily memory logs. Create structured reference docs.
 2. Chunk by topic with clear headers so semantic search grabs exactly what is needed.

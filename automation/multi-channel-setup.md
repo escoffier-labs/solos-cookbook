@@ -429,7 +429,7 @@ The main agent model is set at the gateway level, not per channel. Whether messa
 - **Cron jobs** pin a model per job (`payload.model`)
 - **Bindings and ACP routing** send a chat to a different agent entirely (see above)
 
-My primary is GPT 6.1 Sol via the gateway default (`agents.defaults.model.primary`), with no fallback chain configured.
+My primary is GPT 6.1 Sol via the gateway default (`agents.defaults.model.primary`), with a short fallback chain (Luna 6, then Opus 5.5) behind it.
 
 **Stickiness warning (history, 2026).** One OpenAI 503 on `gpt-5.5` once pinned a cron channel to `gpt-5.3-codex` via the internal `auto` override system for four days. Both models are retired now, but the mechanism is general. `/reset` does not reliably clear `auto` overrides. Use `/model` to re-pin with `user` source when this happens. The incident is memorable because the cheaper fallback silently handled four days of work at lower quality before anyone noticed.
 

@@ -154,19 +154,19 @@ Fallback chains are tried in order. That single fact drives every rule here.
 
 A single, deliberately ordered fallback beats a long speculative chain. Each extra entry is one more model that has to stay valid and one more place to sweep on the next retirement. Manage the list with `openclaw models fallbacks list`, `add`, `remove`, and `clear`.
 
-### The Empty Chain: My Own Stack Is the Example
+### History: The Empty Chain, and What Replaced It
 
-My live config is the other half of this problem. `agents.defaults.model.fallbacks` is `[]`, every agent entry has `fallbacks: []`, and `openclaw models fallbacks list` prints `Fallbacks (0)`. The primary is `openai/gpt-6.1-sol`, and `agents.defaults.modelPolicy.allow` lists exactly five models.
+Until October 2026 my live config was the other half of this problem: `agents.defaults.model.fallbacks` was `[]`, every agent entry had `fallbacks: []`, and `openclaw models fallbacks list` printed `Fallbacks (0)`. That is the case this guide's opening warns about, with the sign flipped. A hidden fallback hides a dead primary, and no fallback makes a dead primary loud, but one provider outage or one quota event then stops the main agent, the sub-agents, and every cron job that inherits the default. Nothing relocates the traffic.
 
-That is the case this guide's opening warns about, with the sign flipped. A hidden fallback hides a dead primary, and no fallback means a dead primary is loud, but it also means one provider outage or one quota event stops the main agent, the sub-agents, and every cron job that inherits the default. Nothing relocates the traffic.
+On 2026-10-17 I replaced it with a short chain. The main agent and the defaults fall back to `openai/gpt-6-luna`, then `anthropic/claude-opus-5-5` (one same-provider hop for a model-specific limit, one cross-provider hop for an OpenAI auth or quota outage). The Anthropic hop runs through the `claude-cli` runtime. The browser agent falls back to `anthropic/claude-sonnet-5-5`. The primary is `openai/gpt-6.1-sol`. Before adding each entry I ran a live turn through it (`openclaw agent --model <ref> -m "Reply with exactly: PROBE_OK"`), because a fallback that has never answered is a guess. Every fallback is also on `agents.defaults.modelPolicy.allow`.
 
-What I do to cope until I decide on a chain:
+The advice from the empty-chain period still holds with a chain in place:
 
 - The allowlist, not the fallback list, is the guard against a typo or a stale id.
 - The worker fleet is the pressure valve for quota events. A Brigade roster can route a task to a Claude or Gemini seat when the OpenAI pool is exhausted. That covers work I dispatch, not the gateway's own turns.
-- I check the boot line after every restart (below) because there is no fallback to mask a mistake.
+- Check the boot line after every restart (below). A working fallback can now hide a mistake in the primary, so confirm the primary is the model that loaded.
 
-If you copy anything from my config, copy the allowlist and the aliases. Decide on a fallback chain on purpose instead of copying the empty one.
+If you copy anything from my config, copy the allowlist and the aliases, and build your own chain on purpose. Probe each entry before you rely on it.
 
 ## Verification
 
@@ -185,7 +185,8 @@ openclaw cron list --json \
 # 3. Agent config resolves to the expected model, and you know your fallback state
 jq '.agents.defaults.model, .agents.defaults.heartbeat.model, .agents.defaults.modelPolicy.allow' ~/.openclaw/openclaw.json
 openclaw models fallbacks list
-# Expected on my stack: "Fallbacks (0)" and "- none". Expected on yours: the chain you chose.
+# Expected: the chain you chose, every entry on modelPolicy.allow. Mine lists
+# openai/gpt-6-luna and anthropic/claude-opus-5-5.
 
 # 4. The boot/gateway log shows the model you intended
 #    Look for the agent model line after restart and confirm it names the
@@ -215,7 +216,7 @@ The boot line is the load-bearing check. A stack can pass the grep checks and st
 
 5. **Cron is the widest blast radius and the easiest to forget.** Agent config is in front of you when you edit. Cron payloads are not. Most retirement misfires I have seen were a cron sweep that did not happen. Make the `openclaw cron list --json` filter the first command you run, not the last.
 
-6. **An empty fallback list is also a decision.** Mine is empty and it is easy to stop noticing. Put `openclaw models fallbacks list` in the sweep so the state is read every time, even when it has not changed.
+6. **An empty fallback list is also a decision.** Mine sat empty for months and it was easy to stop noticing. Put `openclaw models fallbacks list` in the sweep so the state is read every time, even when it has not changed.
 
 ## Related
 

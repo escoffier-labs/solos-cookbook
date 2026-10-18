@@ -74,7 +74,7 @@ Build out this table as you learn the shape of your durable knowledge. Starter s
 | security | hardening, audits, runbooks |
 | lessons | hard-won gotchas, corrections, prior-incident learnings |
 
-Add categories as the workspace grows. One topic per card; one card per topic.
+Add categories as the workspace grows. One topic per card. One card per topic.
 
 ## Starter Cards
 

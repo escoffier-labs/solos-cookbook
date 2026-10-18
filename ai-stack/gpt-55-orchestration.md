@@ -128,7 +128,7 @@ The mechanical guards are the fix. These soft adjustments reduce how often they 
 
 Minimum config for Sol 6.1 as main with the guards active (shape from the live file):
 
-`plugins.allow` is an exclusive list: the `codex` runtime and the `openai` provider must both be on it, or the primary model resolves as disabled with `not in allowlist`. If you already have an allowlist, merge into it instead of replacing it.
+`plugins.allow` is an exclusive list: the `codex` runtime and the `openai` provider must both be on it, or the primary model resolves as disabled with `not in allowlist`. The Opus fallback in this snippet also needs `anthropic` on the list. If you already have an allowlist, merge into it instead of replacing it.
 
 ```json
 {
@@ -139,10 +139,18 @@ Minimum config for Sol 6.1 as main with the guards active (shape from the live f
       },
       "model": {
         "primary": "openai/gpt-6.1-sol",
-        "fallbacks": []
+        "fallbacks": [
+          "openai/gpt-6-luna",
+          "anthropic/claude-opus-5-5"
+        ]
       },
       "models": {
-        "openai/gpt-6.1-sol": { "alias": "sol61", "agentRuntime": { "id": "codex" } }
+        "openai/gpt-6.1-sol": { "alias": "sol61", "agentRuntime": { "id": "codex" } },
+        "openai/gpt-6-luna": { "alias": "luna6", "agentRuntime": { "id": "codex" } },
+        "anthropic/claude-opus-5-5": { "agentRuntime": { "id": "claude-cli" } }
+      },
+      "modelPolicy": {
+        "allow": ["openai/gpt-6.1-sol", "openai/gpt-6-luna", "anthropic/claude-opus-5-5"]
       }
     },
     "entries": {
@@ -152,7 +160,7 @@ Minimum config for Sol 6.1 as main with the guards active (shape from the live f
     }
   },
   "plugins": {
-    "allow": ["codex", "openai", "tool-narration-guard", "acpx"],
+    "allow": ["codex", "openai", "anthropic", "tool-narration-guard", "acpx"],
     "entries": {
       "tool-narration-guard": {
         "enabled": true,
@@ -167,7 +175,7 @@ Minimum config for Sol 6.1 as main with the guards active (shape from the live f
 Notes on that config:
 
 - **Thinking level is `medium`, not `xhigh`.** High thinking burns rate limit faster than it returns value for orchestration. Save deeper review for bounded Claude seats.
-- **`fallbacks` is empty on my box**, which is the state [model retirement and fallbacks](model-retirement-and-fallbacks.md) warns about. If you add a chain, keep it on providers you run and put the preferred substitute first. A Gemini fallback silently lands requests on a different model without telling the user.
+- **My fallback chain is short and probed.** The main agent falls back to Luna 6, then to Opus 5.5 through the `claude-cli` runtime, and each hop answered a live turn before I kept it (see [model retirement and fallbacks](model-retirement-and-fallbacks.md)). Keep a chain on providers you run and put the preferred substitute first. A Gemini fallback silently lands requests on a different model without telling the user, and every fallback must also be on `modelPolicy.allow`.
 
 ## Verification
 

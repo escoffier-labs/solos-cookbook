@@ -158,7 +158,7 @@ Bulk implementation does not belong here anymore. It goes to the worker fleet be
     "defaults": {
       "model": {
         "primary": "openai/gpt-6.1-sol",
-        "fallbacks": []
+        "fallbacks": ["openai/gpt-6-luna", "anthropic/claude-opus-5-5"]
       },
       "models": {
         "openai/gpt-6.1-sol": { "alias": "sol61", "agentRuntime": { "id": "codex" } },
@@ -187,7 +187,7 @@ Three things changed from the 2026.4 shape:
 - The runtime is chosen per model entry with `agentRuntime`, not implied by the provider.
 - `agents.defaults.modelPolicy.allow` is an allowlist. A model that is not on it is refused, which is a cheap guard against a stale alias or a cron payload that names a retired model. My `models` map also carries a few aliases that are not on the allowlist, so keep the two lists in step on purpose rather than by accident.
 
-**My fallback list is empty.** `openclaw models fallbacks list` prints `Fallbacks (0)`. With a single primary and no chain, a Sol outage or a quota event surfaces as an error instead of a quiet downgrade. That is easier to notice than a silent hop, but it also means no automatic recovery. I treat it as a gap to close rather than a design to copy: [Model retirement and fallbacks](model-retirement-and-fallbacks.md) explains the trap it leaves open and how I check for it.
+**Fallbacks cross providers on purpose.** The chain is Luna first (same OpenAI login, catches a Sol-specific limit) and Opus 5.5 second on the `claude-cli` runtime (catches an OpenAI auth or quota outage). I ran a live turn through each before adding it. Until October 2026 the list was empty, which turned every quota event into an outage: [Model retirement and fallbacks](model-retirement-and-fallbacks.md) covers that trap and how I check for it.
 
 ### The worker fleet: Brigade seats and T3 Code tasks
 
@@ -371,12 +371,12 @@ On 2026.10 the agent roster lives under `agents.entries`, with an `ownership` fi
     "ownership": "explicit",
     "entries": {
       "main": {
-        "model": { "primary": "openai/gpt-6.1-sol", "fallbacks": [] },
+        "model": { "primary": "openai/gpt-6.1-sol", "fallbacks": ["openai/gpt-6-luna", "anthropic/claude-opus-5-5"] },
         "thinkingDefault": "medium",
         "subagents": { "allowAgents": ["browser-operator"] }
       },
       "browser-operator": {
-        "model": { "primary": "openai/gpt-6-luna", "fallbacks": [] },
+        "model": { "primary": "openai/gpt-6-luna", "fallbacks": ["anthropic/claude-sonnet-5-5"] },
         "thinkingDefault": "low",
         "skills": ["browser-automation"],
         "tools": {
@@ -449,7 +449,7 @@ Check your agent configuration:
 ```bash
 # Primary model and fallbacks
 jq '.agents.defaults.model' ~/.openclaw/openclaw.json
-# Expected: {"primary": "openai/gpt-6.1-sol", "fallbacks": []} (or your own chain)
+# Expected: {"primary": "openai/gpt-6.1-sol", "fallbacks": ["openai/gpt-6-luna", "anthropic/claude-opus-5-5"]} (or your own chain)
 
 # Agents and their models
 jq '.agents.entries | map_values(.model.primary)' ~/.openclaw/openclaw.json

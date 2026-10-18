@@ -40,9 +40,9 @@ jq '.agents.defaults.models | with_entries(select(.key | startswith("anthropic/"
 
 - Both models are in `agents.defaults.modelPolicy.allow`, and `anthropic` is in `plugins.allow`.
 - `openclaw models list` shows both as configured with auth present, under the aliases `opus` and `sonnet`.
-- The default model is `openai/gpt-6.1-sol` and its fallback list is empty, so no ordinary turn runs on these entries. They exist so the models can be picked per chat or per bot.
+- The default model is `openai/gpt-6.1-sol`. Its fallback list is Luna 6, then `anthropic/claude-opus-5-5`, and the browser agent falls back to `anthropic/claude-sonnet-5-5`. Those two Anthropic entries are the `claude-cli` runtime entries above, so an ordinary turn only reaches them after the earlier hops fail. They can also be picked per chat or per bot.
 - I have not made `claude-cli` the escalation path. Escalation still goes through the ACP wrapper in [the ACP guide](acp-claude-code.md) or the [tmux relay](claude-code-tmux-relay.md).
-- I did not run a turn through the `claude-cli` runtime while writing this, so I am not claiming it works end to end on my host. The config and the model list are what I verified.
+- I ran a live turn through `anthropic/claude-opus-5-5` and another through `anthropic/claude-sonnet-5-5` on the `claude-cli` runtime on 2026-10-17, and both answered. That probe is what justified putting them in the fallback chains. I have not soak-tested the runtime under real load.
 
 If you are starting fresh in 2026.10, that runtime is worth testing before you build an ACP lane. If you are cleaning up a 2026.4 config, the leftover `claude-cli` pieces in the steps below are the part to remove.
 
@@ -185,7 +185,7 @@ My live config has no `cliBackends` key at all. If yours does not either, skip t
 jq '.agents.defaults.model' ~/.openclaw/openclaw.json
 ```
 
-The primary should be the model you actually standardize on, with a short fallback list confined to providers you run and have tested. Fallback hops you have not exercised degrade quality silently when the primary hiccups. See [model retirement and fallbacks](model-retirement-and-fallbacks.md) for what an empty list costs you.
+The primary should be the model you actually standardize on, with a short fallback list confined to providers you run and have tested. Fallback hops you have not exercised degrade quality silently when the primary hiccups. See [model retirement and fallbacks](model-retirement-and-fallbacks.md) for how I probe each hop and what an empty list costs you.
 
 ### 3c. Remove stale `anthropic:claude-cli` auth profiles
 
@@ -213,7 +213,7 @@ mkdir -p ~/.openclaw/vendor/claude-acp
 cat > ~/.openclaw/vendor/claude-acp/claude-opus-5-acp.sh <<'EOF'
 #!/usr/bin/env bash
 # ACPX spawn wrapper: Claude ACP adapter with Claude Code pinned to one model.
-export ANTHROPIC_MODEL=claude-opus-5
+export ANTHROPIC_MODEL=claude-opus-5-5
 exec npx -y @agentclientprotocol/claude-agent-acp "$@"
 EOF
 chmod +x ~/.openclaw/vendor/claude-acp/claude-opus-5-acp.sh

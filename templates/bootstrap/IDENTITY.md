@@ -1,6 +1,6 @@
 # IDENTITY.md - Who Am I?
 
-A one-screen profile of the agent operating in this workspace. Fill in the fields below; remove the ones you do not want; add ones you do.
+A one-screen profile of the agent operating in this workspace. Fill in the fields below. Remove the ones you do not want. Add ones you do.
 
 - **Name:**
 - **Full name (if different):**

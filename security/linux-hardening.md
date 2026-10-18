@@ -2,8 +2,8 @@
 
 Practical hardening runbook for an Ubuntu 24.04 machine running OpenClaw as an always-on AI agent. This covers firewall configuration, SSH lockdown, fail2ban, and service binding to reduce attack surface.
 
-**Tested on:** Ubuntu 24.04 LTS (bare metal, Intel Ultra 250, 64GB DDR5)
-**Last updated:** 2026-04-19
+**Tested on:** Ubuntu 24.04.5 LTS (bare metal, kernel 6.17 OEM), OpenSSH from the 24.04 archive, UFW, fail2ban, auditd, Wazuh agent 4.14.x
+**Last updated:** 2026-10-17
 
 ---
 
@@ -16,11 +16,12 @@ An OpenClaw host is a high-value target. It has API keys for AI providers, acces
 | Component | What Changed |
 |-----------|-------------|
 | UFW | Enabled with default deny incoming, explicit allow rules for required services |
-| SSH | Bound to LAN only, password auth disabled, root login disabled, max auth tries reduced |
-| fail2ban | Installed with aggressive sshd jail (3 attempts, 2-hour ban) |
+| SSH | Bound to the LAN address (plus one tailnet listener for peer controllers), password auth disabled, root login disabled |
+| fail2ban | Installed with an sshd jail (3 attempts, 2-hour ban) |
 | xrdp | Bound to LAN IP only (if remote desktop is used) |
 | Ollama | Defense-in-depth deny rule (already localhost-bound) |
-| OpenClaw Gateway | UFW-restricted to LAN subnet |
+| OpenClaw Gateway | UFW-restricted to LAN sources |
+| Detection and patching | auditd, unattended-upgrades, and a Wazuh agent (see section 7) |
 
 ---
 
@@ -40,8 +41,12 @@ sudo ufw enable
 Replace `<LAN_SUBNET_CIDR>` with your LAN subnet. Replace `<HOST_LAN_IP>` with your host's LAN IP.
 
 ```bash
-# SSH - LAN only
+# SSH - LAN only (subnet form, simplest)
 sudo ufw allow from <LAN_SUBNET_CIDR> to any port 22 proto tcp
+
+# SSH - per-host form (what I run): one rule per trusted client, with a comment
+sudo ufw allow from 192.0.2.20 to any port 22 proto tcp comment 'SSH trusted client'
+sudo ufw allow from 192.0.2.21 to any port 22 proto tcp comment 'SSH automation host'
 
 # Web traffic (if running any web services publicly)
 sudo ufw allow 80/tcp
@@ -59,6 +64,9 @@ sudo ufw allow from <LAN_SUBNET_CIDR> to any port 18789 proto tcp
 # Ollama - deny from everywhere (defense-in-depth, already localhost-bound)
 sudo ufw deny 11434
 
+# Tailnet-only listener (see section 2): allowed on the tailnet interface only
+sudo ufw allow in on tailscale0 to any port <tailnet-ssh-port> proto tcp comment 'peer-controller sshd, tailnet only'
+
 # mDNS - LAN only
 sudo ufw allow from <LAN_SUBNET_CIDR> to any port 5353 proto udp
 ```
@@ -71,6 +79,8 @@ sudo ufw status verbose
 
 Expected output should show `Status: active`, `Default: deny (incoming)`, and your explicit allow/deny rules.
 
+The rule set grows. Mine is about 40 rules now, mostly one-per-host allows for SSH, the gateway, remote desktop, device-sync tools, and a few dev-server ports, each with a `comment` naming the reason. Add the comment when you add the rule. A rule list with no reasons cannot be audited six months later.
+
 ---
 
 ## 2. SSH Hardening
@@ -81,7 +91,7 @@ Default Ubuntu SSH configuration:
 - Listens on `0.0.0.0:22` and `[::]:22` (all interfaces)
 - Password authentication enabled
 - Root login permitted
-- 6 max authentication tries
+- 6 max authentication tries (the OpenSSH default)
 
 ### The Fix
 
@@ -89,12 +99,32 @@ Create a drop-in config (cleaner than editing the main `sshd_config`, easier to 
 
 ```bash
 sudo tee /etc/ssh/sshd_config.d/hardening.conf << 'EOF'
-# OpenClaw host hardening - 2026-03-11
+# Host hardening: key-only, LAN-bound
+ListenAddress <HOST_LAN_IP>
 PasswordAuthentication no
 PermitRootLogin no
-MaxAuthTries 3
+MaxAuthTries 6
+UseDNS no
 EOF
 ```
+
+`MaxAuthTries` is 6 on my host, which is also the OpenSSH default. The first version of this guide set it to 3. It buys little once password auth is off, because a client that offers several keys from an agent can burn through three attempts before the right key is tried (Windows OpenSSH hit exactly this against a `MaxAuthTries 3` server until I set `IdentitiesOnly yes` on the client). Set it to 3 if your clients are tidy, but check what the server really enforces, not what the drop-in file says:
+
+```bash
+sudo -n sshd -T 2>/dev/null | grep -E '^(maxauthtries|passwordauthentication|permitrootlogin|listenaddress)'
+```
+
+`sshd -T` without root returns only the public settings and omits `listenaddress` and `maxauthtries`. If you cannot use sudo, read the drop-ins directly:
+
+```bash
+grep -hv '^#' /etc/ssh/sshd_config.d/*.conf | grep -v '^$'
+```
+
+### A second listener on the tailnet
+
+I run a second listener bound only to the tailnet address on a second, non-default port. A peer-controller tool uses it so peer machines can start controller sessions without going through the LAN. The matching UFW rule is scoped to the `tailscale0` interface (above), so the port is not reachable from the LAN even though sshd would accept it. The listener is key-only like port 22, because both share `sshd_config`.
+
+On Ubuntu 24.04 the listener is defined by the socket unit, not by `ListenAddress` (see the socket-activation gotcha below). If you add a listener like this, check it with `ss -tlnp | grep <tailnet-ssh-port>` and confirm UFW has no rule for it on the LAN interface.
 
 ### Ubuntu 24.04 Gotcha: Socket Activation
 
@@ -108,30 +138,32 @@ sudo tee /etc/systemd/system/ssh.socket.d/override.conf << 'EOF'
 ListenStream=
 # Bind to LAN IP only
 ListenStream=<HOST_LAN_IP>:22
+# Second listener on the tailnet address (omit if you have none)
+ListenStream=[<tailnet-address>]:<tailnet-ssh-port>
 EOF
 
 sudo systemctl daemon-reload
 sudo systemctl restart ssh.socket
 ```
 
-> **Note:** The empty `ListenStream=` line is required. It clears the default listen addresses before setting the new one. Without it, your custom address gets *added* to the defaults instead of replacing them.
+> **Note:** The empty `ListenStream=` line is required. It clears the default listen addresses before setting the new ones. Without it, your custom addresses get *added* to the defaults instead of replacing them. The clear also drops every other listener, including a tailnet one that the generated `ssh.socket.d/addresses.conf` would have added, so the override must list every endpoint you want, not only the LAN address. Check the merged result with `systemctl cat ssh.socket`.
 
 ### Verify
 
 ```bash
-# Check listening address
-ss -tlnp | grep :22
+# Check listening addresses (both endpoints if you run a tailnet listener)
+ss -tlnp | grep -E ':22\b|:<tailnet-ssh-port>\b'
 
-# Should show only your LAN IP, not 0.0.0.0 or [::]
-# Expected: <HOST_LAN_IP>:22
+# Should show only your LAN IP and the tailnet listener, not 0.0.0.0 or [::]
+# Expected: <HOST_LAN_IP>:22 and [<tailnet-address>]:<tailnet-ssh-port>
 
 # Check config values
-sudo sshd -T | grep -E "passwordauthentication|permitrootlogin|maxauthtries"
+sudo -n sshd -T | grep -E "passwordauthentication|permitrootlogin|maxauthtries"
 
 # Expected:
 # passwordauthentication no
 # permitrootlogin no
-# maxauthtries 3
+# maxauthtries 6
 ```
 
 ---
@@ -165,6 +197,8 @@ This gives you:
 - **3 failed attempts** within a 10-minute window triggers a ban
 - **2-hour ban** per offense
 - Covers both password and key auth failures
+
+On Ubuntu 24.04 the `sshd` filter reads the journal. A `backend = systemd` line in a `[DEFAULT]` block of `jail.local` keeps it consistent across jails.
 
 ### Verify
 
@@ -210,7 +244,7 @@ ss -tlnp | grep :3389
 
 ## 5. OpenClaw Gateway
 
-The OpenClaw gateway (default port 18789) binds to `0.0.0.0` by default. Rather than changing the gateway config, we protect it at the firewall level:
+The OpenClaw gateway (default port 18789) binds to `0.0.0.0` on my host with `bind: "lan"` and token auth. Its `tailnet` bind mode listens on the tailnet address only and drops loopback, which would break local CLI calls and scripts that talk to `127.0.0.1`, so I kept `lan` and protect the port at the firewall level:
 
 ```bash
 # Already covered by the UFW rules above
@@ -248,15 +282,20 @@ ss -tlnp | grep :3389
 
 echo ""
 echo "=== SSH Config ==="
-sudo sshd -T 2>/dev/null | grep -E "passwordauthentication|permitrootlogin|maxauthtries"
+sudo -n sshd -T 2>/dev/null | grep -E "passwordauthentication|permitrootlogin|maxauthtries"
 
 echo ""
 echo "=== UFW Status ==="
 sudo ufw status | head -20
 
 echo ""
+echo ""
 echo "=== fail2ban Status ==="
 sudo fail2ban-client status sshd 2>/dev/null || echo "fail2ban not running"
+
+echo ""
+echo "=== Patching, audit, detection ==="
+systemctl is-active unattended-upgrades auditd wazuh-agent
 ```
 
 Expected output:
@@ -264,22 +303,33 @@ Expected output:
 ```
 SSH: <HOST_LAN_IP>:22 only
 xrdp: <HOST_LAN_IP>:3389 only
-sshd: PasswordAuthentication no, PermitRootLogin no, MaxAuthTries 3
+sshd: PasswordAuthentication no, PermitRootLogin no, MaxAuthTries 6
 UFW: active, default deny incoming
 fail2ban: sshd jail active, 0 banned
+unattended-upgrades, auditd, wazuh-agent: active x3
 ```
 
 ---
 
+## 7. Patching, audit, and detection
+
+Three things the original version of this guide listed as "next steps" are now on the host. Check each one rather than assuming:
+
+| Control | What I run | Check |
+|---------|-----------|-------|
+| Automatic security updates | `unattended-upgrades` with the default Ubuntu security origins (main, ESM apps, ESM infra) and `APT::Periodic::Unattended-Upgrade "1"` | `cat /etc/apt/apt.conf.d/20auto-upgrades` |
+| Audit logging | `auditd` active, with `-w <path> -p wa -k <key>` watch rules under `/etc/audit/rules.d/` | `sudo auditctl -s` and `sudo auditctl -l` |
+| Intrusion detection | A Wazuh agent reporting to a central manager | `systemctl is-active wazuh-agent` |
+
+The audit rule set is small: a handful of write-watches on files an agent should not touch quietly. Start with the paths that matter to you (your secrets directory, SSH config, systemd user units) and keep the key names greppable. The agent version rules are in [`wazuh-triage.md`](wazuh-triage.md): the agent must never be newer than the manager, so I hold the `wazuh-agent` package with `apt-mark hold`.
+
 ## What This Doesn't Cover
 
-- **Automatic security updates** (configure `unattended-upgrades`)
 - **Kernel hardening** (sysctl parameters, AppArmor profiles)
-- **Audit logging** (auditd rules for sensitive file access)
 - **Network segmentation** (VLANs, separate management interfaces)
-- **Intrusion detection** (host-based IDS like OSSEC/Wazuh)
+- **Disk encryption and boot-chain integrity** (the sealed-credential trade-offs are in [`secret-management.md`](secret-management.md))
 
-These are all good next steps depending on your threat model. This guide focuses on the fundamentals that every OpenClaw host should have on day one.
+These are good next steps depending on your threat model. This guide focuses on the fundamentals that every OpenClaw host should have on day one.
 
 ---
 
@@ -293,4 +343,8 @@ These are all good next steps depending on your threat model. This guide focuses
 
 4. **Test from another machine.** After applying SSH changes, keep your current session open and test a new connection from a different machine. If you lock yourself out, the existing session still works.
 
-5. **OpenClaw upgrades regenerate the systemd unit.** Every minor upgrade across the 2026.4.x line has silently regenerated `~/.config/systemd/user/openclaw-gateway.service` and dropped custom directives - most painfully `EnvironmentFile=`. Without it, secrets from `~/.openclaw/workspace/.env` don't load and the gateway crash-loops. If you maintain a hardening script, run it after every `openclaw update`, or automate the restore. We use a wrapper script (`~/bin/openclaw-update.sh`) that bumps the version drop-in and re-asserts `EnvironmentFile=` after each upgrade.
+5. **OpenClaw upgrades regenerate the systemd unit.** Upgrades rewrite `~/.config/systemd/user/openclaw-gateway.service` and drop custom directives, most painfully `EnvironmentFile=`. Without it, secrets do not load and the gateway crash-loops. I now promote releases through a script that manages a version drop-in, and the gateway gets its secrets from a rendered tmpfs file (see [`secret-management.md`](secret-management.md)) with the `EnvironmentFile=` line re-asserted in a drop-in rather than the main unit. After any upgrade, check `systemctl --user cat openclaw-gateway.service | grep EnvironmentFile`. The upgrade procedure is in [`../infrastructure/upgrade-hygiene.md`](../infrastructure/upgrade-hygiene.md).
+
+6. **The drop-in file is not the effective config.** I found a stale `MaxAuthTries 3` in this guide while the live server enforced 6. Read the effective values with `sshd -T`, and keep dated backups of drop-ins (`hardening.conf.bak-<date>`) so a change is diffable.
+
+7. **A new listener needs a firewall rule you can name.** The tailnet listener above is safe because its UFW rule is bound to the `tailscale0` interface. A bare `ufw allow <port>/tcp` would have opened it to the LAN too.
