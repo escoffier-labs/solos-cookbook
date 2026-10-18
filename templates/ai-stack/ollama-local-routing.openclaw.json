@@ -1,28 +1,24 @@
 {
+  "memory": {
+    "citations": "auto",
+    "search": {
+      "provider": "openai",
+      "remote": {
+        "baseUrl": "http://127.0.0.1:11434/v1/",
+        "apiKey": "<ollama-placeholder-key>"
+      },
+      "fallback": "none",
+      "model": "qwen3-embedding:8b"
+    }
+  },
   "agents": {
     "defaults": {
-      "memorySearch": {
-        "provider": "openai",
-        "remote": {
-          "baseUrl": "<ollama-openai-compatible-base-url>",
-          "apiKey": "ollama"
-        },
-        "fallback": "none",
-        "model": "qwen3-embedding:8b"
-      },
       "models": {
-        "ollama/qwen3:7b": {
-          "alias": "localTriage",
+        "ollama/<local-utility-model>": {
+          "alias": "localUtility",
           "params": {
             "temperature": 0,
             "numPredict": 256
-          }
-        },
-        "ollama/qwen3-coder:14b": {
-          "alias": "localCommit",
-          "params": {
-            "temperature": 0.2,
-            "numPredict": 512
           }
         }
       }

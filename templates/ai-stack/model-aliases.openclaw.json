@@ -2,27 +2,64 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "openai-codex/gpt-5.5",
-        "fallbacks": [
-          "openai-codex/gpt-5.4",
-          "openai-codex/gpt-5.3-codex"
-        ]
+        "primary": "openai/gpt-6.1-sol",
+        "fallbacks": []
       },
       "models": {
-        "openai-codex/gpt-5.5": {
-          "alias": "gpt55",
-          "params": {
-            "thinking": "medium"
-          }
+        "openai/gpt-6.1-sol": {
+          "alias": "sol61",
+          "agentRuntime": { "id": "codex" }
         },
-        "openai-codex/gpt-5.4:cron": {
-          "alias": "gpt54cron",
-          "params": {
-            "thinking": "low"
-          }
+        "openai/gpt-6-luna": {
+          "alias": "luna6",
+          "agentRuntime": { "id": "codex" }
         },
-        "ollama/qwen3-coder-next:cloud": {
-          "alias": "qwenCoderNext"
+        "anthropic/claude-opus-5-5": {
+          "agentRuntime": { "id": "claude-cli" }
+        },
+        "anthropic/claude-sonnet-5-5": {
+          "agentRuntime": { "id": "claude-cli" }
+        }
+      },
+      "modelPolicy": {
+        "allow": [
+          "openai/gpt-6.1-sol",
+          "openai/gpt-6-luna",
+          "anthropic/claude-opus-5-5",
+          "anthropic/claude-sonnet-5-5"
+        ]
+      },
+      "subagents": {
+        "maxConcurrent": 8,
+        "model": "openai/gpt-6-luna"
+      },
+      "embeddedAgent": {
+        "executionContract": "strict-agentic"
+      }
+    },
+    "ownership": "explicit",
+    "entries": {
+      "main": {
+        "model": {
+          "primary": "openai/gpt-6.1-sol",
+          "fallbacks": []
+        },
+        "thinkingDefault": "medium",
+        "subagents": {
+          "allowAgents": ["browser-operator", "main"]
+        }
+      },
+      "browser-operator": {
+        "model": {
+          "primary": "openai/gpt-6-luna",
+          "fallbacks": []
+        },
+        "thinkingDefault": "low",
+        "skills": ["browser-automation"],
+        "tools": {
+          "profile": "minimal",
+          "alsoAllow": ["browser", "browser_credential_fill"],
+          "elevated": { "enabled": false }
         }
       }
     }
