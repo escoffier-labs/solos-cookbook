@@ -230,6 +230,8 @@ If you build a one-shot bridge that drives the real TUI through tmux and emits t
 
 Defaults in mine: model `opus`, permission mode `acceptEdits`, 600 second request timeout, 30 second startup timeout, `--keep-session` to leave the tmux session up for debugging, and `--prompt-file` to read the prompt from a file instead of stdin.
 
+`acceptEdits` approves file edits anywhere in the working directory without a prompt, so step 6 does not limit writes to the result file. That is fine for a prompt you wrote about a repo you own. For a review of untrusted content (a contributor's branch, a pasted document), point the one-shot at a disposable worktree or copy, not your live checkout, so a stray or injected edit cannot land in files you care about.
+
 ### Detached mode with durable report-back
 
 For calls made from an agent turn, a synchronous relay is the wrong shape: the turn can end, or the gateway can restart, before Claude finishes. The bridge takes `--report-to <channel>:<target>` (for example `discord:channel:<channel-id>`). With it set, the call:

@@ -61,7 +61,7 @@ Precise scheduled tasks with their own model, session target, timeout, and deliv
 
 ### Managing Jobs
 
-The gateway owns the job store (SQLite on 2026.10.x). Use the CLI. Do not hand-edit the legacy `~/.openclaw/cron/jobs.json`, which only survives as backup copies from the old layout, and run `openclaw doctor --fix` to normalize old storage.
+The gateway owns the job store (SQLite on 2026.10.x). Use the CLI. Do not hand-edit the legacy `~/.openclaw/cron/jobs.json`. If `jobs.json`, `<name>-state.json`, or `runs/*.jsonl` files still exist from the pre-SQLite layout, the 2026.10 Doctor will not import them: install OpenClaw 2026.9.7 first, run `openclaw doctor --fix` there, then upgrade. Otherwise those jobs are simply absent from the scheduler.
 
 ```bash
 openclaw cron list --json     # all jobs, with state and delivery previews
@@ -164,7 +164,7 @@ A generic agent job, shaped like one of mine:
 Equivalent creation with the CLI:
 
 ```bash
-openclaw cron add daily-summary \
+openclaw cron add --name daily-summary \
   --cron "0 8 * * *" --tz America/New_York \
   --session isolated \
   --model openai/gpt-6-luna --thinking low \

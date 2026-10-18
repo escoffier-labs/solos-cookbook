@@ -1,6 +1,6 @@
 {
   "_comment": "Reference shape of one gateway cron job as reported by `openclaw cron list --json` (OpenClaw 2026.10.x). The job store is gateway-owned and SQLite-backed: do not hand-edit files under ~/.openclaw/cron/. Create jobs with `openclaw cron add` (see _create_comment) and read them back with `openclaw cron list --json`. Replace every <ANGLE_BRACKETS> placeholder.",
-  "_create_comment": "openclaw cron add --name <short-id> --description '<one-line description>' --cron '0 7 * * *' --tz <IANA/Timezone> --session isolated --model <provider>/<model> --thinking low --timeout-seconds 600 --message 'Run /path/to/your/script.sh and post the result.' --announce --channel <channel-plugin-id> --to <channel-type>:<channel-id>",
+  "_create_comment": "openclaw cron add --name <short-id> --description '<one-line description>' --cron '0 7 * * *' --tz <IANA/Timezone> --session isolated --model <provider>/<model> --thinking low --timeout-seconds 600 --tools exec,read --message 'Run /path/to/your/script.sh and post the result.' --announce --channel <channel-plugin-id> --to <channel-type>:<channel-id>",
 
   "name": "<short-id>",
   "description": "<one-line description shown in admin UI>",
@@ -26,7 +26,7 @@
     "message": "Run /path/to/your/script.sh and post the result.",
     "toolsAllow": ["exec", "read"]
   },
-  "_payload_comment": "Pin the model and thinking level per job; there is no shared :cron alias. Keep toolsAllow minimal: every exposed tool schema adds input tokens to every run. Reference a script file instead of composing shell in the message.",
+  "_payload_comment": "Pin the model and thinking level per job; there is no shared :cron alias. Keep toolsAllow minimal: every exposed tool schema adds input tokens to every run. Pass it with --tools at creation; omitting --tools stores *, which gives the job the owner session's full tool policy. Reference a script file instead of composing shell in the message.",
 
   "delivery": {
     "mode": "announce",

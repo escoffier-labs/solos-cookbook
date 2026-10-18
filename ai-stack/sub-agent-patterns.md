@@ -122,7 +122,7 @@ On 2026.10 agents live under `agents.entries` (not `agents.list`), with `agents.
     "entries": {
       "main": {
         "model": { "primary": "openai/gpt-6.1-sol", "fallbacks": [] },
-        "subagents": { "allowAgents": ["browser-operator", "main"] }
+        "subagents": { "allowAgents": ["browser-operator"] }
       },
       "browser-operator": {
         "model": { "primary": "openai/gpt-6-luna", "fallbacks": [] },
@@ -138,6 +138,8 @@ On 2026.10 agents live under `agents.entries` (not `agents.list`), with `agents.
   }
 }
 ```
+
+With `ownership: "explicit"` and more than one agent, also set `agents.defaults.systemAgent.agentId` (mine is `main`) or cover every channel with a binding. Otherwise traffic and jobs with no matching route have no owner. `main` is deliberately absent from its own `allowAgents`: listing it would let the orchestrator spawn more orchestrators instead of staying in the narrow lane.
 
 `subagents.allowAgents` on the parent is the spawn allowlist: `main` can spawn `browser-operator` and itself, nothing else. Model aliases (`sol61`, `luna6`) are defined in `agents.defaults.models`. See [multi-model orchestration](multi-model-orchestration.md) for the full alias setup.
 

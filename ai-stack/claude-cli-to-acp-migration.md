@@ -126,11 +126,13 @@ jq '.plugins.allow' ~/.openclaw/openclaw.json
   "acp": {
     "enabled": true,
     "backend": "acpx",
-    "defaultAgent": "codex",
-    "allowedAgents": ["claude", "claude-opus-5", "codex", "cursor", "opencode"]
+    "defaultAgent": "claude-opus-5",
+    "allowedAgents": ["claude-opus-5"]
   }
 }
 ```
+
+With `permissionMode: "approve-all"` on the plugin, every agent listed here runs with headless write and shell approval. List only the agents you intend to run that way.
 
 `allowedAgents` is the list of ACP agent ids that sessions may spawn. `claude` is a built-in ACPX harness alias. `claude-opus-5` is a custom id defined in the next step.
 

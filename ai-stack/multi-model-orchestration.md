@@ -373,7 +373,7 @@ On 2026.10 the agent roster lives under `agents.entries`, with an `ownership` fi
       "main": {
         "model": { "primary": "openai/gpt-6.1-sol", "fallbacks": [] },
         "thinkingDefault": "medium",
-        "subagents": { "allowAgents": ["browser-operator", "main"] }
+        "subagents": { "allowAgents": ["browser-operator"] }
       },
       "browser-operator": {
         "model": { "primary": "openai/gpt-6-luna", "fallbacks": [] },
@@ -389,6 +389,8 @@ On 2026.10 the agent roster lives under `agents.entries`, with an `ownership` fi
   }
 }
 ```
+
+With `ownership: "explicit"` and more than one agent, also set `agents.defaults.systemAgent.agentId` (mine is `main`) or cover every channel with a binding. Otherwise traffic and jobs with no matching route have no owner. `main` is deliberately absent from its own `allowAgents`: listing it would let the orchestrator spawn more orchestrators instead of staying in the narrow lane.
 
 Aliases (`sol61`, `luna6`) resolve against `agents.defaults.models`. Check them with `openclaw models aliases list`.
 

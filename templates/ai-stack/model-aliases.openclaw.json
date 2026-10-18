@@ -5,20 +5,31 @@
         "primary": "openai/gpt-6.1-sol",
         "fallbacks": []
       },
+      "systemAgent": {
+        "agentId": "main"
+      },
       "models": {
         "openai/gpt-6.1-sol": {
           "alias": "sol61",
-          "agentRuntime": { "id": "codex" }
+          "agentRuntime": {
+            "id": "codex"
+          }
         },
         "openai/gpt-6-luna": {
           "alias": "luna6",
-          "agentRuntime": { "id": "codex" }
+          "agentRuntime": {
+            "id": "codex"
+          }
         },
         "anthropic/claude-opus-5-5": {
-          "agentRuntime": { "id": "claude-cli" }
+          "agentRuntime": {
+            "id": "claude-cli"
+          }
         },
         "anthropic/claude-sonnet-5-5": {
-          "agentRuntime": { "id": "claude-cli" }
+          "agentRuntime": {
+            "id": "claude-cli"
+          }
         }
       },
       "modelPolicy": {
@@ -46,7 +57,9 @@
         },
         "thinkingDefault": "medium",
         "subagents": {
-          "allowAgents": ["browser-operator", "main"]
+          "allowAgents": [
+            "browser-operator"
+          ]
         }
       },
       "browser-operator": {
@@ -55,11 +68,18 @@
           "fallbacks": []
         },
         "thinkingDefault": "low",
-        "skills": ["browser-automation"],
+        "skills": [
+          "browser-automation"
+        ],
         "tools": {
           "profile": "minimal",
-          "alsoAllow": ["browser", "browser_credential_fill"],
-          "elevated": { "enabled": false }
+          "alsoAllow": [
+            "browser",
+            "browser_credential_fill"
+          ],
+          "elevated": {
+            "enabled": false
+          }
         }
       }
     }
