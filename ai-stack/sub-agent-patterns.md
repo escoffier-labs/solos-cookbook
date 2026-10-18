@@ -121,11 +121,11 @@ On 2026.10 agents live under `agents.entries` (not `agents.list`), with `agents.
     "ownership": "explicit",
     "entries": {
       "main": {
-        "model": { "primary": "openai/gpt-6.1-sol", "fallbacks": [] },
+        "model": { "primary": "openai/gpt-6.1-sol", "fallbacks": ["openai/gpt-6-luna", "anthropic/claude-opus-5-5"] },
         "subagents": { "allowAgents": ["browser-operator"] }
       },
       "browser-operator": {
-        "model": { "primary": "openai/gpt-6-luna", "fallbacks": [] },
+        "model": { "primary": "openai/gpt-6-luna", "fallbacks": ["anthropic/claude-sonnet-5-5"] },
         "thinkingDefault": "low",
         "skills": ["browser-automation"],
         "tools": {

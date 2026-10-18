@@ -2,9 +2,22 @@
 
 > Transcript logs are an audit trail and a mining seam. Treat them as search-only source material, not something to shovel raw into every prompt.
 
+**Tested on:** OpenClaw 2026.10.4, Claude Code 2.1.302, codex-cli 0.163.0, sqlite3 3.45, `miseledger` 0.6.0
+**Last updated:** 2026-10-17
+
 ## What this is
 
-OpenClaw stores session history on disk as JSONL files under `~/.openclaw/agents/<agentId>/sessions/*.jsonl`. That is useful. It means you can answer "what was said when," recover the real shape of a past session, and feed a memory sweep from ground truth instead of vibes.
+Agent harnesses keep session history on disk, and it is useful. It means you can answer "what was said when," recover the real shape of a past session, and feed a memory sweep from ground truth instead of vibes. Where the history lives depends on the harness, and for OpenClaw it moved:
+
+| Harness | Where transcripts live now | Format |
+|---------|---------------------------|--------|
+| OpenClaw 2026.10 | `~/.openclaw/agents/<agentId>/agent/openclaw-agent.sqlite` | SQLite: `transcript_events` rows holding the same event JSON, plus an FTS5 index |
+| OpenClaw, Codex runtime | `~/.openclaw/agents/<agentId>/agent/codex-home/sessions/YYYY/MM/DD/rollout-*.jsonl` | JSONL, one file per Codex run |
+| OpenClaw before the move | `~/.openclaw/agents/<agentId>/sessions/*.jsonl` | JSONL, now mostly renamed `*.migrated`, `*.deleted.*.zst`, or `*.reset.*` |
+| Claude Code | `~/.claude/projects/<project-path>/*.jsonl` | JSONL |
+| Codex CLI | `~/.codex/sessions/` | JSONL |
+
+The title of this guide predates the OpenClaw change. The principle (search the transcript, promote the durable fact) is unchanged. Only the way you open the file changed.
 
 It is also dangerous if you use it lazily. Raw transcripts are noisy, repetitive, and full of ephemeral junk. If you load whole session logs into context or dump them into memory cards unchanged, you turn your memory system into a landfill.
 
@@ -30,7 +43,7 @@ Mix those up and the system gets dumber as it gets bigger.
 ## Prerequisites
 
 - OpenClaw or another agent stack that writes per-session transcripts to disk
-- Basic comfort with `jq`, `grep`, or a search indexer
+- Basic comfort with `jq`, `grep`, `sqlite3`, or a search indexer
 - A memory system with somewhere curated facts can land, such as cards, daily logs, or rules files
 - Willingness to keep transcripts behind a trust boundary because they may contain sensitive content
 
@@ -147,22 +160,32 @@ If you retain transcripts forever, index them in a way that favors recency. Othe
 
 ## Verification
 
-Basic inspection on a host running OpenClaw:
+Basic inspection on a host running OpenClaw 2026.10 or later:
 
 ```bash
-# 1. Count transcript files by agent
-find ~/.openclaw/agents -path '*/sessions/*.jsonl' | sed 's#.*/agents/##; s#/sessions/.*##' | sort | uniq -c
+# 1. List recent sessions the supported way (pass --agent on a multi-agent install)
+openclaw sessions --agent main --limit 5
+# Expected: "Session store: .../agents/main/agent/openclaw-agent.sqlite", a count, and a table
 
-# 2. Inspect the shape of one recent transcript line-by-line
-LATEST=$(find ~/.openclaw/agents -path '*/sessions/*.jsonl' | sort | tail -1)
-echo "$LATEST"
-head -5 "$LATEST" | jq .
+# 2. Inspect the shape of the stored events (open the database read-only)
+DB=~/.openclaw/agents/main/agent/openclaw-agent.sqlite
+sqlite3 -readonly "$DB" "select count(*), sum(event_json is null) from transcript_events;"
+# Expected: total event rows, and how many are stored compressed (event_zstd) instead of as text
 
-# 3. Search transcripts for a phrase or decision
-grep -Rni 'memory sweep' ~/.openclaw/agents/*/sessions/*.jsonl | head
+sqlite3 -readonly "$DB" "select substr(event_json,1,160) from transcript_events where event_json is not null limit 2;"
+# Expected: lines like {"type":"session","version":3,...} and {"type":"message","id":...}
 
-# 4. Estimate recent transcript volume
-find ~/.openclaw/agents -path '*/sessions/*.jsonl' -mtime -7 -printf '%s\n' | awk '{sum+=$1} END {print sum " bytes in last 7 days"}'
+# 3. Search the transcript index for a phrase or decision
+sqlite3 -readonly "$DB" "select role, timestamp, length(text) from session_transcript_fts where session_transcript_fts match 'memory sweep' limit 5;"
+# Expected: rows with a role and an epoch-millisecond timestamp
+
+# 4. Estimate database size (the file includes sessions and other agent data)
+du -h "$DB"
+
+# 5. The JSONL-based harnesses: count and sample
+find ~/.claude/projects -name '*.jsonl' | wc -l
+LATEST=$(find ~/.claude/projects -name '*.jsonl' -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+head -3 "$LATEST" | jq -c 'keys'
 ```
 
 Healthy signs:
@@ -171,7 +194,15 @@ Healthy signs:
 - sweep jobs can cite transcript-backed evidence without loading whole files
 - memory cards created from transcripts are concise and topic-based, not chat dumps
 
+If you want one query across every harness instead of one command per store, that is what [the evidence pipeline](evidence-pipeline.md) is for.
+
 ## Gotchas
+
+**Old grep recipes find nothing on OpenClaw 2026.10.** A `grep -R` over `agents/*/sessions/*.jsonl` still works on old files, but live sessions are not written there any more. If your sweep job greps that path, it quietly reviews stale history and reports "nothing new". Query the SQLite store, or use `openclaw sessions`, and check that the newest result is from today.
+
+**Open the database read-only.** The store is live, with a write-ahead log and other tables in the same file (sessions, delivery state, auth profiles). Use `sqlite3 -readonly`, never edit rows by hand, and never copy the file somewhere with looser permissions than the original. A transcript store is as sensitive as the credentials that might have appeared in it.
+
+**Some events are compressed.** About a third of the event rows on my main agent store the payload as zstd instead of text, so `event_json` is null for them. A plain `select` on `event_json` skips those rows. The FTS index covers message text either way, so search with it first.
 
 **Whole-transcript loading is token arson.** It feels safe because you think "more context means better answers." Usually it means the model spends half its attention on stale tool chatter and buried status noise.
 
@@ -188,3 +219,4 @@ Healthy signs:
 - [`memory-architecture.md`](memory-architecture.md) - where transcript evidence fits in the trust hierarchy
 - [`memory-token-optimization.md`](memory-token-optimization.md) - how transcript search plugs into a lean memory system
 - [`claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) - promoting durable machine-local knowledge without copying raw session logs
+- [`evidence-pipeline.md`](evidence-pipeline.md) - one searchable archive over every harness's transcripts

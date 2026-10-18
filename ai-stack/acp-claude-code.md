@@ -4,7 +4,7 @@ In April 2026, Anthropic stopped accepting subscription OAuth from third-party h
 
 That setup is still the one I use for explicit ACP sessions. For code review and second opinions, the preferred lane is the [Claude Code tmux relay](claude-code-tmux-relay.md). This guide covers the ACP side: install, wrapper script, config, permissions, and the auth boundary that decides whether the whole thing works.
 
-**Tested on:** OpenClaw 2026.10.4 (embedded ACPX runtime, a vendored `acpx` package pinned `^0.19.2` is also on the host), Claude Code 2.1.302, Claude Opus 5 behind a pinned wrapper (`ANTHROPIC_MODEL=claude-opus-5`). Earlier revisions of this guide were written against OpenClaw 2026.4.x, ACPX 0.7.x, and Opus 4.x.
+**Tested on:** OpenClaw 2026.10.4 (embedded ACPX runtime, a vendored `acpx` package pinned `^0.19.2` is also on the host), Claude Code 2.1.302, Claude Opus 5.5 behind a pinned wrapper (`ANTHROPIC_MODEL=claude-opus-5-5`, agent id still `claude-opus-5`). Earlier revisions of this guide were written against OpenClaw 2026.4.x, ACPX 0.7.x, and Opus 4.x.
 **Last updated:** 2026-10-17
 
 ---
@@ -87,7 +87,7 @@ Each Claude ACP agent is a small shell script that pins the model and starts the
 #!/usr/bin/env bash
 # ACPX spawn wrapper: Claude ACP adapter with Claude Code pinned to one model.
 # ANTHROPIC_MODEL is the env var Claude Code honors for a primary-model pin.
-export ANTHROPIC_MODEL=claude-opus-5
+export ANTHROPIC_MODEL=claude-opus-5-5
 exec npx -y @agentclientprotocol/claude-agent-acp "$@"
 ```
 

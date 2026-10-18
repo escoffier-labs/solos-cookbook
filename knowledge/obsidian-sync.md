@@ -2,6 +2,9 @@
 
 > One vault, one sync layer, one place for automation to write. That is how you get bidirectional cloud sync without waking up to three "conflicted copy" files and a broken notes index.
 
+**Tested on:** rclone 1.73.5 bisync against a Google Drive remote, systemd 255 user timer, OpenClaw 2026.10.4, Brigade 0.28.0, Ubuntu 24.04
+**Last updated:** 2026-10-17
+
 ## What this is
 
 Obsidian sync gets messy fast when desktop, phone, and automation all act like they own the vault. You end up with duplicate notes, attachments that exist on one device only, and indexes that drift because two writers touched the same file seconds apart.
@@ -49,7 +52,7 @@ Example structure:
 
 ```text
 Obsidian/
-└── Cerebro/
+└── Vault/
     ├── 00 - Inbox/
     ├── 01 - Projects/
     ├── 02 - Areas/
@@ -140,21 +143,77 @@ Once a day or once a week, do a quick audit:
 
 This is five minutes well spent. Letting small vault drift sit for a month is how you end up losing a Saturday to note archaeology.
 
+### 8. Wire the sync as one timer with a bounded blast radius
+
+My version of "one sync engine" is `rclone bisync` between a Drive folder and a local vault, run by a systemd user timer every two minutes. The service is a oneshot with three jobs around the sync itself:
+
+```ini
+# ~/.config/systemd/user/obsidian-sync.service
+[Service]
+Type=oneshot
+# Deliver agent notes into the vault inbox first. The leading "-" means a bridge
+# failure never blocks the vault sync.
+ExecStartPre=-%h/.openclaw/workspace/scripts/notes-to-vault.sh
+# File the just-delivered notes into their work-log folders.
+ExecStartPre=-%h/.openclaw/workspace/scripts/agent-notes-filer.sh
+ExecStart=%h/bin/rclone bisync gdrive:Obsidian %h/Obsidian --resilient --recover --create-empty-src-dirs --max-lock 2m
+# Refresh the local notes index after the sync, again non-fatal.
+ExecStartPost=-%h/bin/vault-index
+```
+
+```ini
+# ~/.config/systemd/user/obsidian-sync.timer
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=2min
+AccuracySec=10s
+```
+
+(`gdrive:Obsidian` and `vault-index` are placeholders for your remote path and whatever indexes your notes. The rest is what I run.)
+
+A second drop-in raises `TimeoutStartSec` to 30 minutes and runs a one-way projection of canonical agent memory into a subfolder of the vault before the sync. The projection is `brigade memory project-vault --target <workspace> --vault <vault>`, and it is the only thing allowed to write that subfolder. That is the "single owner" rule from step 4 applied to a generated tree. A failed projection is logged and retried. It does not block your notes from syncing.
+
+The notes bridge is conflict-safe by design. It records each delivered note's hash in a ledger and skips unchanged ones. It skips a note whose basename already exists elsewhere in the vault, because that means you already filed it. If the destination exists, differs from the source, and was edited in the vault more recently, it writes a `.conflict-<timestamp>` sibling instead of overwriting your edit.
+
+`--max-lock 2m` deserves its own paragraph, because leaving it out breaks `--resilient` and `--recover` in a way you will not see until the first interrupted run. Without `--max-lock`, rclone writes a bisync lock with an effectively infinite expiry. Kill the process mid-sync (a reboot, an OOM kill, a stop) and the lock stays. Every later run then fails with "prior lock file found" and the recovery flags never get a chance to act. That wedged my vault for 15 days in July 2026 before I noticed. With `--max-lock 2m`, a live run keeps renewing its lock, so only a lock whose owner is gone expires. The minimum rclone accepts is 2 minutes. Set it to at least that, and keep your timer interval from overlapping a run that legitimately takes longer.
+
+The first bisync of a new pair of paths needs a one-time `--resync` per rclone's bisync docs. After that, `--resilient --recover` handle ordinary interruptions without it.
+
 ## Verification
 
 On a desktop with a local mirror of the vault:
 
 ```bash
 # 1. Find obvious conflict artifacts
-find ~/Obsidian/Cerebro -type f \( -iname '*conflict*' -o -iname '*conflicted copy*' \)
+find ~/Obsidian/Vault -type f \( -iname '*conflict*' -o -iname '*conflicted copy*' \)
 
 # 2. Find duplicate basenames in different folders
-find ~/Obsidian/Cerebro -type f -name '*.md' -printf '%f\n' | sort | uniq -d
+find ~/Obsidian/Vault -type f -name '*.md' -printf '%f\n' | sort | uniq -d
 
 # 3. Spot notes with missing attachments (basic check)
-grep -Rho '!\[\[.*\]\]' ~/Obsidian/Cerebro | sed 's/^!\[\[//; s/\]\]$//' | while read -r f; do
-  find ~/Obsidian/Cerebro -type f -name "$f" | grep -q . || echo "Missing attachment: $f"
+grep -Rho '!\[\[.*\]\]' ~/Obsidian/Vault | sed 's/^!\[\[//; s/\]\]$//' | while read -r f; do
+  find ~/Obsidian/Vault -type f -name "$f" | grep -q . || echo "Missing attachment: $f"
 done
+```
+
+And check the sync service itself:
+
+```bash
+# Timer is firing
+systemctl --user list-timers obsidian-sync.timer
+# Expected: a NEXT time within two minutes
+
+# Last run succeeded
+systemctl --user show obsidian-sync.service -p Result,ExecMainStatus
+# Expected: Result=success, ExecMainStatus=0
+
+# Bisync flags include the lock fix
+systemctl --user cat obsidian-sync.service | grep -- '--max-lock'
+# Expected: a line ending in --max-lock 2m
+
+# A stuck lock shows up in recent logs
+journalctl --user -u obsidian-sync.service -n 50 --no-pager | grep -i 'lock file'
+# Expected: no "prior lock file found" lines
 ```
 
 Manual test loop:
@@ -169,6 +228,10 @@ Manual test loop:
 If that six-step loop is clean, your sync model is probably healthy.
 
 ## Gotchas
+
+**A missing `--max-lock` turns one crash into a long outage.** See step 8. The symptom is a service that fails on every tick with a prior-lock message while nothing about your vault looks wrong. Check the flag before you suspect the remote.
+
+**A bridge that blocks the sync is worse than a bridge that fails.** The leading `-` on each `ExecStartPre` and `ExecStartPost` line is deliberate. My notes bridge, the filer, and the post-sync index all failed at some point, and the vault kept syncing because none of them were allowed to fail the unit.
 
 **Stacking sync tools is the fastest path to pain.** Running Obsidian Sync plus a cloud-drive mirror plus a provider plugin sounds redundant and safe. It is neither. Each layer notices file changes at slightly different times and happily manufactures conflicts for you.
 
@@ -185,3 +248,4 @@ If that six-step loop is clean, your sync model is probably healthy.
 - [`memory-architecture.md`](memory-architecture.md) - what belongs in long-term notes versus short-lived workflow state
 - [`session-jsonl.md`](session-jsonl.md) - using transcript logs as a search source instead of dumping raw conversations into the vault
 - [`claude-code-memory-handoffs.md`](claude-code-memory-handoffs.md) - when durable machine-local knowledge should become canonical shared memory
+- [`../automation/cron-patterns.md`](../automation/cron-patterns.md) - why this is a systemd timer and not an OpenClaw cron job

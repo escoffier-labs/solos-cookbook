@@ -2,8 +2,8 @@
 
 > A self-hosted SOC where an AI agent drives incident response through MCP servers you wrote yourself. A SIEM alert fires, the agent triages it, opens a case, runs observable analysis, enriches indicators against threat intel, and maps the activity to ATT&CK. The agent proposes every write. You approve the ones that matter. 🦞
 
-**Tested on:** Wazuh manager 4.14.5 in an LXC container on a home Proxmox host watching a ~14-agent fleet; TheHive 5.4.11, Cortex 3.x, and MISP running as Hyper-V VMs on a Windows desktop; five first-party MCP servers (wazuh-mcp, thehive-mcp, cortex-mcp, misp-mcp, mitre-mcp) wired into one agent
-**Last updated:** 2026-06-10
+**Tested on:** Wazuh manager 4.14.8 in an LXC container on a home Proxmox host watching a ~21-agent fleet. TheHive, Cortex 3.x, and MISP run as Hyper-V VMs on a Windows desktop. Five first-party MCP servers (wazuh-mcp, thehive-mcp, cortex-mcp, misp-mcp, mitre-mcp, all in the public `lidless-labs` GitHub org) wired into one agent. Claude Code 2.1.302.
+**Last updated:** 2026-10-17
 
 > The tool calls below are representative. The stack is real and running, but specific alert IDs, case numbers, and job IDs in the walkthrough are illustrative placeholders, not transcripts of a single incident.
 
@@ -17,7 +17,15 @@ The classic problem with a one-person SOC is that the tooling is built for teams
 
 The fix here is to put each platform behind an MCP server and give one agent all five. The agent reads from every platform freely, correlates across them in a single turn, and proposes the write actions (open this case, add these observables, run this analyzer). The human reads the proposal and approves or rejects. The agent does the tab-switching and the copy-paste. The operator does the judgment.
 
-Every MCP server in this loop is first-party. They are not wrappers someone else shipped; they are the operator's own code in `escoffier-labs` / `solomonneas`, which matters because it means the safety gates described below are auditable, not assumed.
+Every MCP server in this loop is first-party. They are not wrappers someone else shipped. They are my own code, now in the public `lidless-labs` GitHub org (they started under my personal account, and the old URLs redirect), which matters because the safety gates described below are auditable, not assumed:
+
+- [`lidless-labs/wazuh-mcp`](https://github.com/lidless-labs/wazuh-mcp)
+- [`lidless-labs/thehive-mcp`](https://github.com/lidless-labs/thehive-mcp)
+- [`lidless-labs/cortex-mcp`](https://github.com/lidless-labs/cortex-mcp)
+- [`lidless-labs/misp-mcp`](https://github.com/lidless-labs/misp-mcp)
+- [`lidless-labs/mitre-mcp`](https://github.com/lidless-labs/mitre-mcp)
+
+The same org also has [`lidless-labs/soc-stack`](https://github.com/lidless-labs/soc-stack), a one-command Proxmox installer for the SIEM side, if you want to stand the stack up from scratch. Package names on npm did not change with the org move, so `npx` invocations are the same as before.
 
 ## Why this way
 
@@ -37,9 +45,9 @@ Three design choices make this safe enough to actually run.
 - MISP with API access and an auth key.
 - An MCP-capable agent host (Claude Code, Claude Desktop, Codex CLI, OpenClaw, or any MCP client).
 - The five MCP servers built and registered: wazuh-mcp, thehive-mcp, cortex-mcp, misp-mcp, mitre-mcp.
-- API credentials for each platform, stored as environment variables, never inline in a guide or a commit.
+- API credentials for each platform, created as **read-only** identities where the platform allows it (see "Credentials" below), stored in a `0600` file or a vault, never inline in a guide, a commit, or `~/.claude.json`.
 
-On the deployment: the SIEM container runs on the hypervisor and watches the fleet. TheHive, Cortex, and MISP run as VMs on the Windows VM host. The agent host talks to all of them over the LAN. Refer to machines by role; do not hardcode hostnames or IPs anywhere the agent or its config can leak them.
+On the deployment: the SIEM container runs on the hypervisor and watches the fleet. TheHive, Cortex, and MISP run as VMs on the Windows VM host. The agent host talks to all of them over the LAN. Refer to machines by role. Do not hardcode hostnames or IPs anywhere the agent or its config can leak them.
 
 ## The loop
 
@@ -154,7 +162,7 @@ Two safety details matter here.
 
 `cortex_analyze_observable` does **not** fan out to every analyzer by default. The agent must pass an explicit `analyzers` allowlist, or set `fanOut=true` to run all applicable analyzers (capped by `CORTEX_MAX_FANOUT`). That keeps a curious agent from submitting your internal IP to forty third-party services in one call.
 
-**Responders are the hard gate.** `cortex_run_responder` causes real-world side effects (block an IP at the firewall, disable an account, send a notification). It requires both `CORTEX_ALLOW_DESTRUCTIVE=1` in the environment **and** `confirm=true` in the call. Two locks, deliberately. The agent can recommend "we should run the block-IP responder" in prose; it cannot pull that trigger on its own.
+**Responders are the hard gate.** `cortex_run_responder` causes real-world side effects (block an IP at the firewall, disable an account, send a notification). It requires both `CORTEX_ALLOW_DESTRUCTIVE=1` in the environment **and** `confirm=true` in the call. Two locks, deliberately. The agent can recommend "we should run the block-IP responder" in prose. It cannot pull that trigger on its own.
 
 File analysis is sandboxed too: `cortex_run_analyzer_file` only reads files inside `CORTEX_FILE_BASE_DIR` (realpath-confined against symlink and `..` escapes), and if that dir is unset, path-based reads are refused entirely and you must submit content via `fileBase64`.
 
@@ -210,35 +218,45 @@ mitre_cross_correlate { "techniques": ["T1110", "T1078"] }
 
 ## The human gate
 
-These are the actions that must not happen without an explicit human approval. The agent surfaces the proposed call and its arguments; you say yes or no.
+These are the actions that must not happen without an explicit human approval. The agent surfaces the proposed call and its arguments. You say yes or no.
 
 | Action | Tool | What gates it |
 |--------|------|---------------|
-| Create / update a case | `thehive_create_case`, `thehive_update_case` | Write; agent proposes full payload, you approve |
+| Create / update a case | `thehive_create_case`, `thehive_update_case` | Write. Agent proposes full payload, you approve |
 | Delete / merge / promote | `thehive_delete_case`, `thehive_merge_cases`, `thehive_promote_alert`, `thehive_delete_alert` | `THEHIVE_ALLOW_DESTRUCTIVE_TOOLS=true` (leave it off) |
 | Raw query DSL | `thehive_query` | `THEHIVE_ENABLE_RAW_QUERY=true` |
 | Run a Cortex responder (real-world action) | `cortex_run_responder` | `CORTEX_ALLOW_DESTRUCTIVE=1` **and** `confirm=true` |
 | Disable analyzer / delete job | `cortex_disable_analyzer`, `cortex_delete_job` | `confirm=true` |
-| Fan out to all analyzers | `cortex_analyze_observable` | Off by default; needs explicit `analyzers` or `fanOut=true` |
+| Fan out to all analyzers | `cortex_analyze_observable` | Off by default. Needs explicit `analyzers` or `fanOut=true` |
 | Add / delete IOC, publish event | `misp_add_attributes_bulk`, `misp_delete_event`, `misp_publish_event` | `confirm:true` (hard delete also `confirmHard:true`) |
 | Cross-stack SOC writes | `mitre_misp_create_event`, `mitre_thehive_create_case`, `mitre_cortex_run_analyzers` | dry-run unless `confirm:true` or `MITRE_SOC_ALLOW_WRITES=true` |
 
 The rule of thumb: anything that creates, mutates, deletes, publishes externally, or causes a real-world side effect is a gate. Everything that only reads is free. The operator's attention is the scarce resource, so it gets spent on the writes, not the reads.
 
+## Credentials: read-only users, a custom indexer role, and CA verification
+
+The first version of this loop connected wazuh-mcp as the Wazuh API's `wazuh-wui` user and the indexer's `admin`, with TLS verification off, by IP address. That works on day one and it is the wrong default: the agent holds credentials that can change the SIEM's own configuration and delete its indices, and an attacker who can talk to the agent's network path can impersonate the SIEM. wazuh-mcp only reads, so give it only read access:
+
+- **Wazuh API:** a dedicated user with the built-in `readonly` role. The role has no `security:*` permissions. Any API user can still read its own record.
+- **Wazuh Indexer:** a custom role with the cluster permission `cluster:monitor/main` and index permissions `read` plus `indices:admin/get` on `wazuh-alerts-*` and `wazuh-states-vulnerabilities-*`, mapped to its own internal user. I checked this against 4.14.8 where it covered the alert and vulnerability tools and the two index checks in `diagnose_wazuh_connection`. Wazuh's built-in read-only cluster role with `read` on `*` was not enough: it got a 403 on those index checks. Note that a default indexer install also maps every internal user to `own_index`, which allows all actions on an index named after the user, so look at what your new user inherits.
+- **TLS:** leave `WAZUH_VERIFY_SSL` and `WAZUH_INDEXER_VERIFY_SSL` at `true`, and point `WAZUH_CA_FILE` and `WAZUH_INDEXER_CA_FILE` at the root CA that signed your Wazuh certificates. The host in each URL must be a name listed in the certificate (the Docker single-node certificates are issued for `wazuh.manager` and `wazuh.indexer`, so connect by those names rather than by IP). A package install's manager API serves a self-signed `localhost` certificate until you replace the key pair in `/var/ossec/api/configuration/ssl/`, so replace it.
+- **Rebuilds delete custom users.** Wazuh's Docker password-change procedure runs `securityadmin.sh -cd`, which removes users, roles, and mappings created through the security REST API. Re-create the read-only identities afterward and keep the setup commands where you can re-run them.
+
+The server's own README has the exact `curl` commands for creating the role and user and a "TLS verification" section: see [`lidless-labs/wazuh-mcp`](https://github.com/lidless-labs/wazuh-mcp). Apply the same idea on the other platforms: a TheHive key from a read-capable role in a dedicated org, a Cortex key with only the permissions the analyzers need, and a MISP auth key bound to a role that cannot publish. Where you have a self-signed certificate on a lab box, prefer adding its CA to the server's trust over `*_VERIFY_SSL=false`.
+
+Keep the secrets file out of reach of other MCP servers. A wrapper that loads one credential file per server and then `exec`s the server limits what each server holds, and `CLAUDE_CODE_MCP_ALLOWLIST_ENV=1` limits what the server inherits from Claude Code's own environment (see [`secret-management.md`](secret-management.md), section 8).
+
 ## Wiring the MCP servers into your agent
 
-Register all five servers with your agent. The shape below uses Claude Code; the same env vars apply to Claude Desktop JSON, Codex CLI, and OpenClaw. Keep every credential in the environment, never in the guide. Use role-based placeholder hostnames and document-only IP ranges (`192.0.2.x`) in any example you commit.
+Register all five servers with your agent. The shape below uses Claude Code, and the same env vars apply to Claude Desktop JSON, Codex CLI, and OpenClaw. Keep every credential out of the guide. The `--env X="$X"` form below is the short version: it copies the value into `~/.claude.json` in plaintext, so for anything beyond a lab use a 0600 env file and a wrapper, as the Wazuh line does. Use role-based placeholder hostnames and document-only IP ranges (`192.0.2.x`) in any example you commit.
 
 ```bash
-# SIEM (reads free; needs the indexer for alert queries)
-claude mcp add wazuh \
-  --env WAZUH_URL=https://siem.example.internal:55000 \
-  --env WAZUH_USERNAME=wazuh-wui \
-  --env WAZUH_PASSWORD="$WAZUH_PASSWORD" \
-  --env WAZUH_INDEXER_URL=https://siem.example.internal:9200 \
-  --env WAZUH_INDEXER_USERNAME=admin \
-  --env WAZUH_INDEXER_PASSWORD="$WAZUH_INDEXER_PASSWORD" \
-  -- wazuh-mcp
+# SIEM (reads free; needs the indexer for alert queries). Credentials live in a
+# 0600 file read by a small wrapper, so no password lands in ~/.claude.json.
+# ~/.config/wazuh-mcp/env holds (wrapper script: see the wazuh-mcp README): WAZUH_URL, WAZUH_USERNAME (read-only API user),
+# WAZUH_PASSWORD, WAZUH_CA_FILE, WAZUH_INDEXER_URL, WAZUH_INDEXER_USERNAME
+# (custom read role), WAZUH_INDEXER_PASSWORD, WAZUH_INDEXER_CA_FILE.
+claude mcp add wazuh -- "$HOME/.local/bin/wazuh-mcp-env" npx -y wazuh-mcp
 
 # Case management. Destructive verbs left OFF on purpose.
 claude mcp add thehive \
@@ -258,7 +276,7 @@ claude mcp add cortex \
 claude mcp add misp \
   --env MISP_URL=https://misp.example.internal \
   --env MISP_API_KEY="$MISP_API_KEY" \
-  --env MISP_VERIFY_SSL=false \
+  --env MISP_VERIFY_SSL=true \
   -- misp-mcp
   # NOT set: MISP_ALLOW_DESTRUCTIVE (writes need confirm:true)
 
@@ -266,8 +284,9 @@ claude mcp add misp \
 claude mcp add mitre-attack \
   --env MITRE_MATRICES=enterprise \
   --env WAZUH_URL=https://siem.example.internal:55000 \
-  --env WAZUH_USERNAME=wazuh-wui \
-  --env WAZUH_PASSWORD="$WAZUH_PASSWORD" \
+  --env WAZUH_USERNAME=wazuh-mcp-api \
+  --env WAZUH_PASSWORD="$WAZUH_MCP_API_PASSWORD" \
+  --env WAZUH_CA_FILE="$HOME/.config/wazuh-mcp/root-ca.pem" \
   --env THEHIVE_URL=http://thehive.example.internal:9000 \
   --env THEHIVE_API_KEY="$THEHIVE_API_KEY" \
   --env CORTEX_URL=http://cortex.example.internal:9001 \
@@ -283,8 +302,8 @@ The deliberate omissions are the whole point. Every `# NOT set` line above is a 
 A few env-gating notes worth keeping straight:
 
 - **wazuh-mcp** redacts sensitive fields by default (IPs, command lines, hashes, manager secrets). The agent opts in per call with flags like `include_command`. `get_manager_config` stays redacted even with the opt-in flag unless `WAZUH_ALLOW_SENSITIVE_CONFIG=true` is set server-side.
-- **TheHive 5** needs a real org. The `admin` org cannot manage cases; create a `SOC` org with an `org-admin` user and key the MCP server to that.
-- **SSL verification** is scoped per client in every server. Setting `*_VERIFY_SSL=false` for a self-signed lab box relaxes TLS only for that one platform's requests, never process-wide.
+- **TheHive 5** needs a real org. The `admin` org cannot manage cases. Create a `SOC` org with an `org-admin` user and key the MCP server to that.
+- **SSL verification** is scoped per client in every server. Setting `*_VERIFY_SSL=false` relaxes TLS only for that one platform's requests, never process-wide, but it still removes the check for those requests. Prefer a CA file (`WAZUH_CA_FILE`, `WAZUH_INDEXER_CA_FILE`) and keep verification on.
 
 ## Verification
 
@@ -301,6 +320,12 @@ claude mcp list   # expect: wazuh, thehive, cortex, misp, mitre-attack
 # 3. Cross-stack read works. Ask:
 #    "Cross-correlate techniques T1110 and T1078 across the SOC."
 #    -> mitre_cross_correlate returns hits from Wazuh/TheHive/MISP.
+
+# 3b. The credentials and TLS are right. Ask the agent to run
+#     diagnose_wazuh_connection (or run `wazuh-mcp-env npx -y --package wazuh-mcp
+#     wazuhctrl diagnostics` in a shell). -> both logins, TLS, and the index
+#     checks pass with verification ON. Then confirm the API user's role in the
+#     Wazuh dashboard is `readonly`, since the diagnostics do not check the role.
 
 # 4. The gate holds. Ask the agent to delete a test case.
 #    -> thehive_delete_case must refuse because
@@ -321,7 +346,7 @@ Step 4 and step 5 are the ones that matter. A loop that reads is convenient. A l
 
 3. **`description` is required on cases and alerts.** TheHive 5 rejects creation without it. If the agent drafts a thin case, the create call fails. Make the agent include a real description in every proposal.
 
-4. **Cortex fan-out is opt-in for a reason.** `cortex_analyze_observable` with `fanOut=true` submits the observable to every applicable analyzer, many of them third-party. For an internal IP or an internal hostname, that is data exfiltration with extra steps. Prefer an explicit `analyzers` allowlist; reserve `fanOut` for indicators you are fine sending to VirusTotal-class services.
+4. **Cortex fan-out is opt-in for a reason.** `cortex_analyze_observable` with `fanOut=true` submits the observable to every applicable analyzer, many of them third-party. For an internal IP or an internal hostname, that is data exfiltration with extra steps. Prefer an explicit `analyzers` allowlist. Reserve `fanOut` for indicators you are fine sending to VirusTotal-class services.
 
 5. **Warninglists before escalation.** Always run `misp_check_warninglists` before treating an indicator as bad. Public resolvers and cloud ranges trip naive correlation constantly. The agent should downgrade on a warninglist hit, not page you.
 
@@ -333,10 +358,16 @@ Step 4 and step 5 are the ones that matter. A loop that reads is convenient. A l
 
 9. **An agent with all five servers can move fast in the wrong direction.** Cross-stack convenience cuts both ways. The same agent that correlates an incident in one turn can, if a gate is wrong, cascade a mistake across five platforms in one turn. The default-deny env posture is what keeps the blast radius small. Treat every gate you turn on as temporary.
 
+10. **Read-only identities vanish on rebuild.** Wazuh's Docker password-change procedure runs `securityadmin.sh -cd`, which deletes API-created users, roles, and mappings. After any rebuild, check that the read-only indexer user still exists before assuming the loop broke for some other reason.
+
+11. **A custom indexer role needs the index-exists check.** A role copied from Wazuh's generic read-only recipe returns 403 on the HEAD index checks the diagnostics tool runs, which looks like a connection failure. Grant `indices:admin/get` on the alert and vulnerability patterns along with `read`.
+
+12. **Admin plus TLS-off is the lab default, not the production one.** If you started that way, the credentials the agent holds can delete the SIEM's own data. Replace them before the loop sees real incidents.
+
 ## Related
 
 - [`wazuh-triage.md`](wazuh-triage.md) - the RCA-fix-narrow-suppress discipline for deciding whether a Wazuh alert is real signal or tuning noise before you ever open a case
-- [`incident-runbook.md`](incident-runbook.md) - the calm ordering for agent-driven incidents (freeze, preserve, fix); the response sequence this loop plugs into when an alert turns out to be a real incident
-- [`agent-security-hardening.md`](agent-security-hardening.md) - treating the agent as an untrusted actor; the philosophy behind the read-free / write-gated split
+- [`incident-runbook.md`](incident-runbook.md) - the calm ordering for agent-driven incidents (freeze, preserve, fix). The response sequence this loop plugs into when an alert turns out to be a real incident
+- [`agent-security-hardening.md`](agent-security-hardening.md) - treating the agent as an untrusted actor. The philosophy behind the read-free / write-gated split
 - [`secret-management.md`](secret-management.md) - keeping the MCP server credentials (API keys, passwords) out of config files, history, and anything the agent can leak
 - [`../infrastructure/homelab-topology.md`](../infrastructure/homelab-topology.md) - the fleet and where the SIEM container, the case platform, and the threat-intel VMs actually live

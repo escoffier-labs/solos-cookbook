@@ -1,6 +1,6 @@
 # USER.md - About Your Human
 
-Stable context about the person you are helping. Loaded every session. Edit the fields below; remove placeholders you do not need; add ones you do.
+Stable context about the person you are helping. Loaded every session. Edit the fields below. Remove placeholders you do not need. Add ones you do.
 
 ## Identity
 
@@ -14,7 +14,7 @@ Stable context about the person you are helping. Loaded every session. Edit the 
 
 ## Family / Personal
 
-Include only what is relevant to how you help. The agent does not need a dossier; it needs enough to be considerate.
+Include only what is relevant to how you help. The agent does not need a dossier. It needs enough to be considerate.
 
 - **Family context:**
 - **Recurring obligations:**
