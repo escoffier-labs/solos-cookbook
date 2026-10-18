@@ -2,11 +2,14 @@
 
 > Browser-native model work without pretending every useful workflow has a clean API.
 
+**Tested on:** OpenClaw 2026.10.4, Chrome lanes supervised by systemd user services on Xvfb, Claude Code 2.1.302
+**Last updated:** 2026-10-17
+
 ## What this is
 
 Some of the best model workflows still live behind a browser session: logged-in research tools, subscription-only UIs, file-upload features, visual review, and draft publishing surfaces. A browser LLM stack gives your agent a controlled Chromium lane for those jobs while keeping API calls as the default path when they are available.
 
-The pattern is simple: run Chromium in a service-owned display, keep one persistent profile per provider or workflow, expose noVNC for human login and inspection, and wrap every fragile profile in a lock.
+The pattern is simple: run Chromium in a service-owned display, keep one persistent profile per provider or workflow, expose noVNC for human login and inspection, and wrap every fragile profile in a lock. In production I run each lane as its own supervised systemd service with a loopback debugging port, and attach to it from the agent runtime (see [Named persistent lanes as services](#8-run-each-lane-as-a-named-service)).
 
 ## Why this way
 
@@ -206,9 +209,95 @@ For social posts, articles, newsletters, and CMS work:
 
 The automation should not click destructive, financial, external-send, or public-publish buttons unless the operator explicitly asked for that specific action in the live session.
 
+### 8. Run each lane as a named service
+
+The flock-and-script pattern above works for batch jobs. For lanes that stay logged in all day and get driven by several tools, I moved to one systemd user service per lane, named `browser-<lane>.service`. Each lane owns four things: a private profile directory, a virtual display, a Chrome remote-debugging (CDP) port, and a noVNC port for human login. Pick generic names that describe the workflow, for example `publishing`, `research-a`, `portal-b`. The lane name should never reveal the account behind it.
+
+Live unit shape (placeholders for the per-lane values):
+
+```ini
+[Unit]
+Description=<lane> Chrome lane (CDP <cdp-port>, noVNC <novnc-port>) on Xvfb :<display>
+Requires=xvfb.service
+After=xvfb.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/lib/browser-bridge/browser-lane-supervisor.sh <lane> %h/.cache/<lane>/chrome.pid <cdp-port> %h/bin/<lane>-browser-launcher
+ExecStartPost=/bin/bash -c 'for i in {1..30}; do curl --fail --silent http://127.0.0.1:<cdp-port>/json/version >/dev/null && exit 0; sleep 1; done; exit 1'
+Restart=always
+RestartSec=5
+TimeoutStartSec=45
+KillMode=control-group
+
+[Install]
+WantedBy=default.target
+```
+
+Four details came from failures:
+
+- **`Type=simple` with a supervisor, not `Type=oneshot`.** A launcher that starts Chrome and exits leaves a `oneshot` unit "active" after Chrome has died. The supervisor script starts Chrome, waits for CDP, then watches the PID and polls `/json/version` every few seconds. Three failed health checks in a row exits non-zero, and `Restart=always` brings the lane back.
+- **`ExecStartPost` readiness check.** A lane is not "started" until its CDP endpoint answers. Anything that depends on the lane can wait on that.
+- **`KillMode=control-group`.** Chrome spawns many children. Without this, a restart leaves orphans holding the profile lock.
+- **Everything on loopback.** The CDP port, the noVNC port, and the x11vnc port all bind to `127.0.0.1` (and `::1`). x11vnc needs `-localhost` explicitly when the websocket proxy is loopback-bound, otherwise the raw VNC port listens on every interface. Process state is not proof: verify with an HTTP 200 from noVNC and a valid CDP response.
+
+I keep a generated registry of lanes (name, unit, profile directory, ports, display, status) so tools discover lanes instead of hardcoding ports. A systemd path unit watches the user unit directory and the launcher scripts, and reruns the generator when a `browser-*.service` file changes. One long-lived lane also gets a daily restart timer scheduled for the quiet hours, because Chrome that has been up for weeks accumulates memory and stale tabs.
+
+### 9. Attach from the agent, with tab discipline
+
+Agents drive a lane by attaching to its CDP port, usually through a per-lane DevTools MCP server, so one MCP entry maps to one lane and one profile. Three rules keep that sane:
+
+- **One driver per lane.** If another agent owns the lane, wait or use a different lane whose purpose matches. Do not pick a lane because its browser happens to be open.
+- **Label your tab, close only your tab.** Open a labeled task tab, and on exit close exactly that tab. Never close a pre-existing tab or the last remaining page target, because closing the last page can take the browser with it.
+- **Check the endpoint before attaching.** A healthy lane returns JSON from `http://127.0.0.1:<cdp-port>/json/version`. A refused connection means the lane is down, which is a service problem, not an agent problem.
+
+### 10. Recover sessions and fill credentials without exposing either
+
+Persistent profiles still lose their login. Two layers handle it without a human at the keyboard:
+
+- **Session recovery.** [Agent Pantry](https://github.com/escoffier-labs/agentpantry) backs up and restores browser session state for a named profile, with a dry run by default and an explicit apply step. The agent never reads or returns the raw cookie contents. After a successful new login, take a fresh backup of that profile.
+- **Credential fill.** For an existing login, a broker tool fills the form from a password manager without returning the secret to the model. Mine is scoped to a single browser-operator agent, bound to an exact item, origin, profile, and target, requires approval for each fill, returns redacted metadata, and never submits the form. Submitting stays a separate, deliberate step.
+
+Keep the lane agent narrow: no shell and no filesystem tools on the browser-operator, and no fallback to the personal desktop session when a lane is unavailable.
+
+### 11. Attaching a second-opinion tool to a signed-in Chrome
+
+Some consultation tools drive a first-party chat UI instead of an API. I run one (Oracle) against my existing signed-in Chrome by attaching over a loopback CDP port instead of launching its own profile. The relevant config is two keys:
+
+```json
+{
+  "browser": {
+    "attachRunning": true,
+    "remoteChrome": { "host": "127.0.0.1", "port": <cdp-port> }
+  }
+}
+```
+
+I switched to attach mode because a separately launched profile hit a bot-challenge login loop that the already-trusted browser did not. The tradeoffs are real: the tool controls tabs in the browser you are using, so coordinate use and keep to one driver at a time, and a debugging port on a signed-in browser is as sensitive as the browser itself, so it must stay on loopback. Select the browser engine explicitly when you invoke it, and do not let a failed browser attach silently fall back to a paid API or a different model.
+
 ## Verification
 
-Check that the display service exists and is healthy:
+For the named-service lanes, list them and confirm each one answers on its debugging port:
+
+```bash
+systemctl --user list-units 'browser-*' --no-pager
+```
+
+Expected: one `browser-<lane>.service` per lane, `loaded active`, and `running` for supervised lanes. Then probe each lane's CDP endpoint:
+
+```bash
+curl -fsS http://127.0.0.1:<cdp-port>/json/version | jq '.Browser'
+```
+
+Expected: a Chrome version string. Confirm nothing is listening beyond loopback:
+
+```bash
+ss -ltn | grep -E ':(<cdp-port>|<novnc-port>)\b'
+```
+
+Expected: every listener shows `127.0.0.1` or `[::1]`, never `0.0.0.0` or `*`.
+
+For the script-based pattern, check that the display service exists and is healthy:
 
 ```bash
 systemctl --user status agent-browser-display.service
@@ -267,6 +356,12 @@ Run two concurrent jobs against the same lane and verify one waits or exits with
 7. **Browser answers need source discipline.** Research skills should return source URLs or screenshots, not just model prose from the page.
 
 8. **Cron needs longer patience.** Browser jobs need bigger timeouts, fewer retries, and clear lock behavior. Fast retry loops can stack up behind a single expired login.
+
+9. **A `oneshot` browser unit lies about health.** If the unit stays "active" after Chrome exits, nothing restarts it and everything attached to it fails with connection refused. Use a supervising `Type=simple` service with `Restart=always`.
+
+10. **A debugging port is a login.** Anyone who can reach a lane's CDP port can drive its authenticated session. Keep CDP and noVNC on loopback, and tunnel if you need remote access.
+
+11. **Do not close the last page target.** Closing the final tab in a lane risks ending the browser. Close only the tab you opened.
 
 ## Templates
 

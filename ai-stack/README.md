@@ -1,24 +1,24 @@
 # AI agent stack
 
-Multi-model orchestration. One orchestrator, many models, escalation lanes. Most of these guides assume OpenClaw as the agent framework, but the patterns generalize.
+Multi-model orchestration. One orchestrator, many models, escalation lanes, and a multi-vendor worker fleet behind it. Most of these guides assume OpenClaw as the agent framework, but the patterns generalize. The worker layer (Brigade roster seats and T3 Code delegated tasks) is described in [`multi-model-orchestration.md`](multi-model-orchestration.md) and [`sub-agent-patterns.md`](sub-agent-patterns.md).
 
 ## Guides
 
-- [x] [`multi-model-orchestration.md`](multi-model-orchestration.md) - GPT 5.5 + Claude Code review lane + browser-LLM + Ollama in one setup, right model per task
-- [x] [`claude-cli-to-acp-migration.md`](claude-cli-to-acp-migration.md) - move Opus off main-agent slot after Anthropic's April 2026 OAuth block
-- [x] [`acp-claude-code.md`](acp-claude-code.md) - running Claude Code as an ACP compatibility lane when ACP is explicitly needed
-- [x] [`claude-code-tmux-relay.md`](claude-code-tmux-relay.md) - driving first-party Claude Code through tmux for recoverable review (a robust alternative to `claude -p`)
-- [x] [`sub-agent-patterns.md`](sub-agent-patterns.md) - spawn patterns, model assignment, ACP escalation, error handling
-- [x] [`gpt-55-orchestration.md`](gpt-55-orchestration.md) - tool-narration guard, strict-agentic gaps, action-verb tuning
-- [x] [`self-improving-agents.md`](self-improving-agents.md) - correction capture, behavioral-guard plugins, daily memory sweeps
-- [x] [`session-management.md`](session-management.md) - Discord channel layouts, cron isolation, hybrid approach
-- [x] [`skills-development.md`](skills-development.md) - write custom skills, structure for discoverability, real-world examples
-- [x] [`prompt-caching.md`](prompt-caching.md) - cache hygiene across Anthropic and OpenAI
+- [x] [`multi-model-orchestration.md`](multi-model-orchestration.md) - GPT 6.1 Sol orchestrator, Claude and Gemini seats, browser-LLM and Ollama lanes, and the worker fleet that does the building
+- [x] [`claude-cli-to-acp-migration.md`](claude-cli-to-acp-migration.md) - how Claude moved off the main-agent slot after Anthropic's April 2026 OAuth block, and the current `claude-cli` and ACP options
+- [x] [`acp-claude-code.md`](acp-claude-code.md) - running Claude Code as an ACP endpoint through ACPX when ACP is explicitly needed
+- [x] [`claude-code-tmux-relay.md`](claude-code-tmux-relay.md) - driving first-party Claude Code through tmux for recoverable review and scripted one-shot calls
+- [x] [`sub-agent-patterns.md`](sub-agent-patterns.md) - in-gateway sub-agents versus worker seats, spawn patterns, model assignment, error handling
+- [x] [`gpt-55-orchestration.md`](gpt-55-orchestration.md) - orchestrating with GPT 6.1 Sol: `executionContract`, the tool-narration guard, silent-loop triage (filename kept for URL stability)
+- [x] [`self-improving-agents.md`](self-improving-agents.md) - correction capture, behavioral-guard plugins, scheduled memory sweeps
+- [x] [`session-management.md`](session-management.md) - channel layouts, session scope and reset, cron isolation
+- [x] [`skills-development.md`](skills-development.md) - writing custom skills, structuring them for discoverability, real examples
+- [x] [`prompt-caching.md`](prompt-caching.md) - cache hygiene across providers and the habits that break it
 - [x] [`compaction-and-context-tuning.md`](compaction-and-context-tuning.md) - compaction, memory flush, context pruning, session search
-- [x] [`browser-llm-stack.md`](browser-llm-stack.md) - Chromium + persistent login profiles + flock-locked concurrency for browser-native LLM work
-- [x] [`local-llm-fallback.md`](local-llm-fallback.md) - Ollama for embeddings, commits, triage; when to reach for it
-- [x] [`oauth-token-lifecycle.md`](oauth-token-lifecycle.md) - subscription OAuth traps: rotating-token reuse, multi-file sync, api-key fallback, the 402 red herring
-- [x] [`model-retirement-and-fallbacks.md`](model-retirement-and-fallbacks.md) - where model ids hide, the retirement sweep, fallback chain ordering
+- [x] [`browser-llm-stack.md`](browser-llm-stack.md) - Chromium with persistent login profiles and flock-locked concurrency for browser-native LLM work
+- [x] [`local-llm-fallback.md`](local-llm-fallback.md) - local Ollama models for embeddings and bounded utility work, and when to reach for them
+- [x] [`oauth-token-lifecycle.md`](oauth-token-lifecycle.md) - subscription OAuth traps: rotating-token reuse, token storage, fallback profiles, the 402 red herring
+- [x] [`model-retirement-and-fallbacks.md`](model-retirement-and-fallbacks.md) - where model ids hide, the retirement sweep, fallback chain ordering, and the empty-chain case
 
 ## Browser Chromium lane
 

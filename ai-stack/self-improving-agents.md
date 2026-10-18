@@ -2,8 +2,8 @@
 
 How to build an AI agent that learns from corrections, captures mistakes as institutional knowledge, runs automated memory sweeps, and gets better over time instead of repeating the same errors.
 
-**Tested on:** OpenClaw 2026.4.x with GPT 5.5 (main + memory sweep), tokenjuice + tool-narration-guard plugins; still accurate on OpenClaw 2026.6.2
-**Last updated:** 2026-06-10
+**Tested on:** OpenClaw 2026.10.4 with GPT 6.1 Sol (main) and GPT 6 Luna (memory sweep), tool-narration-guard plugin, Brigade 0.28.0
+**Last updated:** 2026-10-17
 
 ---
 
@@ -19,7 +19,7 @@ AI agents wake up fresh every session. They have no memory of what they did wron
 
 Each correction costs you time and tokens. A self-improving agent captures corrections once and applies them forever.
 
-Two complementary mechanisms: **content memory** (what you correct) and **plugin hooks** (what the agent catches itself doing wrong in real time). Both matter. This guide covers both.
+Three complementary mechanisms: **content memory** (what you correct), **plugin hooks** (what the agent catches itself doing wrong in real time), and a **review queue** for turning repeated corrections into skills. This guide covers all three.
 
 ## Architecture: Three Feedback Loops
 
@@ -114,11 +114,11 @@ Before completing any task, ask yourself:
 
 ## Plugin Hooks: Catch Behaviors In-Flight
 
-Two plugins we run in production turn specific correction patterns into automatic guardrails.
+One plugin we run in production turns a specific correction pattern into an automatic guardrail. A second one, `tokenjuice`, is retired (see below).
 
 ### tool-narration-guard
 
-**What it fixes:** GPT 5.5 (and other models) sometimes narrate what they're *about* to do instead of actually calling the tool. "I'm running the build now" with no subsequent tool call. You notice 30 minutes later that nothing happened.
+**What it fixes:** GPT-class models sometimes narrate what they're *about* to do instead of actually calling the tool. "I'm running the build now" with no subsequent tool call. You notice 30 minutes later that nothing happened.
 
 **How it works:** The plugin tracks runs at the session level. When it detects narration without a follow-up tool call in the same turn, it injects a `prependContext` rule on the next turn that forces the model to either call the tool or say "I can't." No more silent stalls.
 
@@ -137,19 +137,17 @@ Two plugins we run in production turn specific correction patterns into automati
 
 The plugin lives at `~/.openclaw/workspace/.openclaw/extensions/tool-narration-guard/`. Load it via `plugins.load.paths`.
 
-### tokenjuice (PostToolUse optimization)
+### `tokenjuice` (retired)
 
-**What it does:** A PostToolUse hook plugin that re-shapes tool output to reduce subsequent turn token burn. Measured in production:
+`tokenjuice` was a PostToolUse hook plugin that re-shaped tool output to reduce later-turn token burn. I measured it before deciding to keep it:
 
 | Surface | Mode | n | Effect | Notes |
 |---------|------|---|--------|-------|
 | Claude Code | PostToolUse | 11 | +1.1% | Below noise floor, ignored |
-| Codex | PostToolUse | 11 | −4.4% | Bimodal (27% retry on compound `cd && cmd`) |
-| Pi | PostToolUse | 10 | −17.7% | Clean runs −25.3%, 30% compound-gap retry |
+| Codex | PostToolUse | 11 | -4.4% | Bimodal (27% retry on compound `cd && cmd`) |
+| Pi | PostToolUse | 10 | -17.7% | Clean runs -25.3%, 30% compound-gap retry |
 
-Pi is the flagship surface. OpenClaw loads the same extension format, so tokenjuice lands there too.
-
-**Caveat:** Claude Code 2.1.113+ doesn't substitute `tool_result` from PostToolUse hooks - only `additionalContext` lands. If you're chasing the full Pi savings profile on Claude Code, don't expect it.
+The gain only showed up on one surface, and Claude Code 2.1.113+ does not substitute `tool_result` from PostToolUse hooks (only `additionalContext` lands), so the Claude side could never match it. On 2026-10-01 I removed the Claude Code hook, and the plugin is now `enabled: false` in `plugins.entries`. I keep the table as history: if you re-enable a tool-output rewriter, measure it per surface first, because a flat average hides a bimodal retry cost.
 
 ## Error Detection & Learning Capture
 
@@ -210,9 +208,51 @@ On Ubuntu 24.04+, SSH is socket-activated by default.
 - **Workflow improvement**: promote to AGENTS.md
 - Update original entry status to "promoted" when promoting
 
+### The `.learnings/` directory
+
+The structured log above lives in a `.learnings/` directory in the workspace, one markdown file per entry type:
+
+```
+.learnings/
+├── ERRORS.md            # ERR entries
+├── LEARNINGS.md         # LRN entries
+└── FEATURE_REQUESTS.md  # FEAT entries
+```
+
+Keeping the three types in separate, predictably named files is what lets tooling read them: `brigade learn import-learnings` parses these files directly (see below).
+
 ### Productized Tooling: Brigade
 
 The hand-rolled correction-capture loop described above now ships as first-class tooling in [Brigade](https://github.com/escoffier-labs/brigade). `brigade learn import-learnings` pulls structured ERR/LRN/FEAT entries into a reviewable store, and `brigade learn skill-candidates` clusters recurring corrections into proposed skills or rules. The key design choice: proposals are never auto-applied. Brigade surfaces candidates and you decide what gets promoted, which keeps a bad pattern from silently rewriting your AGENTS.md. If you would rather not maintain the scripts in this guide by hand, lean on Brigade for the import-and-cluster half and keep the promotion decision human.
+
+`brigade learn propose-skill` turns a skill candidate into a reviewed proposal, and `brigade learn closeout` records whether a candidate was accepted, dismissed, archived, or deferred. Run `brigade learn --help` for the full list.
+
+### Skill Workshop: agent-proposed skills
+
+OpenClaw has its own queue for the same idea. With `skills.workshop.autonomous.mode` set to `"propose"`, the agent may draft a new skill or an update to a Workshop-generated skill, but the draft lands as a pending proposal instead of changing the skills directory. My live config:
+
+```json
+{
+  "skills": {
+    "workshop": {
+      "approvalPolicy": "auto",
+      "autonomous": { "mode": "propose" }
+    }
+  }
+}
+```
+
+Review the queue with the `openclaw skills workshop` subcommands:
+
+```bash
+openclaw skills workshop list              # pending and completed proposals
+openclaw skills workshop inspect <id>      # read one proposal
+openclaw skills workshop evaluate <id>     # evaluate the exact current proposal
+openclaw skills workshop apply <id>        # accept it
+openclaw skills workshop reject <id>       # or reject / revise / quarantine
+```
+
+Propose mode is the same design call as Brigade's candidates: the agent notices the pattern, a human decides whether it becomes a skill. Apply is a separate step from proposing, so a bad proposal costs you a rejected entry, not a rewritten skill.
 
 ## Daily Memory Sweep
 
@@ -220,25 +260,29 @@ Set up an automated cron job that reviews recent sessions across all channels an
 
 ### Cron Configuration
 
+This is the job shape I run (message abbreviated):
+
 ```json
 {
-  "name": "memory-sweep",
+  "name": "Memory Sweep - Session Review",
   "schedule": {
     "kind": "cron",
-    "expr": "0 */6 * * *",
+    "expr": "0 22 * * *",
     "tz": "America/New_York"
   },
   "payload": {
     "kind": "agentTurn",
     "message": "Review recent sessions across all channels. For each session:\n1. Identify significant decisions, corrections, or lessons\n2. Create or update knowledge cards for anything worth persisting\n3. Update daily log with session summaries\n4. Check for correction patterns that should be promoted to rules\n5. Skip trivial conversations (greetings, simple lookups)",
-    "model": "openai-codex/gpt-5.5"
+    "model": "openai/gpt-6-luna",
+    "thinking": "low",
+    "timeoutSeconds": 600
   },
-  "delivery": { "mode": "none" },
+  "delivery": { "mode": "announce", "channel": "discord", "to": "channel:<channel-id>" },
   "sessionTarget": "isolated"
 }
 ```
 
-This runs on the main `gpt-5.5` (medium thinking), not `gpt-5.5:cron`. Memory sweep needs judgment about what's worth keeping - thinking low produces shallower cards.
+It runs once a day at 22:00. The summary is announced to a chat channel so I can skim what got written without opening the vault.
 
 ### What the Sweep Does
 
@@ -251,7 +295,7 @@ This runs on the main `gpt-5.5` (medium thinking), not `gpt-5.5:cron`. Memory sw
 
 ### Model Selection
 
-Use your main orchestration model (GPT 5.5 medium) for the sweep. The task is structured extraction with some judgment - memory sweeps miss nuance when run on a smaller or thinking-low model. Don't route the sweep through Claude Code: the escalation lane is for high-judgment review work, not back-office housekeeping.
+The sweep started on the main model at medium thinking (GPT 5.5 at the time), because early runs on a smaller model missed nuance. It now runs on GPT 6 Luna at low thinking and the last run completed cleanly in about 77 seconds. The prompt is a fixed extraction checklist and the run is isolated and bounded (600 second timeout), which is why the cheaper lane holds up. If cards start coming back shallow, raise `thinking` before you raise the model tier. Don't route the sweep through Claude Code: the escalation lane is for high-judgment review work, not back-office housekeeping.
 
 ## Real Corrections We've Captured
 
@@ -325,13 +369,23 @@ grep -c "self-audit\|Self-Audit\|self-improvement\|Self-Improvement" ~/.openclaw
 
 echo ""
 echo "=== Memory Sweep Cron ==="
-# Check if memory sweep cron exists
-echo "Verify via: openclaw cron list | grep memory-sweep"
+openclaw cron list --json | jq -r '.jobs[] | select(.name|test("Memory Sweep")) | "\(.name)  model=\(.payload.model)  schedule=\(.schedule.expr)  last=\(.state.lastRunStatus)"'
 
 echo ""
-echo "=== Error Detection ==="
-[ -f ~/.openclaw/workspace/ERROR_DETECTION.md ] && echo "✓ ERROR_DETECTION.md exists" || echo "✗ ERROR_DETECTION.md missing"
+echo "=== .learnings Log ==="
+ls ~/.openclaw/workspace/.learnings/ 2>/dev/null || echo "No .learnings directory"
+
+echo ""
+echo "=== Skill Workshop Mode ==="
+jq -r '.skills.workshop.autonomous.mode' ~/.openclaw/openclaw.json
+openclaw skills workshop list --agent main
+
+echo ""
+echo "=== tokenjuice (expect disabled) ==="
+jq -r '.plugins.entries.tokenjuice.enabled' ~/.openclaw/openclaw.json
 ```
+
+Expected: one `Memory Sweep` job line with a `last=ok` status, the three `.learnings` files, `propose` for the workshop mode (followed by whatever proposals are pending), and `false` for `tokenjuice`.
 
 ## Gotchas
 
@@ -341,12 +395,16 @@ echo "=== Error Detection ==="
 
 3. **Over-promotion clutters rules.** Not every one-off correction needs to be in AGENTS.md. Use the 3-occurrence threshold. One-time corrections stay as knowledge cards.
 
-4. **The sweep model matters.** A budget model doing the memory sweep might miss nuance in conversations. A code-specialized model (Codex, GPT 5.5) is better at structured extraction than a small local model.
+4. **The sweep model matters.** A budget model doing the memory sweep might miss nuance in conversations. A current hosted model (Luna at low thinking works for me) is better at structured extraction than a small local model.
 
 5. **Corrections compound.** The first month of running a self-improving agent is noisy because there are lots of corrections. By month three, correction frequency drops significantly because the agent has internalized the patterns. The system works, but it takes time.
 
 6. **Don't skip the pre-task search.** The whole system falls apart if the agent doesn't check for relevant corrections before starting work. Make the self-audit a non-negotiable part of AGENTS.md.
 
-7. **Prompt-level guards don't scale; hook-level guards do.** If a correction keeps surfacing, don't keep adding sentences to AGENTS.md - build (or enable) a plugin that makes the wrong behavior structurally impossible. `tool-narration-guard` is the canonical example.
+7. **Prompt-level guards don't scale. Hook-level guards do.** If a correction keeps surfacing, don't keep adding sentences to AGENTS.md - build (or enable) a plugin that makes the wrong behavior structurally impossible. `tool-narration-guard` is the canonical example.
 
 8. **Validate memory before acting on it.** A memory card naming a specific file, function, or flag is a claim about a snapshot in time. Files get renamed, endpoints get removed. Before recommending something pulled from a memory card, grep for it or read the file. "The card says X exists" is not the same as "X exists now."
+
+9. **A propose-mode queue needs a reviewer.** Skill Workshop proposals stay `pending` until someone applies or rejects them. Mine had ten waiting when I checked. If you never look at `openclaw skills workshop list`, propose mode is just a slower way of not having the skill.
+
+10. **Retired plugins leave config behind.** `tokenjuice` is still listed under `plugins.allow` with `enabled: false`. That is harmless, but when you audit "what guards are running", read `plugins.entries.<name>.enabled`, not the allow list.

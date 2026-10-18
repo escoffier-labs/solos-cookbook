@@ -2,8 +2,8 @@
 
 How to manage OpenClaw sessions effectively using Discord (or similar channel-based platforms) instead of single-thread messaging apps. The difference between productive multi-project orchestration and fighting your own agent for context.
 
-**Tested on:** OpenClaw 2026.4.x running Discord + Telegram + Signal concurrently for 4+ months; still accurate on OpenClaw 2026.6.2
-**Last updated:** 2026-06-10
+**Tested on:** OpenClaw 2026.10.4 running Discord and Telegram concurrently (Signal was part of the original setup and is now disabled)
+**Last updated:** 2026-10-17
 
 ---
 
@@ -33,7 +33,7 @@ Single-thread chat means every topic shares one context window:
 [08:05] You: "Tell me more about that third item"
 [08:05] Agent: (confused - the briefing cron ran in an isolated session,
          the main session doesn't know what "third item" means)
-[08:10] You: "The email from Josh about the network migration"
+[08:10] You: "The email from a colleague about the network migration"
 [08:10] Agent: (searches memory, finds nothing because the cron
          output was never in this session's context)
 ```
@@ -95,13 +95,30 @@ When you spawn sub-agents, they can deliver to Discord threads:
 
 ```
 sessions_spawn(
-  agentId: "coder",
   task: "Build the API routes from this spec...",
-  thread: true    // Creates a Discord thread for this agent
+  thread: true    // Creates a Discord thread for this sub-agent
 )
 ```
 
 The sub-agent gets its own thread, its own session, and its own context. You can monitor it, steer it, or ignore it. It doesn't touch your main conversation.
+
+Two pieces of live config govern this. `session.threadBindings.spawnSessions` (default `true`) controls whether `sessions_spawn({ thread: true })` creates and binds a thread. If thread bindings are disabled, thread-bound spawns are unavailable. And `agents.defaults.subagents` sets the model and the ceiling for spawned work. Mine:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "subagents": {
+        "maxConcurrent": 8,
+        "archiveAfterMinutes": 60,
+        "model": "openai/gpt-6-luna"
+      }
+    }
+  }
+}
+```
+
+Sub-agents run on GPT 6 Luna unless the spawn names something else, and finished sessions are archived after an hour.
 
 ## Recommended Discord Server Layout
 
@@ -134,22 +151,26 @@ The sub-agent gets its own thread, its own session, and its own context. You can
 
 📁 CAREER
   #job-search       → Applications, networking, prep
-  #education        → USF coursework, certifications
+  #education        → Coursework, certifications
 
 📁 AUTOMATION
   #cron-output      → All cron deliveries
-  #heartbeat        → Heartbeat status (if noisy)
+  #heartbeat        → Heartbeat status (only if you run heartbeats; mine are off)
   #alerts           → Urgent-only notifications
 
 📁 BEST PRACTICES
   #cookbook        → Meta: improving the setup itself
 
 📁 ESCALATION
-  Thread: acp-opus     → Dedicated ACP thread for Claude Opus escalation
+  Thread: acp-claude   → Dedicated ACP thread for Claude escalation
                          (intel, design, security review, academic work)
 ```
 
 See [multi-channel setup](../automation/multi-channel-setup.md) for the ACP thread routing config.
+
+### Routing a Channel to a Different Agent
+
+Session isolation is per channel, but you can also pin a channel or account to a different agent. That is the top-level `bindings` array in `openclaw.json`: each entry matches on `channel` and `accountId` (and optionally a peer) and names the `agentId` that handles it. I use one to send a dedicated Discord channel to a browser-only agent while everything else lands on `main`. Bindings are matched in order, so put the specific route above the catch-all. See [multi-channel setup](../automation/multi-channel-setup.md) for the full shape.
 
 ### Channel Naming Conventions
 
@@ -212,12 +233,13 @@ Update your cron jobs to deliver to the Discord cron channel:
 {
   "delivery": {
     "mode": "announce",
-    "channel": "discord"
+    "channel": "discord",
+    "to": "channel:<channel-id>"
   }
 }
 ```
 
-Or configure a specific channel target if OpenClaw supports channel-level delivery routing.
+The `to` field takes a `channel:<id>` target, which is how a job lands in #cron-output instead of whatever channel happened to be last active.
 
 ### Step 3: Build the Habit
 
@@ -251,17 +273,19 @@ Confirm the isolation is actually happening. Each Discord channel and each cron 
 openclaw sessions list
 ```
 
-Expected shape (keys truncated):
+Add `--active 60` to see only sessions touched in the last hour. Expected shape (keys truncated, columns trimmed):
 
 ```
-Kind     Key                         Age     Tokens (ctx %)
-group    agent:main:discord:...      7m ago  117k/272k (43%)
-group    agent:main:discord:...      3h ago  39k/272k (14%)
-cron     agent:main:cron:...         8m ago  41k/200k (20%)
-direct   agent:main:main             9m ago  136k/272k (50%)
+Kind     Key                          Age     Model         Tokens (ctx %)
+direct   agent:main:main              1m ago  gpt-6.1-sol   71k/475k (15%)
+group    agent:main:discord:...       3h ago  gpt-6.1-sol   39k/200k (20%)
+cron     agent:main:cron:<job-id>     8m ago  gpt-6-luna    99k/258k (38%)
+direct   agent:main:<web-client>:<id>     5m ago  gpt-6.1-sol   37k/475k (8%)
 ```
 
-Three things to check:
+The context window in the denominator depends on the model, which is why the same agent shows 475k on Sol and 258k on Luna.
+
+The session store is a SQLite database (the command prints its path on the first line), not a directory of JSONL files. Three things to check:
 
 - every active Discord channel appears as its own `group` session key, so topics are not sharing context
 - cron jobs run in their own `cron` sessions, not in your working channel
@@ -269,7 +293,7 @@ Three things to check:
 
 ## Gotchas
 
-1. **Discord sessions reset daily too.** Channel isolation helps with topic separation, but everything still resets at your configured hour (default 4am). Important context must be in memory files.
+1. **Discord sessions reset daily too.** Channel isolation helps with topic separation, but everything still resets at your configured hour. The live setting is `session.reset` with `mode: "daily"` and `atHour: 4`, and `/new` or `/reset` start a fresh session on demand. Important context must be in memory files.
 
 2. **More channels = more sessions = more token potential.** If you're active in 6 Discord channels simultaneously, that's 6 session context loads. You won't hit issues on most plans, but be aware of the multiplication.
 
@@ -279,6 +303,8 @@ Three things to check:
 
 5. **Mobile Discord isn't as fast as Telegram.** Discord's mobile app is heavier. For quick mobile interactions, keeping Telegram as a secondary channel makes sense.
 
-6. **Permission management.** If you share the Discord server with other people (family, team), use Discord's permission system to restrict which channels they can see. Your agent has access to your files and memory; not everyone should see those responses.
+6. **Permission management.** If you share the Discord server with other people (family, team), use Discord's permission system to restrict which channels they can see. Your agent has access to your files and memory. Not everyone should see those responses.
 
-7. **"My agent froze" triage.** Before assuming the main agent is stuck, check the session JSONL mtime in `~/.openclaw/agents/<name>/sessions/`. GPT 5.5 on the main agent routinely goes silent for 10–30+ minutes inside deep SSH → `pct exec` → docker loops, then resumes. The session file getting touched every few seconds means it's working, not frozen. Actual freezes are rarer than the silence pattern suggests.
+7. **"My agent froze" triage.** Before assuming the main agent is stuck, check whether the session is still moving. `openclaw sessions list --active 5` shows sessions updated in the last five minutes, and the `Age` column resets every time the agent writes. The agent routinely goes silent for 10 to 30+ minutes inside deep SSH, `pct exec`, and docker loops, then resumes. Actual freezes are rarer than the silence pattern suggests. (On releases before the SQLite session store, the same check was the mtime of the session JSONL under `~/.openclaw/agents/<name>/sessions/`. Those files are now migrated archives, so mtime no longer tells you anything.)
+
+8. **Sender and DM scoping are separate settings.** `session.scope` is `per-sender` and `session.dmScope` is `per-channel-peer` on my setup, so a DM from the same person on Telegram and Discord gets two sessions. If you expect one continuous DM conversation across channels, check those two keys before blaming memory.
