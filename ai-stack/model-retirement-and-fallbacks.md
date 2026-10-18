@@ -192,6 +192,10 @@ openclaw models fallbacks list
 #    new id, not the retired one and not a silent fallback.
 journalctl --user -u openclaw-gateway -n 200 | grep -i "agent model"
 # Expected: [gateway] agent model: openai/gpt-6.1-sol (thinking=medium, fast=on)
+# The boot line only proves the default. A long-lived channel session can still
+# carry a sticky model override, so check the sessions you care about too:
+openclaw sessions --active 1440 --json | jq -r '.sessions[] | "\(.key) \(.modelProvider)/\(.model)"'
+# Expected: no session still naming the retired id
 
 # 5. Worker roster seats still name live models
 brigade fleet models list

@@ -129,7 +129,7 @@ The same runbooks can also be fired from OpenClaw cron as a `command` payload (b
 
 Use for: scheduled research, daily summaries, posting to chat channels, any task that's "agent does X, returns text, send it somewhere."
 
-OpenClaw skeleton lives in [`../templates/cron/openclaw-cron-job.json`](../templates/cron/openclaw-cron-job.json). Add jobs with `openclaw cron add`. The gateway owns job storage (a SQLite store on 2026.10.x), so do not hand-edit the legacy `~/.openclaw/cron/jobs.json`. `openclaw doctor --fix` migrates it. Hermes and other orchestrators have their own cron-config surface: the three rules below are general. The file format isn't.
+OpenClaw skeleton lives in [`../templates/cron/openclaw-cron-job.json`](../templates/cron/openclaw-cron-job.json). Add jobs with `openclaw cron add`. The gateway owns job storage (a SQLite store on 2026.10.x), so do not hand-edit the legacy `~/.openclaw/cron/jobs.json`. Current Doctor only preserves old file-store jobs: to import them, run `openclaw doctor --fix` on 2026.9.7 before upgrading to 2026.10 (see the [cron deep dive](openclaw-cron-deep-dive.md)). Hermes and other orchestrators have their own cron-config surface: the three rules below are general. The file format isn't.
 
 Three things to get right (orchestrator-agnostic):
 

@@ -105,8 +105,8 @@ Two pieces: a top-level `acp` block that turns ACP on and names the allowed agen
   "acp": {
     "enabled": true,
     "backend": "acpx",
-    "defaultAgent": "codex",
-    "allowedAgents": ["claude", "claude-opus-5", "codex", "cursor", "opencode"]
+    "defaultAgent": "claude-opus-5",
+    "allowedAgents": ["claude-opus-5"]
   },
   "plugins": {
     "allow": ["acpx"],
@@ -127,6 +127,8 @@ Two pieces: a top-level `acp` block that turns ACP on and names the allowed agen
   }
 }
 ```
+
+`permissionMode: "approve-all"` applies to every agent in `allowedAgents`, not just the one you wrote the wrapper for: any session allowed to spawn `codex`, `cursor`, or `opencode` gets the same headless write and shell approval. The example above is narrowed to the one agent it configures. My own config still lists the other harnesses, and that is a wider grant than this guide recommends.
 
 `plugins.allow` here is shown with only `acpx` for brevity. If you already have an allowlist, add `acpx` to it rather than replacing it. Replace `/absolute/path/to/agent-home` with the gateway account's absolute home directory. Under systemd, `PATH` is minimal and relative lookups fail silently.
 
