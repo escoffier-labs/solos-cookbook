@@ -2,8 +2,8 @@
 
 > When an agent breaks something, stop the bleeding first, preserve evidence second, and only then fix the root cause.
 
-**Tested on:** agent API exposure incidents, secret-leak drills, publish-boundary checks, backup restore workflows
-**Last updated:** 2026-05-11
+**Tested on:** Ubuntu 24.04, systemd user services, OpenClaw 2026.10.4, Brigade 0.28.0. Drawn from agent API exposure incidents, secret-leak drills, publish-boundary checks, backup restore workflows, and a SIEM disk-full incident.
+**Last updated:** 2026-10-17
 
 ## What this is
 
@@ -123,7 +123,7 @@ Use the first matching class:
 | runaway automation | cron loop, repeated browser jobs, message spam | disable timer or queue, inspect trigger |
 | prompt injection | untrusted content caused tool use or policy bypass | freeze external-action tools, preserve prompt and source |
 | memory corruption | false durable claim, secret in memory, bad rule | stop ingestion, quarantine handoff or card |
-| service outage | gateway, plugin, or dependency failed | preserve logs, restart only after status capture |
+| service outage | gateway, plugin, dependency, or disk failed | preserve logs, check disk space and the index as well as the process, restart only after status capture |
 
 Severity is about blast radius, not drama:
 
@@ -150,9 +150,9 @@ Do not solve this with "tell the model not to do that." Remove the endpoint, nar
 #### Secret exposure
 
 1. Revoke or rotate the secret.
-2. Update the vault and local env file.
+2. Update the vault (or, in the minimal variant, the local env file). If env files are rendered from a vault into tmpfs, re-run the render unit afterward and compare the output file's mtime to the unit's completion time. An `active (exited)` unit does not prove the re-render worked. See [`secret-management.md`](secret-management.md).
 3. Restart affected services.
-4. Search for the old value or handle in repos, logs, transcripts, staged artifacts, screenshots, and memory handoffs.
+4. Search for the old value or handle in repos, logs, transcripts, shell-snapshot directories kept by agent harnesses, staged artifacts, screenshots, and memory handoffs. Shell snapshots can hold exported secrets in plaintext.
 5. Scrub or delete exposed artifacts.
 6. Add a scanner rule or publish-boundary check if the leak class was not covered.
 
@@ -210,6 +210,8 @@ Watch logs during the first run:
 ```bash
 journalctl --user -u <service-name>.service -f
 ```
+
+If the incident was a full disk, free or grow the disk before restarting, then check that downstream stores are writable. After a SIEM disk-full incident, the indexer stayed read-only (flood-stage watermark) until I cleared it, and the manager looked healthy the whole time because its on-disk archives were complete. See [`wazuh-triage.md`](wazuh-triage.md).
 
 Run a smoke test that cannot repeat the incident. For example:
 
@@ -308,6 +310,10 @@ Expected result: affected automation is either still paused intentionally or has
 
 7. **A prompt reminder is not closure.** Closure means the destructive path is gone, gated, scoped, or monitored.
 
+8. **A green process is not a working system.** A manager that is running while its index is read-only, or a gateway that is up while its env file is stale, passes a status check and still loses data. Verify the output, not only the unit state.
+
+9. **Rotation has to reach the rendered copy.** If your env files are generated from a vault, rotating the vault entry fixes nothing until the render runs again and the consuming service restarts.
+
 ## Templates
 
 - [`../templates/security/incident-note.md`](../templates/security/incident-note.md) - sanitized incident note template
@@ -318,7 +324,8 @@ Expected result: affected automation is either still paused intentionally or has
 ## Related
 
 - [`agent-security-hardening.md`](agent-security-hardening.md) - remove destructive paths and scope agent permissions
-- [`secret-management.md`](secret-management.md) - rotate secrets and keep values out of logs, repos, and memory
+- [`secret-management.md`](secret-management.md) - rotate secrets, render env files from a vault, and keep values out of logs, repos, and memory
+- [`wazuh-triage.md`](wazuh-triage.md) - the SIEM disk-full incident and retention
 - [`../infrastructure/backup-recovery.md`](../infrastructure/backup-recovery.md) - restore from encrypted snapshots
 - [`../publishing/publish-time-scrubbing.md`](../publishing/publish-time-scrubbing.md) - public leak cleanup and publish-boundary checks
 - [`../automation/cron-patterns.md`](../automation/cron-patterns.md) - pause and reshape scheduled jobs

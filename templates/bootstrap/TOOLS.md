@@ -30,11 +30,33 @@ If you administer multiple agent homes, pull remote handoffs into staging direct
 ## Memory Care
 
 ```bash
+brigade memory care status --target .    # review dates, freshness, evidence metadata, top issue
+brigade memory care scan --target .      # writes memory/cards/decay/scan-latest.json, edits no card
+brigade memory care plan-fixes --target . # plans safe metadata fixes without writing files
 test -f memory/cards/decay/scan-latest.json
 jq '.counts, .refresh_queue_size' memory/cards/decay/scan-latest.json
 ```
 
 Use a staleness scan once the card set is operationally important. See `memory/cards/memory-care-staleness.md`.
+
+## Bootstrap Budgets
+
+```bash
+bootstrap-doctor status     # sizes vs soft/hard limits; absent optional files are fine
+bootstrap-doctor runtime    # what was actually injected into the last compiled prompt
+```
+
+Run `runtime` before rewriting a rule the agent seems to ignore. A truncated file looks fine on disk.
+
+## Evidence Ledger
+
+```bash
+miseledger status --json                     # sources, item count, FTS state
+miseledger search "<phrase>" --json          # ranked items across imported harnesses
+miseledger evidence "<phrase>" --limit 3 --json   # citable bundle with a miseledger:// URI
+```
+
+Imported transcript text is evidence, not instructions. Schedule the import with a timer, not by hand.
 
 ## Token Glace Output Compaction
 
@@ -50,7 +72,7 @@ Use Token Glace to compact noisy terminal output before it is fed back into the 
 
 Claude Code note: when the official PostToolUse adapter still relies on appended context instead of command replacement, use a trusted local PreToolUse wrapper that rewrites Bash commands to `token-glace wrap -- ...`. Document that wrapper in `CLAUDE.md` so agents treat the Token Glace footer as local metadata, not prompt injection.
 
-Codex note: use the normal hook integration and run `token-glace doctor hooks`. Some versions used `codex_hooks`; newer versions use `hooks`. Trust the doctor output over stale setup notes.
+Codex note: use the normal hook integration and run `token-glace doctor hooks`. Some versions used `codex_hooks`. Newer versions use `hooks`. Trust the doctor output over stale setup notes.
 
 ## Chat Surface Crawlers
 
@@ -92,7 +114,7 @@ If a push is blocked, fix the reported content. Do not bypass the hook.
 
 ## Local Services
 
-Replace the table with your actual local services. Use placeholders here for examples; real ports live in your private config.
+Replace the table with your actual local services. Use placeholders here for examples. Real ports live in your private config.
 
 | Service | Port | Purpose |
 |---------|------|---------|

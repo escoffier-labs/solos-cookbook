@@ -54,7 +54,7 @@ The pre-push hook runs Brigade guard with the `public-repo` policy. For publish-
 
 ## Preferred Tools
 
-- Use `trash` (or your platform equivalent) instead of `rm`. Recoverable beats gone forever.
+- Prefer a recoverable delete over `rm`. `trash` (the `trash-cli` package on Debian and Ubuntu) is not installed by default, so install it first. Until then, move files to a holding directory instead of deleting them. Recoverable beats gone forever.
 - Do not bypass repository verification hooks. Fix the blocker or stop and report it.
 
 ---
@@ -100,7 +100,7 @@ Before installing anything (even with user approval):
 
 ## Memory Hygiene
 
-- Do not write durable memory entries directly; use the handoff flow.
+- Do not write durable memory entries directly. Use the handoff flow.
 - Do not promote unverified reflections into canonical memory.
 - Stale memory is worse than missing memory. Update or remove entries when their basis changes.
 - Do not load knowledge cards in shared / group contexts that include other people.
@@ -142,7 +142,7 @@ Document the protected paths and what lives there.
 
 ## Personal Workstation Safety
 
-If the workspace shares a network with the user's personal daily driver (different machine, same LAN), treat that machine as **off-limits without explicit confirmation**. Do not restart, kill processes, install software, or modify settings remotely. Read-only access is fine; mutation is not.
+If the workspace shares a network with the user's personal daily driver (different machine, same LAN), treat that machine as **off-limits without explicit confirmation**. Do not restart, kill processes, install software, or modify settings remotely. Read-only access is fine. Mutation is not.
 
 ---
 

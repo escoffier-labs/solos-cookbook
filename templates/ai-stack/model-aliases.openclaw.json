@@ -3,7 +3,10 @@
     "defaults": {
       "model": {
         "primary": "openai/gpt-6.1-sol",
-        "fallbacks": []
+        "fallbacks": [
+          "openai/gpt-6-luna",
+          "anthropic/claude-opus-5-5"
+        ]
       },
       "systemAgent": {
         "agentId": "main"
@@ -53,7 +56,10 @@
       "main": {
         "model": {
           "primary": "openai/gpt-6.1-sol",
-          "fallbacks": []
+          "fallbacks": [
+            "openai/gpt-6-luna",
+            "anthropic/claude-opus-5-5"
+          ]
         },
         "thinkingDefault": "medium",
         "subagents": {
@@ -65,7 +71,9 @@
       "browser-operator": {
         "model": {
           "primary": "openai/gpt-6-luna",
-          "fallbacks": []
+          "fallbacks": [
+            "anthropic/claude-sonnet-5-5"
+          ]
         },
         "thinkingDefault": "low",
         "skills": [
