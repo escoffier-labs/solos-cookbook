@@ -2,8 +2,8 @@
 
 How to write custom OpenClaw skills, structure them for discoverability, and extend your agent's capabilities with reusable task-specific instructions.
 
-**Tested on:** OpenClaw 2026.4.x with 20+ custom skills across security, content, and development; still accurate on OpenClaw 2026.6.2
-**Last updated:** 2026-06-10
+**Tested on:** OpenClaw 2026.10.4 with 60+ workspace skills, Claude Code 2.1.302 with the Skillet plugin 0.6.0, Brigade 0.28.0
+**Last updated:** 2026-10-17
 
 ---
 
@@ -92,7 +92,7 @@ These are scoped to the project and can reference project-specific patterns, arc
 
 Published skills that others can use. The Open Agent Skills standard (agentskills.io) provides a cross-platform format.
 
-Browse community skills at [ClawHub](https://clawhub.ai) or find them on GitHub.
+Browse community skills at [ClawHub](https://clawhub.ai) or find them on GitHub. A skill you write for one harness is a plain `SKILL.md` directory, so it travels: the next section covers how mine reach each harness.
 
 ## Writing Effective Skills
 
@@ -272,15 +272,90 @@ OpenClaw scans skill descriptions to match incoming requests. The matching proce
 - Include negative examples ("NOT for: simple one-liner fixes")
 - Test by asking your agent tasks that should and shouldn't trigger the skill
 
+## How Skills Are Distributed
+
+The same `SKILL.md` has to work in more than one harness, so I stopped copying skill folders by hand. Two mechanisms now do the distribution.
+
+### Skillet: a plugin of shared skills
+
+[Skillet](../tools/skillet.md) is a public collection of SKILL.md-format skills (the repo audit, planning, review, and handoff skills I use daily). In Claude Code it installs as a plugin, so the skills arrive namespaced (`skillet:line-check`, `skillet:check`) and update when the plugin does:
+
+```
+/plugin marketplace add escoffier-labs/skillet
+/plugin install skillet@skillet
+```
+
+Check what is installed and at what version:
+
+```bash
+claude plugin list
+```
+
+Expected: a `skillet@skillet` entry with `Status: enabled` (mine reports version 0.6.0 at user scope). For OpenClaw or any other SKILL.md-capable harness, copy the individual skill folder from a clone into that harness's skills directory.
+
+### `brigade skills`: one reviewed registry, many harnesses
+
+For skills I author myself, [Brigade](../tools/brigade.md) keeps a reviewed registry and projects it into each harness's own skills directory, so I edit one source and the copies cannot silently drift. The commands (all present in Brigade 0.28.0, run `brigade skills --help` for the full list):
+
+| Command | What it does |
+|---------|--------------|
+| `brigade skills search <query>` | Search the local registry |
+| `brigade skills lint <skill>` | Lint a registry skill or a skill directory before you trust it |
+| `brigade skills install <skill> --target <harness\|all>` | Install one reviewed skill into a harness (`--force` to overwrite) |
+| `brigade skills sync --target <harness\|all> [--write]` | Reconcile the registry against installed copies. Without `--write` it only reports |
+| `brigade skills fleet status` | Count installed copies as current, stale, missing, unsupported, unknown, or external |
+| `brigade skills compatibility <skill>` | Show how a skill maps across harness adapters |
+| `brigade skills diff` / `history` / `rollback` | Compare against the bundled template or registry, list install history, restore the last snapshot |
+| `brigade skills inbox ...` | Review agent-proposed skill packs (`add`, `list`, `show`, `diff`, `accept`, `reject`) before they enter the registry |
+| `brigade skills pack ...` | Build, import, and inspect portable skill packs |
+
+Harness targets come from adapters. `brigade skills adapters list` shows the built-in set (Codex, Claude, OpenCode, Antigravity, Cursor, Copilot, Goose, and others), each with the directory it writes to, such as `.claude/skills/<skill_id>` or `.codex/skills/<skill_id>`.
+
+The review step is the reason I use this instead of a symlink farm. `sync` is a dry run until you add `--write`, `--trust` sets the minimum registry trust level that may be installed, and `inbox` gives agent-proposed skills a human gate. That mirrors OpenClaw's own Skill Workshop queue (see [self-improving agents](self-improving-agents.md)).
+
+### OpenClaw's own skill sources
+
+OpenClaw loads skills from the agent workspace and from bundled and node-provided sources, and its CLI can install more:
+
+```bash
+openclaw skills list --agent main      # every skill, with status and source
+openclaw skills check --agent main     # ready, visible, disabled, missing requirements
+openclaw skills install <skill-ref>    # ClawHub ref, git:<repo>, or a local directory
+openclaw skills update                 # update ClawHub-installed skills
+```
+
+Bundled skills you will never use should be turned off rather than left in the prompt. Each one is an entry under `skills.entries`:
+
+```json
+{
+  "skills": {
+    "entries": {
+      "<bundled-skill-name>": { "enabled": false }
+    }
+  }
+}
+```
+
+I disable several dozen bundled skills this way, which keeps the skill list in the system prompt short.
+
 ## Managing Skills
 
 ### Install a Community Skill
 
+Prefer the installer, which can apply the configured install policy before the skill lands:
+
 ```bash
-# Clone or download to your skills directory
+openclaw skills install <skill-ref>
+```
+
+or, for a one-off, clone it into the workspace skills directory and read it before you rely on it:
+
+```bash
 cd ~/.openclaw/workspace/skills/
 git clone https://github.com/someone/cool-skill.git
 ```
+
+A third-party skill is executable instructions. Read its `SKILL.md` and scripts before enabling it.
 
 ### List Your Skills
 
@@ -318,6 +393,23 @@ done
 ```
 
 Expected: `ok` for every skill directory. Any `MISSING` line is a skill the agent can never discover.
+
+Then confirm OpenClaw agrees:
+
+```bash
+openclaw skills check --agent main
+```
+
+Expected: a summary with `Missing requirements: 0` and the eligible count close to the total minus the skills you deliberately disabled.
+
+For distribution, confirm the Skillet plugin is installed and the registry copies are current:
+
+```bash
+claude plugin list | grep -A3 skillet
+brigade skills fleet status
+```
+
+Expected: `skillet@skillet` enabled. `fleet status` prints a count line such as `checked=954 current=944 stale=0 missing=0 unsupported=0 unknown=7 external=3`, then lists each `unknown` or `external` copy. `stale` and `missing` should be 0. Run it from the workspace that owns the registry, because it checks the current directory (elsewhere it reports `checked=0`).
 
 Then test discovery live: send the agent a message containing one of the skill's trigger phrases and confirm it loads that skill (the response should follow the skill's steps, not generic behavior). Follow with a message that should *not* trigger it and confirm it doesn't.
 

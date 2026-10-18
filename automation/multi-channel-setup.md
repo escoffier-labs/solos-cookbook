@@ -2,8 +2,8 @@
 
 How OpenClaw handles multiple messaging platforms simultaneously, session isolation between channels, and practical patterns for Discord, Telegram, and Signal.
 
-**Tested on:** OpenClaw 2026.4.x with Discord + Telegram + Signal running concurrently; still accurate on OpenClaw 2026.6.2
-**Last updated:** 2026-06-10
+**Tested on:** OpenClaw 2026.10.4 with Discord and Telegram live (Signal configured but disabled). Earlier notes come from 2026.4.x with all three running concurrently
+**Last updated:** 2026-10-17
 
 ---
 
@@ -25,15 +25,17 @@ The key insight: **each channel/chat gets its own session.** Your Telegram DM, D
 
 ### How Session Keys Work
 
-Session keys are derived from the channel context:
+Session keys are derived from the agent, the channel, and the chat context. These are the shapes I see in `openclaw sessions --agent main --json` on 2026.10.4:
 
-| Platform | Session Key Pattern | Example |
-|----------|-------------------|---------|
-| Telegram DM | `agent:main:telegram:dm:<user_id>` | Your private chat |
-| Discord Channel | `agent:main:discord:channel:<channel_id>` | #general |
-| Discord Thread | `agent:main:discord:thread:<thread_id>` | Thread in #dev |
-| Discord DM | `agent:main:discord:dm:<user_id>` | Bot DM |
-| Signal | `agent:main:signal:<chat_id>` | Signal chat |
+| Source | Session Key Pattern | Example |
+|--------|-------------------|---------|
+| Telegram DM | `agent:main:telegram:direct:<user_id>` | Your private chat |
+| Discord channel | `agent:main:discord:channel:<channel_id>` | #general |
+| Cron job run | `agent:main:cron:<uuid>` | One isolated job run |
+| Sub-agent | `agent:main:subagent:<uuid>` | A spawned worker |
+| Web or API client | `agent:main:<web-client>:<uuid>`, `agent:main:openai:<uuid>` | A local web chat client, OpenAI-compatible API calls |
+
+Of 427 stored sessions on my main agent, 265 are Discord channels. How a channel's sessions are split per sender is set by `session.scope` and `session.dmScope` (mine: `per-sender` and `per-channel-peer`).
 
 ### What's Isolated
 
@@ -61,22 +63,23 @@ This is by design. Channel isolation prevents context bleeding, which is importa
 
 ### Daily Reset
 
-Sessions reset on a configurable schedule (default: daily at 4am local time):
+Sessions reset on a configurable schedule. The setting lives at the top-level `session.reset` (it used to be documented under `agents.defaults`, that location is wrong on current releases):
 
 ```json
 {
-  "agents": {
-    "defaults": {
-      "reset": {
-        "mode": "daily",
-        "atHour": 4
-      }
+  "session": {
+    "scope": "per-sender",
+    "dmScope": "per-channel-peer",
+    "resetTriggers": ["/new", "/reset"],
+    "reset": {
+      "mode": "daily",
+      "atHour": 4
     }
   }
 }
 ```
 
-Every morning, every session starts fresh. No infinite context buildup. Important information persists through workspace files.
+Every morning at 4am local time, sessions start fresh. No infinite context buildup. `resetTriggers` are the chat commands that reset one session on demand. Important information persists through workspace files.
 
 ### Mid-Session Compaction
 
@@ -84,10 +87,14 @@ If a session fills its context window before the daily reset, compaction kicks i
 
 ```json
 {
-  "compaction": {
-    "mode": "safeguard",
-    "memoryFlush": {
-      "enabled": true
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "mode": "safeguard",
+        "keepRecentTokens": 20000,
+        "recentTurnsPreserve": 4,
+        "memoryFlush": { "enabled": true, "softThresholdTokens": 32000 }
+      }
     }
   }
 }
@@ -95,6 +102,7 @@ If a session fills its context window before the daily reset, compaction kicks i
 
 - `safeguard` mode only compacts when approaching context limits
 - `memoryFlush` writes a summary to memory files before trimming
+- `keepRecentTokens` and `recentTurnsPreserve` keep the latest turns verbatim
 - The session continues with compressed history
 
 ### Context Pruning
@@ -103,9 +111,14 @@ Tool outputs get pruned automatically to prevent context bloat:
 
 ```json
 {
-  "contextPruning": {
-    "mode": "cache-ttl",
-    "ttl": "5m"
+  "agents": {
+    "defaults": {
+      "contextPruning": {
+        "mode": "cache-ttl",
+        "ttl": "5m",
+        "hardClear": { "enabled": true, "placeholder": "[tool output pruned]" }
+      }
+    }
   }
 }
 ```
@@ -129,7 +142,9 @@ Discord has the richest feature set: channels, threads, reactions, embeds, polls
 
 **Formatting:** Discord supports markdown but NOT markdown tables. Use bullet lists instead. Wrap multiple links in `<>` to suppress embeds.
 
-**Thread spawning:** Sub-agents can be spawned into Discord threads using `sessions_spawn` with `thread: true`, giving them their own isolated conversation space.
+**Thread spawning:** Sub-agents can be spawned into Discord threads using `sessions_spawn` with `thread: true`, giving them their own isolated conversation space. That is gated by the account's `threadBindings` block (`enabled` and `spawnSessions` in my config).
+
+**Progress streaming:** `streaming.mode: "progress"` (with a `progress` block for label, tool progress, and line limits) posts a status line while the agent works instead of going quiet for minutes.
 
 ### Telegram
 
@@ -151,7 +166,7 @@ Signal provides secure messaging with basic formatting support.
 
 ### Running Multiple Channels
 
-Channels are plugins. Register them in `plugins.allow` and `plugins.entries`, then configure per-channel in `channels.*`:
+Channels are plugins. Register them in `plugins.allow` (an exclusive whitelist), enable or disable them under `plugins.entries`, then configure each platform under `channels.*`. Placeholders below. Real tokens come from your secret store, never inline:
 
 ```json
 {
@@ -159,49 +174,113 @@ Channels are plugins. Register them in `plugins.allow` and `plugins.entries`, th
     "allow": ["telegram", "discord", "signal", "..."],
     "entries": {
       "telegram": { "enabled": true },
-      "discord":  { "enabled": true },
-      "signal":   { "enabled": true }
+      "signal":   { "enabled": false }
     }
   },
   "channels": {
     "discord": {
       "enabled": true,
-      "token": "your-discord-bot-token",
-      "allowedGuilds": ["guild-id"]
+      "groupPolicy": "allowlist",
+      "streaming": { "mode": "progress" },
+      "accounts": {
+        "default": {
+          "token": "${DISCORD_BOT_TOKEN}",
+          "groupPolicy": "allowlist",
+          "threadBindings": { "enabled": true, "spawnSessions": true }
+        }
+      },
+      "guilds": {
+        "<guild-id>": {
+          "requireMention": false,
+          "ignoreOtherMentions": true,
+          "users": ["<discord-user-id>"],
+          "channels": {
+            "<channel-id>": { "enabled": true }
+          }
+        }
+      },
+      "execApprovals": {
+        "enabled": true,
+        "target": "channel",
+        "approvers": ["<discord-user-id>"]
+      }
     },
     "telegram": {
       "enabled": true,
-      "token": "your-telegram-bot-token",
-      "allowedUsers": ["your-user-id"]
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "dmPolicy": "allowlist",
+      "allowFrom": ["<telegram-user-id>"],
+      "groupPolicy": "allowlist",
+      "groupAllowFrom": ["<telegram-user-id>"],
+      "groups": { "*": { "requireMention": true } },
+      "dmHistoryLimit": 8,
+      "streaming": { "mode": "progress" }
     },
     "signal": {
-      "enabled": true
+      "enabled": false,
+      "account": "<signal-account>",
+      "dmPolicy": "pairing",
+      "allowFrom": [],
+      "groupPolicy": "allowlist",
+      "groupAllowFrom": []
     }
   }
 }
 ```
 
-**Schema break heads-up (2026-04-14):** The `2026.4.14` release removed `ackReaction`, `typingIndicator`, and scalar-streaming options from the telegram channel schema. `openclaw doctor --fix` is a stub for this - migrate with `jq` before restarting the gateway, or the gateway crash-loops on validation.
+Key names that changed from older guides: the Telegram credential is `botToken` (not `token`). Access control is `dmPolicy` / `allowFrom` for DMs and `groupPolicy` / `groupAllowFrom` for groups (not `allowedUsers`). Discord access is the `guilds` map keyed by guild id, with `users` and a `channels` map inside each (not `allowedGuilds` / `allowedChannels`), and the bot token sits under `accounts.<name>.token`. `dmPolicy: "pairing"` means unknown senders get a pairing flow instead of being dropped. Signal here also carries a `transport` block (a managed signal-cli process). I keep it disabled, so the section above is shape only.
 
-## ACP Escalation via Discord Thread
+**Schema break heads-up (2026-04-14, history):** The `2026.4.14` release removed `ackReaction`, `typingIndicator`, and scalar-streaming options from the telegram channel schema, and `openclaw doctor --fix` did not migrate them. Streaming is now an object (`mode`, plus an optional `progress` block). Newer doctor releases migrate more of this. My promotion script runs `doctor --fix --non-interactive` against live state before the new build starts (see [Upgrade hygiene](../infrastructure/upgrade-hygiene.md)).
 
-Since the [April 2026 claude-cli removal](../ai-stack/claude-cli-to-acp-migration.md), Claude Opus reaches you via ACP, not the main agent slot. The cleanest UX is a dedicated Discord thread routed straight to the ACP session:
+## Routing: Bindings
+
+Which agent answers a given chat is decided by the top-level `bindings` array, not by anything under `channels.*`. An entry with `type: "route"` pins one peer (a channel, thread, or DM) to an agent:
 
 ```json
 {
-  "channels": {
-    "discord": {
-      "routing": {
-        "threads": {
-          "acp-opus": { "agentId": "acp-claude" }
-        }
+  "bindings": [
+    {
+      "type": "route",
+      "agentId": "<agent-id>",
+      "comment": "dedicated channel for the browser agent",
+      "match": {
+        "channel": "discord",
+        "accountId": "default",
+        "peer": { "kind": "channel", "id": "<discord-channel-or-thread-id>" }
       }
+    },
+    {
+      "agentId": "<default-agent-id>",
+      "match": { "channel": "discord", "accountId": "*" }
+    },
+    {
+      "agentId": "<default-agent-id>",
+      "match": { "channel": "telegram", "accountId": "*" }
     }
+  ]
+}
+```
+
+I run three bindings: one `route` with a `peer` for a dedicated channel, and two account-level entries (no `type`, no `peer`) that send everything else on Discord and Telegram to the default agent. Agents themselves are defined under `agents.entries`.
+
+## ACP Escalation via Discord Thread
+
+Since the [April 2026 claude-cli removal](../ai-stack/claude-cli-to-acp-migration.md), Claude reaches you via ACP, not the main agent slot. ACP is configured at the top level of `openclaw.json`, not under a channel:
+
+```json
+{
+  "acp": {
+    "enabled": true,
+    "backend": "acpx",
+    "defaultAgent": "codex",
+    "allowedAgents": ["claude", "codex", "cursor", "opencode"]
   }
 }
 ```
 
-Create a Discord thread named `acp-opus`. Any message posted there spins up a fresh ACP session with Claude Code; subsequent messages continue it. The session is fully isolated from your main GPT 5.5 sessions.
+`allowedAgents` is the whitelist of ACP harnesses a session may start. Mine also lists a few pinned Claude entries from earlier model generations. Trim yours to what you actually run.
+
+The cleanest UX is still a dedicated Discord thread: a `route` binding (see Routing above) pointing that thread's peer id at a dedicated agent. Mine points a channel at the browser agent. The same binding shape can target any agent id you define, including one that runs on an ACP runtime. Anything posted there starts a fresh ACP session. Subsequent messages continue it. The session is fully isolated from the main agent's sessions. The older `channels.discord.routing.threads` block this guide used to show is not how routing works on current releases.
 
 **Why a thread and not a channel:** Threads auto-archive after inactivity, which matches ACP's short-lived-session model. Channels stick around and invite people to expect persistence that ACP doesn't offer.
 
@@ -230,16 +309,20 @@ Set up a periodic cron job that reviews recent sessions across all channels and 
 ```json
 {
   "name": "memory-sweep",
-  "schedule": { "kind": "cron", "expr": "0 */6 * * *", "tz": "America/New_York" },
+  "schedule": { "kind": "cron", "expr": "0 22 * * *", "tz": "America/New_York" },
   "payload": {
     "kind": "agentTurn",
     "message": "Review recent sessions across all channels. Extract any important decisions, facts, or context worth persisting. Create or update knowledge cards as needed.",
-    "model": "openai-codex/gpt-5.5"
+    "model": "openai/gpt-6-luna",
+    "thinking": "low",
+    "timeoutSeconds": 600
   },
-  "delivery": { "mode": "none" },
+  "delivery": { "mode": "announce", "channel": "discord", "to": "channel:<discord-channel-id>", "bestEffort": true },
   "sessionTarget": "isolated"
 }
 ```
+
+Mine runs nightly at 22:00, a few hours before the 04:00 reset, so the day's decisions land in cards before the sessions clear. Job fields are covered in [openclaw-cron-deep-dive](openclaw-cron-deep-dive.md).
 
 ## Local-First Message Archives Beyond OpenClaw
 
@@ -308,15 +391,25 @@ Restrict who can interact with your agent on each platform:
 {
   "channels": {
     "discord": {
-      "allowedGuilds": ["your-server-id"],
-      "allowedChannels": ["channel-id-1", "channel-id-2"]
+      "groupPolicy": "allowlist",
+      "guilds": {
+        "<guild-id>": {
+          "users": ["<discord-user-id>"],
+          "channels": { "<channel-id>": { "enabled": true } }
+        }
+      }
     },
     "telegram": {
-      "allowedUsers": ["your-user-id", "trusted-friend-id"]
+      "dmPolicy": "allowlist",
+      "allowFrom": ["<telegram-user-id>"],
+      "groupPolicy": "allowlist",
+      "groupAllowFrom": ["<telegram-user-id>"]
     }
   }
 }
 ```
+
+`allowlist` drops anyone not listed. Discord's `requireMention` and `ignoreOtherMentions` (per guild) control whether the agent answers every message or only ones aimed at it. Telegram's `groups` map takes the same `requireMention` flag per group (`"*"` for all). Discord also has `execApprovals`: exec requests that need a human go to a named approver, here posted into the channel (`target: "channel"`).
 
 ### Group Chat Safety
 
@@ -333,39 +426,55 @@ The main agent model is set at the gateway level, not per channel. Whether messa
 
 - **Sub-agents** get their own model assignment
 - **Per-session overrides** via `/model` command
-- **Cron jobs** can specify a different model
-- **ACP thread routing** sends messages to a different agent entirely (see above)
+- **Cron jobs** pin a model per job (`payload.model`)
+- **Bindings and ACP routing** send a chat to a different agent entirely (see above)
 
-**Stickiness warning.** One OpenAI 503 on `gpt-5.5` once pinned a cron channel to `gpt-5.3-codex` via the internal `auto` override system for four days. `/reset` does not reliably clear `auto` overrides. Use `/model` to re-pin with `user` source when this happens. The incident is memorable because the cheaper fallback silently handled four days of work at lower quality before anyone noticed.
+My primary is GPT 6.1 Sol via the gateway default (`agents.defaults.model.primary`), with no fallback chain configured.
+
+**Stickiness warning (history, 2026).** One OpenAI 503 on `gpt-5.5` once pinned a cron channel to `gpt-5.3-codex` via the internal `auto` override system for four days. Both models are retired now, but the mechanism is general. `/reset` does not reliably clear `auto` overrides. Use `/model` to re-pin with `user` source when this happens. The incident is memorable because the cheaper fallback silently handled four days of work at lower quality before anyone noticed.
 
 ## Verification
 
 ```bash
-# Check configured channels
+# Check configured channels (keys only, no tokens)
 echo "=== Channel Configuration ==="
-jq '.channels | to_entries | map({name: .key, enabled: .value.enabled})' ~/.openclaw/openclaw.json
+jq -c '.channels | to_entries | map({name: .key, enabled: .value.enabled})' ~/.openclaw/openclaw.json
+# Expected: one object per channel, e.g. discord true, telegram true, signal false
 
-# Check channel plugins are allowed + enabled
+# Check channel plugins are enabled (bundled plugins you never touched show null)
 echo ""
 echo "=== Channel Plugins ==="
-jq '.plugins.entries | to_entries | map(select(.key as $k | ["telegram","discord","signal"] | index($k))) | map({plugin: .key, enabled: .value.enabled})' ~/.openclaw/openclaw.json
+jq -c '.plugins.entries | to_entries | map(select(.key as $k | ["telegram","discord","signal"] | index($k))) | map({plugin: .key, enabled: .value.enabled})' ~/.openclaw/openclaw.json
+
+# Check the channel keys exist under their current names (no values printed)
+echo ""
+echo "=== Channel Keys ==="
+jq -c '.channels | map_values(keys)' ~/.openclaw/openclaw.json
+# Expected: telegram has botToken, allowFrom, groupAllowFrom, dmPolicy, groupPolicy;
+# discord has guilds, accounts, groupPolicy
 
 # Check session reset config
 echo ""
 echo "=== Reset Configuration ==="
-jq '.agents.defaults.reset // {}' ~/.openclaw/openclaw.json
+jq -c '.session | {scope, dmScope, reset, resetTriggers}' ~/.openclaw/openclaw.json
+# Expected: reset {"mode":"daily","atHour":4}
 
-# Check ACP thread routing (if configured)
+# Check routing bindings (shape only)
 echo ""
-echo "=== Discord Thread Routing ==="
-jq '.channels.discord.routing.threads // {}' ~/.openclaw/openclaw.json
+echo "=== Bindings ==="
+jq -c '.bindings | map({type, agentId, channel: .match.channel, peer: (.match.peer != null)})' ~/.openclaw/openclaw.json
+
+# Check ACP
+echo ""
+echo "=== ACP ==="
+jq -c '.acp | {enabled, backend, defaultAgent, allowedAgents}' ~/.openclaw/openclaw.json
 ```
 
 ## Gotchas
 
 1. **Channel sessions are independent.** Telling the agent something in Telegram doesn't make it available in Discord. Use memory files for cross-channel persistence.
 
-2. **Daily reset clears ALL sessions.** Every channel starts fresh at the configured reset hour. Important context from yesterday must be in memory files.
+2. **Daily reset clears ALL sessions.** Every channel starts fresh at `session.reset.atHour`. Important context from yesterday must be in memory files.
 
 3. **Group chats burn more tokens.** Your agent processes every message in a group chat, even ones it doesn't respond to. A chatty Discord channel can burn through context faster than a quiet DM.
 
@@ -375,6 +484,8 @@ jq '.channels.discord.routing.threads // {}' ~/.openclaw/openclaw.json
 
 6. **Concurrent messages from different channels.** If someone messages you on Telegram and Discord at the same time, both are handled as separate sessions. No conflict, no queue blocking. The gateway routes them independently.
 
-7. **`plugins.allow` is exclusive.** Even bundled channel plugins (`telegram`, `discord`, `signal`) get blocked if they're not in the whitelist. One symptom of the channel being "silently broken" after an upgrade is that `plugins.allow` was regenerated without your channel in it. Check with `jq '.plugins.allow' ~/.openclaw/openclaw.json` before debugging deeper.
+7. **`plugins.allow` is exclusive.** Even bundled channel plugins (`telegram`, `discord`, `signal`) get blocked if they're not in the whitelist. A disabled plugin whose config is still present (mine: Signal) logs a config warning on every CLI call. That is cosmetic. One symptom of the channel being "silently broken" after an upgrade is that `plugins.allow` was regenerated without your channel in it. Check with `jq '.plugins.allow' ~/.openclaw/openclaw.json` before debugging deeper.
 
 8. **`message_sending` hooks scrub ALL outgoing messages.** Including DMs to the owner. No clean way to distinguish DM vs group in the event context. For artifact scrubbing (PII redaction, etc.), a CLI script at the outbound boundary is a cleaner seam than a message hook.
+
+9. **Old key names are a silent trap.** `token` on Telegram, `allowedUsers`, `allowedGuilds`, `allowedChannels`, `agents.defaults.reset`, and `channels.discord.routing.threads` are the names earlier versions of this guide used. The live 2026.10.4 config uses `botToken`, `allowFrom`, `guilds`, `session.reset`, and `bindings` instead. After editing channel config, run `openclaw doctor --lint` (read-only health checks) rather than assuming a channel works because the gateway started.

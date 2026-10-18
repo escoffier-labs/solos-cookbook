@@ -1,27 +1,27 @@
-# Orchestrating with GPT 5.5: Narration Guards and Strict-Agentic Gaps
+# Orchestrating with GPT 6.1 Sol: Execution Contract, Narration Guards, and Silent Loops
 
-Running GPT 5.5 (via OpenAI Codex Pro) as your main orchestrator is cheap and fast compared to frontier API billing, but it has specific failure modes that will quietly eat hours of your time until you know to guard against them. This guide documents the real ones: tool-call narration, planning-only stalls, strict-agentic detection gaps, and the silent-tool-loop false alarm.
+Running a Codex-subscription model as your main orchestrator is cheap and fast compared to frontier API billing, but it has specific failure modes that quietly eat hours until you know to guard against them. This guide documents the ones I have actually hit: tool-call narration, planning-only stalls, the `executionContract` setting and what it covers, and the silent-tool-loop false alarm. The filename keeps its old `gpt-55` slug so existing links still resolve. The content now describes GPT 6.1 Sol.
 
-**Tested on:** GPT 5.5 (Codex OAuth), OpenClaw 2026.4.x, `executionContract: strict-agentic`; still accurate on OpenClaw 2026.6.2
-**Last updated:** 2026-06-10
+**Tested on:** OpenClaw 2026.10.4, GPT 6.1 Sol (`openai/gpt-6.1-sol`, Codex runtime), `embeddedAgent.executionContract: strict-agentic`, the `tool-narration-guard` plugin
+**Last updated:** 2026-10-17
 
 ---
 
 ## Why This Guide Exists
 
-Anthropic blocked third-party harness OAuth in April 2026. The cheapest path to a subscription-grade frontier orchestrator became GPT 5.5 via the OpenAI Codex Pro plan. It is a strong orchestrator. It also has three distinct failure patterns that `default` and even `strict-agentic` execution contracts do not fully catch.
+Anthropic blocked third-party harness OAuth in April 2026. The cheapest path to a subscription-grade frontier orchestrator became a GPT model on a Codex plan: GPT 5.5 first, then GPT 6 Sol, now GPT 6.1 Sol. Each generation is a stronger orchestrator. The narration failure survived all of them in some form, so the mechanical guards stayed.
 
-If you're running GPT 5.5 as main and wondering why the bot sometimes "goes silent" for 30 minutes or posts confident "running it now" messages without actually running anything, the patterns below are why.
+If you run a Codex-plan model as main and wonder why the bot sometimes "goes silent" for 30 minutes or posts a confident "running it now" without running anything, the patterns below are why.
 
 ## Failure Mode 1: Tool Call Narration
 
-GPT 5.5 will say it's doing the work - "On it", "Running it now", "Dual-lane running", "I'll handle this" - and then end the turn with **zero tool calls**. From the user's perspective the bot promised action; nothing happens. Hours pass. You check the session and see no tool activity after the confident message.
+The model says it is doing the work ("On it", "Running it now", "I'll handle this") and then ends the turn with **zero tool calls**. From the user's side the bot promised action and nothing happens. You check the session and see no tool activity after the confident message.
 
-The root cause is that OpenAI's assistant-style RLHF rewards conversational fluency. Narrating the plan *is* the reward signal. Without a mechanical guard, GPT 5.5 will occasionally substitute the narration for the work.
+The cause is that conversational fluency is rewarded in training. Narrating the plan can substitute for doing it. A mechanical guard is the fix, because prompts only lower the rate.
 
 ### The Tool Narration Guard Plugin
 
-A small OpenClaw plugin catches this pattern at the hook boundary. The version that works in production does four things:
+A small OpenClaw plugin catches this pattern at the hook boundary. It is still enabled on my 2026.10.4 gateway (`plugins.allow` lists `tool-narration-guard`, and its entry sets `hooks.allowConversationAccess` to `true`). The version that works in production does four things:
 
 ```
 after_tool_call       Record tool calls in a per-runId Set
@@ -29,11 +29,11 @@ llm_output            If action-promise keywords present AND
                       zero tools called in the whole run → flag violation
 before_prompt_build   On sessions with recent violations, prepend
                       escalating enforcement context (WARN → CRITICAL)
-message_sending       Append a visible "⚠ action without tool call"
+message_sending       Append a visible "action without tool call"
                       warning to the outgoing Discord/Telegram message
 ```
 
-Plugin lives at `~/.openclaw/workspace/.openclaw/extensions/tool-narration-guard/`. The two pieces that matter for getting it right:
+Plugin lives in the workspace extensions directory (`~/.openclaw/workspace/.openclaw/extensions/tool-narration-guard/`) and keeps its violation state in a `state.json` next to the source. The two pieces that matter for getting it right:
 
 **Track per `runId`, not per assistant message.** Multi-turn tool use looks like [tool_use → tool_result → assistant text → more tool_use]. If you check only the last assistant turn for tool calls, you false-positive on every complex flow. Accumulate tool calls into a Set keyed by `runId` and only flag when the whole run ends with zero tools called.
 
@@ -41,173 +41,171 @@ Plugin lives at `~/.openclaw/workspace/.openclaw/extensions/tool-narration-guard
 
 ### Action-Promise Keywords to Watch
 
-The regex behind the violation check. Tune it to your bot's voice:
+The regex list behind the violation check. Tune it to your bot's voice:
 
 ```javascript
-const ACTION_PROMISES = /\b(?:on it|running (?:it )?now|starting (?:on )?that|
-    handling (?:it|that)|kicking (?:it|this) off|dual[- ]lane running|
-    i['']ll (?:go|handle|run|start)|working on it|got it, running)\b/i;
+const ACTION_PROMISE_PATTERNS = [
+  /\brunning it now\b/i,
+  /\bon it\b/i,
+  /\bdoing it now\b/i,
+  /\bspawning\b/i,
+  /\bi'?ll (?:run|spawn|use|kick off|launch|fire up|start|drop|post|send)\b/i,
+  /\blet me (?:run|spawn|use|kick off|launch|fire up|start)\b/i,
+];
 ```
 
-What makes these dangerous is that they're *confident and short*. Long planning paragraphs usually end with a tool call. Five-word "I'm running it now" usually doesn't.
+What makes these dangerous is that they are confident and short. Long planning paragraphs usually end with a tool call. A five-word "I'm running it now" usually doesn't.
 
 ## Failure Mode 2: Planning-Only Stalls
 
-Related but distinct. GPT 5.5 writes a bulleted plan ("I'll do this in two steps: 1)… 2)…") and ends the turn without executing step 1. This is what `executionContract: "strict-agentic"` is supposed to fix - it injects a `PLANNING_ONLY_RETRY_INSTRUCTION` and forces another turn.
+Related but distinct. The model writes a bulleted plan ("I'll do this in two steps: 1)… 2)…") and ends the turn without executing step 1.
 
-It works most of the time. It has two known gaps as of OpenClaw 2026.4.14.
+### What `executionContract: strict-agentic` does now
 
-### Gap A: Non-Allowlisted User Verbs
+The OpenClaw config schema describes it this way: `"default"` keeps the standard runner behavior, while `"strict-agentic"` enables structured plan tracking and non-visible turn recovery for supported OpenAI and OpenAI Codex runs. It can be set globally under `agents.defaults.embeddedAgent.executionContract` or per agent under `agents.entries.<id>.embeddedAgent.executionContract`.
 
-`strict-agentic` only fires the retry if it judges the *user's* prompt actionable. The gate is a regex allowlist of ~30 verbs: `check|look|read|write|edit|update|fix|investigate|debug|run|search|find|implement|add|remove|refactor|explain|summari|analy|review|tell|show|make|restart|deploy|prepare`.
+Two things changed from the 2026.4 behavior that this guide used to document:
 
-Common imperatives that are **not** on the list and slip through:
+- **The key moved.** It was `agents.defaults.embeddedPi.executionContract`. The live key is `embeddedAgent.executionContract`.
+- **The verb-allowlist detection is gone.** On 2026.4.x the retry fired only when the user's prompt matched an allowlist of about 30 verbs, and the planning-only detector matched a short list of phrases like "I'll" and "let me". Those two gaps (imperatives such as "do" and "send" slipped through, and "I'm running it now" passed every detector) were real, and I carried a local patch on the runner bundle for them. On 2026.10.4 I could not find that regex in the shipped build. Terminal turns are now classified by what the harness returned: a turn with no assistant text but a plan is `planning-only`, one with only reasoning is `reasoning-only`, and the rest are `empty`. Releases are promoted as fresh worktrees now, so a local patch on the runner would not survive anyway.
 
-```
-do       put      post     draft    polish   rewrite
-pass     send     build    finish   create   generate   compose
-```
+### Check what the contract covers on your model
 
-A prompt like **"do another pass then send this for a deeper review"** is classed as non-actionable, the retry guard short-circuits, and GPT 5.5 gets away with a plan-only turn.
+Reading the 2026.10.4 build, the strict-agentic check only treats provider `openai` models whose id matches `gpt-5` (a `/^gpt-5(?:[.o-]|$)/` pattern) as supported. `gpt-6.1-sol` does not match. I read this from source and did not test it behaviorally, but the practical reading is that the setting is inert for Sol 6.1 and Luna 6 on this build. My config still carries it (`"executionContract": "strict-agentic"`), which is harmless. Two consequences:
 
-### Gap B: Short Confident Narration
+1. Do not count on it to catch plan-only turns on a GPT 6 model. Verify against the version you run.
+2. The narration guard plugin is doing the real work. It does not depend on the model id.
 
-Even when the user's prompt passes the actionable gate (e.g. they reply `GO`), the assistant's response can still skip the retry if it's too confident and too short. The planning-only guard requires one of:
-
-```
-i'll  |  i will  |  i'm going to  |  let me  |  i can do that
-```
-
-It does **not** match `i'm running`, `i'm doing`, `on it`, `handling that now`. A five-word reply like `"Great. I'm running it now."` passes all three planning detectors.
-
-### Workarounds Until Upstream Fixes
-
-You have three options, in increasing order of effort:
-
-1. **Local patch on `dist/pi-embedded-runner-*.js`.** Extend both regexes to cover the missing verbs and the present-continuous narration pattern. Persist the patch through upgrades via [Upgrade Hygiene](../infrastructure/upgrade-hygiene.md). This is what runs in production for me.
-2. **Deny-list instead of allow-list** on the actionable-prompt gate. Skip retry only for obvious chit-chat (`thanks`, `ok cool`, `lol`, `nice`, `got it`). More durable - allowlists keep growing forever.
-3. **Rely on the narration guard plugin.** It catches what `strict-agentic` misses, but it warns rather than retrying. The user sees a visible warning on the message; the turn doesn't re-fire automatically.
-
-Use all three together. They fail in different ways - the patch fixes the guard regex, the denylist catches new verbs, the plugin warns visibly when both miss.
+This is the kind of drift the [model retirement guide](model-retirement-and-fallbacks.md) warns about: a setting that looks active in the config and does nothing after a model change.
 
 ## Failure Mode 3: Silent Tool Loops (False Alarm)
 
-The opposite problem. GPT 5.5 goes 10–30+ minutes without surfacing anything to the channel, and you assume it froze. Usually it hasn't. Deep SSH→pct→docker chains, long-running `infer` calls, n8n workflow patching - all of these produce long gaps between assistant messages while tool calls are actively running.
+The opposite problem. The model goes 10 to 30+ minutes without surfacing anything to the channel, and you assume it froze. Usually it hasn't. Deep SSH-to-container-to-docker chains, long-running `infer` calls, and n8n workflow patching all produce long gaps between assistant messages while tool calls run.
 
-The Discord typing indicator expires after ~2 minutes regardless of actual activity, which makes an active agent look dead.
+The Discord typing indicator expires after about 2 minutes regardless of actual activity, which makes an active agent look dead.
 
 ### Triage Before Assuming Freeze
 
 Three checks, in order:
 
 ```bash
-# 1. Is the session transcript still being written to?
-stat ~/.openclaw/agents/main/sessions/*.jsonl \
-    | sort -k6 | tail -1
-# If mtime is within the last ~60 seconds, agent is alive.
+# 1. Is the session still updating? (ageMs is time since last activity)
+openclaw sessions --agent main --active 5 --json \
+    | jq '.sessions // . | map({key, status, ageMs, model})'
+# A session with a small ageMs is alive.
 
 # 2. Gateway health + recent activity (filter signal noise)
 journalctl --user -u openclaw-gateway --since "-5min" \
     | grep -v signal-cli
 
-# 3. What is it actually doing right now?
-SESSION=$(ls -t ~/.openclaw/agents/main/sessions/*.jsonl | head -1)
-tail -c 8000 "$SESSION" | jq -c 'select(.type=="tool_use" or .type=="tool_result")'
+# 3. Is anything still executing under the gateway?
+ps -eo pid,etimes,cmd --sort=-etimes | grep -E 'codex|claude|ssh ' | grep -v grep | head
 ```
 
 ### Real Freeze Signals
 
 It actually is stuck (not just quiet) when:
 
-- Session jsonl mtime is > 2 minutes stale
+- The session's `ageMs` is above two minutes and no child process is running
 - No bootstrap hook injections in the gateway log for 5+ minutes
-- Same `sessionId` appears in `ps` with no new exec/tool calls
+- A child process for the session exists in `ps` but its elapsed time keeps growing with no new output
 
-Before restarting the gateway for a suspected freeze, check mtime. Restarting a healthy agent mid-tool-loop corrupts its state; you lose whatever it was doing and it can't resume.
+Before restarting the gateway for a suspected freeze, check `ageMs` and the process list. Restarting a healthy agent mid-tool-loop corrupts its state. You lose whatever it was doing and it can't resume.
 
 ## Prompt-Side Adjustments That Help
 
-The mechanical guards are the load-bearing fix. These soft adjustments reduce how often the guards need to fire:
+The mechanical guards are the fix. These soft adjustments reduce how often they need to fire:
 
-1. **Put the instruction in present tense.** "Run the intel pipeline" beats "I need you to run the intel pipeline when you can" - the second one invites a commitment narration. Imperative framings get imperative execution.
+1. **Put the instruction in present tense.** "Run the intel pipeline" beats "I need you to run the intel pipeline when you can". The second invites a commitment narration.
 
-2. **Avoid "please" on execution prompts.** It's a small thing, but polite phrasing triggers the assistant-mode RLHF. For chat tasks it's fine; for agent work, strip it.
+2. **Avoid "please" on execution prompts.** For chat tasks it's fine. For agent work, strip it.
 
-3. **End task prompts with the expected tool, not the expected result.** "Call `sessions_spawn(agentId: researcher, task: ...)` now" is harder to narrate past than "Get the research done". Naming the tool biases toward calling it.
+3. **End task prompts with the expected tool, not the expected result.** "Call `sessions_spawn(agentId: browser-operator, task: ...)` now" is harder to narrate past than "Get the research done".
 
-4. **For multi-step work, pre-declare the step count.** "This has 3 steps. Step 1 is X. Do step 1 now, then report the result." makes plan-only responses feel incomplete even to the model.
+4. **For multi-step work, pre-declare the step count.** "This has 3 steps. Step 1 is X. Do step 1 now, then report the result."
 
 ## Config: Agents Section
 
-Minimum viable config for GPT 5.5 as main with the guards active:
+Minimum config for Sol 6.1 as main with the guards active (shape from the live file):
+
+`plugins.allow` is an exclusive list: the `codex` runtime and the `openai` provider must both be on it, or the primary model resolves as disabled with `not in allowlist`. If you already have an allowlist, merge into it instead of replacing it.
 
 ```json
 {
   "agents": {
     "defaults": {
-      "embeddedPi": {
+      "embeddedAgent": {
         "executionContract": "strict-agentic"
       },
       "model": {
-        "primary": "openai-codex/gpt-5.5",
-        "fallbacks": [
-          "openai-codex/gpt-5.3-codex"
-        ]
+        "primary": "openai/gpt-6.1-sol",
+        "fallbacks": []
+      },
+      "models": {
+        "openai/gpt-6.1-sol": { "alias": "sol61", "agentRuntime": { "id": "codex" } }
       }
     },
     "entries": {
       "main": {
-        "model": "openai-codex/gpt-5.5:medium",
-        "thinking": "medium"
+        "thinkingDefault": "medium"
       }
     }
   },
   "plugins": {
-    "allow": ["tool-narration-guard", "acpx"],
+    "allow": ["codex", "openai", "tool-narration-guard", "acpx"],
     "entries": {
       "tool-narration-guard": {
         "enabled": true,
-        "violationTtlSeconds": 600
+        "config": {},
+        "hooks": { "allowConversationAccess": true }
       }
     }
   }
 }
 ```
 
-Two notes on that config:
+Notes on that config:
 
-- **Thinking level is `medium`, not `xhigh`.** On Codex Pro, high thinking burns rate limit faster than it returns value for orchestration. Save deeper review for bounded Claude Code tmux relay passes.
-- **Codex first in the fallbacks.** Gemini fallback silently lands requests on a different model without notifying the user. If you must include Gemini, put it last and only if you actually want that behavior - which these days, you probably don't (see [Multi-Model Orchestration](multi-model-orchestration.md)).
+- **Thinking level is `medium`, not `xhigh`.** High thinking burns rate limit faster than it returns value for orchestration. Save deeper review for bounded Claude seats.
+- **`fallbacks` is empty on my box**, which is the state [model retirement and fallbacks](model-retirement-and-fallbacks.md) warns about. If you add a chain, keep it on providers you run and put the preferred substitute first. A Gemini fallback silently lands requests on a different model without telling the user.
 
 ## Verification
 
 Quick checks after deploying the guards:
 
 ```bash
-# Plugin loaded and seeing events
+# Plugin loaded
+jq '.plugins.allow | index("tool-narration-guard") != null' ~/.openclaw/openclaw.json
+# Expected: true
+
+# Plugin enabled
+jq '.plugins.entries["tool-narration-guard"].enabled' ~/.openclaw/openclaw.json
+# Expected: true
+
+# Execution contract set at the current key
+jq '.agents.defaults.embeddedAgent' ~/.openclaw/openclaw.json
+# Expected: {"executionContract": "strict-agentic"}
+
+# Plugin activity in the gateway log
 journalctl --user -u openclaw-gateway -n 200 | grep tool-narration-guard
 
-# Strict-agentic active on this agent
-jq '.agents.defaults.embeddedPi' ~/.openclaw/openclaw.json
-
-# Current violation state (if plugin persists it)
-ls ~/.openclaw/workspace/state/tool-narration-guard/ 2>/dev/null
-
-# Replay a session to see how often the guard fires
-jq 'select(.type=="plugin_event" and .name=="tool-narration-guard")' \
-    ~/.openclaw/agents/main/sessions/*.jsonl | head -20
+# Current violation state
+jq 'keys' ~/.openclaw/workspace/.openclaw/extensions/tool-narration-guard/state.json
+# Expected: ["lastAutoRetry", "savedAt", "violations"]
 ```
 
-If the plugin never fires in a week of real usage, either GPT 5.5 isn't narrating much for you (nice) or the keyword regex is too narrow for your bot's voice. Widen it.
+If the plugin never fires in a week of real usage, either the model isn't narrating much for you or the keyword list is too narrow for your bot's voice. Widen it.
 
 ## Gotchas
 
-1. **Model-pinning stickiness.** A single OpenAI 503 on gpt-5.5 can pin a channel to gpt-5.3-codex for days. `/reset` doesn't clear `auto` overrides reliably; use `/model <name>` explicitly to repin.
+1. **Model-pinning stickiness.** A single provider 503 can pin a channel to a different model for days via an `auto` override. `/reset` doesn't clear it reliably. Use `/model <name>` explicitly to repin. This was observed on GPT 5.5 falling to GPT 5.3 Codex, and the mechanism is not model-specific.
 
-2. **Codex rate limits can read 0% while failing.** GPT 5.3 Codex has a known bug where weekly usage shows 0% but requests return rate-limit errors. Resets around 3:45am local. When Codex breaks, coder subagent tasks surface as `FailoverError` - not as a rate limit message.
+2. **Quota readings can lie.** A weekly usage meter can read 0% while requests return rate-limit errors. When the Codex lane breaks, sub-agent tasks surface as `FailoverError`, not as a rate limit message.
 
-3. **Concurrent subagents on the same OAuth.** Main and coder both on the same Codex token will sometimes 500 under load. If you run concurrent subagents, give coder its own profile or a different provider.
+3. **Concurrent sub-agents on the same OAuth.** Main and sub-agents on the same Codex token will sometimes 500 under load. With `subagents.maxConcurrent` at 8, spread work across Brigade seats instead of the gateway pool when a burst is expected.
 
-4. **Don't dual-route the orchestrator through Claude.** Putting a Claude escalation lane in the main agent's primary chain adds startup latency and confuses ownership. Keep Claude Code for bounded review escalation through the [tmux relay](claude-code-tmux-relay.md), with [ACP](acp-claude-code.md) only where you explicitly need ACP compatibility.
+4. **Don't dual-route the orchestrator through Claude.** Putting a Claude lane in the main agent's primary chain adds startup latency and confuses ownership. Keep Claude for bounded review escalation through a Brigade seat or the [tmux relay](claude-code-tmux-relay.md), with [ACP](acp-claude-code.md) only where you explicitly need it.
 
-5. **The guards are belt-and-braces, not one or the other.** `strict-agentic` retry > local regex patch > narration plugin. Each catches failures the others miss. Running only one will leak violations.
+5. **Settings can go inert after a model change.** `strict-agentic` is the example: still present in config, no longer matched by the model check. After a model generation change, confirm each guard still fires on the new model id.
+
+6. **History.** On 2026.4.x the retry guard had two known gaps (imperative verbs outside an allowlist, and short confident narration), which a local patch on the runner bundle closed, and the narration plugin was the backstop. Those specifics no longer apply on 2026.10.4. The plugin, and the lesson that no single guard is enough, do.
