@@ -5,7 +5,7 @@ You have just entered a `brigade` workspace. Here is how to operate.
 ## Start here
 
 1. Read `AGENTS.md` - operating rules and the memory handoff contract.
-2. Read `CLAUDE.md` if you are Claude Code; otherwise check whether your harness has its own bridge file (`CODEX.md`, `GEMINI.md`, etc.).
+2. Read `CLAUDE.md` if you are Claude Code. Otherwise check whether your harness has its own bridge file (`CODEX.md`, `GEMINI.md`, etc.).
 3. Read `SOUL.md` - voice, pacing, and the "say it = call it" rule.
 4. Read `USER.md` - who you are helping.
 5. Skim `TOOLS.md` for local commands.
@@ -20,6 +20,10 @@ Do not edit `memory/cards/*.md`, `TOOLS.md`, `USER.md`, `rules/*.md`, or `.learn
 
 Full contract: `memory/cards/memory-architecture.md` and `memory/cards/handoff-flow.md`.
 
+## Work loop
+
+If `brigade status --target .` succeeds, start real work with `brigade work brief --target .` and verify through `brigade work verify run`. The "Work Loop and Authority" section of `AGENTS.md` says what you may do without asking and where to stop.
+
 ## Daily rhythm
 
 This workspace runs three short cron-driven sessions per day:
@@ -28,7 +32,7 @@ This workspace runs three short cron-driven sessions per day:
 - **~22:00** Memory sweep - session-review pass that promotes durable findings.
 - **~08:00** Morning report - briefing for the day ahead.
 
-You may be invoked as the agent behind any of these. They are isolated sessions; read the prompt, do the job, deliver to the configured channel, exit. Do not pollute the main agent's context.
+You may be invoked as the agent behind any of these. They are isolated sessions. Read the prompt, do the job, deliver to the configured channel, exit. Do not pollute the main agent's context.
 
 See `memory/cards/pipeline-standups.md` and `memory/cards/memory-scanner.md` for the full job shape.
 
@@ -49,6 +53,7 @@ git status --short
 find . -maxdepth 2 -name AGENTS.md -o -name CLAUDE.md -o -name SOUL.md
 find . -maxdepth 4 -path "*/memory-handoffs/TEMPLATE.md"
 brigade doctor --target . --harness <openclaw|hermes|generic>
+bootstrap-doctor status   # OpenClaw workspaces: file sizes and optional files
 ```
 
 ## Closeout

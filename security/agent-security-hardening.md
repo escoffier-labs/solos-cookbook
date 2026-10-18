@@ -2,8 +2,8 @@
 
 How to treat your AI agent as an untrusted actor and build guardrails that actually work. Includes a real post-mortem from when a sub-agent nuked a production database.
 
-**Tested on:** OpenClaw 2026.4.x multi-agent setup (GPT 5.5 main + coder, ACP Opus escalation, browser-LLM skills); current stack OpenClaw 2026.6.2 with Opus 4.8 via ACPX
-**Last updated:** 2026-06-10
+**Tested on:** OpenClaw 2026.10.4 (GPT 6.1 Sol primary, Claude via ACPX for escalation, a locked-down browser agent), Brigade 0.28.0. The incident below dates from the 2026.3 to 2026.4 stack.
+**Last updated:** 2026-10-17
 
 ---
 
@@ -23,7 +23,7 @@ This isn't theoretical. Here's what happened to us (2026-03-02).
 
 **Root cause:** The DELETE endpoint existed. That's it. Haiku wasn't malicious. It wasn't even doing anything unusual. It found a tool and used it. The security failure was exposing a destructive endpoint to an agent in the first place.
 
-**The incident scales beyond Haiku.** We've since seen the same pattern with GPT 5.5 and other frontier models - any model with tool access and an OpenAPI spec will eventually exercise every endpoint. Model size and vendor are not a defense.
+**The incident scales beyond Haiku.** I have since seen the same pattern with the GPT-5 generation and other frontier models. Any model with tool access and an OpenAPI spec will eventually exercise every endpoint. Model size and vendor are not a defense.
 
 There's a model-selection side to this incident too: cheap models belong in read-only lanes, and any lane that can mutate state needs fencing regardless of which model runs it. That angle is covered in [multi-model orchestration](../ai-stack/multi-model-orchestration.md#cheap-vs-capable-is-about-blast-radius-not-just-budget).
 
@@ -57,6 +57,12 @@ def health():
 # Admin operations require separate auth or CLI-only access
 ```
 
+### Where my own APIs stand
+
+The code search API from the incident has had its destructive endpoint removed since March, and I confirmed on 2026-10-17 that its OpenAPI spec lists no `DELETE`. The cleanup is not complete across everything on the host, though. A re-check found a write route still live on a second local API. It is on my fix list: remove or auth-gate the write routes, and bind to loopback.
+
+Check your own host the same way. The loop in the Verification section lists every `PUT` and `DELETE` route on the local ports you name. Treat any hit as a decision you have to make, not a pass.
+
 ### Use Short-Lived Tokens
 
 Don't give agents persistent API keys. Use JIT (Just-In-Time) tokens:
@@ -79,66 +85,59 @@ Sequential IDs (1, 2, 3...) allow iteration attacks. An agent that discovers rec
 Each agent gets only the permissions it needs. Nothing more.
 
 ```
-Main agent (Opus):     fs:read, fs:write, exec:allowlist, api:full
-Code worker (Codex):   fs:read, fs:write, exec:allowlist
-Scanner (Haiku):       fs:read ONLY
-Cron jobs:             task-specific, no exec, no API write
+Main agent:            fs:read, fs:write, exec, scoped API access
+Code worker:           fs:read, fs:write inside one worktree
+Scanner / reviewer:    read-only
+Browser agent:         browser tools only, no exec, no sudo
+Cron jobs:             task-specific, no API write
 ```
 
 ### Child Agents Inherit Downgraded Permissions
 
-When your main agent spawns a sub-agent, the sub-agent should get a SUBSET of the parent's permissions, never equal or elevated.
+When your main agent spawns a sub-agent, the sub-agent should get a SUBSET of the parent's permissions, never equal or higher.
 
 ### OpenClaw Tool Permissions
 
-Configure in `openclaw.json`:
+On 2026.10.4 per-agent config lives under `agents.entries.<id>` (the older `agents.list[]` array is gone). The agent I fence hardest is the browser agent, because it handles logged-in sessions and untrusted pages:
 
 ```json
 {
   "agents": {
-    "list": [
-      {
-        "id": "coder",
-        "model": "gpt55",
+    "entries": {
+      "browser-operator": {
         "tools": {
-          "exec": {
-            "security": "allowlist",
-            "allowlist": ["git", "npm", "node", "python3"]
-          },
-          "elevated": { "enabled": false }
+          "profile": "minimal",
+          "alsoAllow": ["browser", "browser_credential_fill"],
+          "elevated": { "enabled": false },
+          "deny": ["session_status"]
         }
       }
-    ]
+    }
   }
 }
 ```
 
 Key settings:
-- **exec.security: "allowlist"** restricts shell access to specific commands
-- **elevated.enabled: false** blocks sudo access
-- Per-agent tool config means your scanner can't exec while your builder can
+- **`profile: "minimal"`** starts from the smallest tool set, and `alsoAllow` adds only what the lane needs
+- **`elevated.enabled: false`** blocks the sudo-like path for that agent
+- **`deny`** removes individual tools even if a profile would grant them
+
+Be honest about what is not fenced. My main agent runs with broad exec and no approval prompts, behind the gateway token. I made that trade for a single-operator host where the agent does real work, and I compensate at other layers: firewall rules, scoped credentials, no destructive endpoints, audit watches, and Brigade hooks on the repos where the agent writes code. The earlier version of this guide recommended an `exec.security: "allowlist"` block. I ran that on 2026.4 and have not re-verified the equivalent on 2026.10.4, so I no longer show it as a recommendation. If you need a tighter exec posture, start from `openclaw exec-policy show --verbose` and the presets (`cautious`, `deny-all`) rather than copying a config block from an older release.
 
 ## 3. Sandboxing exec Access
 
 ### The Problem with exec: "full"
 
-`exec` with `security: "full"` means the agent can run any shell command. This includes `rm -rf`, `curl` to exfiltrate data, or any other destructive operation.
+`exec` in `full` mode means the agent can run any shell command. This includes `rm -rf`, `curl` to exfiltrate data, or any other destructive operation. If you run it that way, the controls have to live outside the model's reach.
 
-### Tighten the Allowlist
+### Tighten What You Can
 
-Start with the minimum and add commands as needed:
+Layers that work regardless of the exec mode:
 
-```json
-{
-  "exec": {
-    "security": "allowlist",
-    "allowlist": [
-      "git", "npm", "node", "python3", "curl",
-      "ls", "cat", "grep", "find", "wc"
-    ]
-  }
-}
-```
+- Scope the credentials a lane can see (see [`secret-management.md`](secret-management.md)). An agent cannot exfiltrate a token it was never given.
+- Put the lane in a read-only worker seat when it does not need to write.
+- Use `openclaw exec-policy preset cautious` or `deny-all` for lanes that should not run commands unattended, after reading what the preset changes with `show --verbose`.
+- Keep the sandbox setting in mind: my main agents run unsandboxed, with a Docker sandbox profile (no network, all capabilities dropped, pid and memory limits) defined for when I need it. Defining a profile is not the same as using it.
 
 ### OS-Level Confinement (Advanced)
 
@@ -199,13 +198,20 @@ def circuit_breaker(agent_id: str, operation: str):
 
 ### Log Every External Action
 
-Your agent should not be able to modify its own audit trail. Store logs separately:
+Your agent should not be able to modify its own audit trail. The version of this guide I first wrote suggested a root-owned `/var/log/openclaw-audit` directory. I never created it, and it does not exist on my host. What actually records agent activity here:
+
+- The OpenClaw `command-logger` hook writes a command log under `~/.openclaw/logs/` (mode `600`, owned by the agent's user)
+- Session transcripts for each harness
+- Brigade's work ledger and verification receipts in repos that use it
+- `auditd` write-watches (`-w <path> -p wa -k <key>`) on a few paths an agent should not change silently
+- A Wazuh agent on the host, shipping to a central manager
+
+The first two are owned by the same user the agent runs as, so they are evidence, not tamper-proof evidence. The `auditd` rules and the Wazuh stream are the parts the agent cannot rewrite without root. If you want the stricter separation, a root-owned directory is still the right shape:
 
 ```bash
-# Dedicated audit log location
-sudo mkdir -p /var/log/openclaw-audit
-sudo chown root:root /var/log/openclaw-audit
-sudo chmod 700 /var/log/openclaw-audit
+sudo mkdir -p /var/log/agent-audit
+sudo chown root:root /var/log/agent-audit
+sudo chmod 700 /var/log/agent-audit
 ```
 
 ### What to Log
@@ -220,11 +226,11 @@ Every log entry should include:
 
 ### SIEM Integration
 
-If you run Wazuh, TheHive, or another SIEM, pipe agent audit logs there for correlation. This lets you detect patterns: is your agent doing things you didn't expect? Acting at unusual hours? Making API calls to services you didn't configure?
+If you run Wazuh, TheHive, or another SIEM, pipe agent audit logs there for correlation (see [`wazuh-triage.md`](wazuh-triage.md) and [`mcp-incident-response.md`](mcp-incident-response.md)). This lets you detect patterns: is your agent doing things you didn't expect? Acting at unusual hours? Making API calls to services you didn't configure?
 
 ## 6. Behavioral Guardrails via Plugins
 
-Prompt-level rules don't scale. Plugin-level hooks do. Two we run in production:
+Prompt-level rules don't scale. Plugin-level hooks do. Two I run, one of them with a caveat:
 
 ### tool-narration-guard
 
@@ -232,11 +238,9 @@ Catches the failure mode where the model narrates "I'm running the build now" wi
 
 Without this plugin, you lose 30+ minutes at a time waiting for work that never started. See [self-improving agents](../ai-stack/self-improving-agents.md).
 
-### strict-agentic (with local patch)
+### strict-agentic (history)
 
-OpenClaw's `strict-agentic` plan-then-act retry has two known detection gaps: (A) imperative prompts like "do X" / "put Y through Z" and (B) short confident narration like "I'm running it now." Both bypass the actionable-prompt detector. We carry a local patch in `dist/pi-embedded-runner-*.js` that tightens the actionable regex and rewrites the retry instruction to close a circular-blocker loophole that lets models game the retry.
-
-Upstream issue body is queued. If you run strict-agentic on the vanilla build, assume it has holes and don't rely on it as a sole guardrail.
+On the 2026.4 and 2026.6 builds, OpenClaw's `strict-agentic` plan-then-act retry had two detection gaps: (A) imperative prompts like "do X" / "put Y through Z" and (B) short confident narration like "I'm running it now." Both bypassed the actionable-prompt detector, and I carried a local patch to the compiled runner. Today the gateway runs from a promoted release worktree that I do not patch by hand, and I have not re-tested whether those gaps still exist on 2026.10.4. Whatever the status, do not rely on this retry as a sole guardrail.
 
 ## 7. Prompt Injection Defense
 
@@ -248,7 +252,7 @@ If your agent reads email, scrapes websites, processes documents, or participate
 
 ### Defenses
 
-1. **Use your strongest model for orchestration.** Frontier models have significantly better injection resistance than budget models. This is the single most impactful defense.
+1. **Use your strongest model for orchestration and review.** Frontier models have significantly better injection resistance than budget models. This is the single most impactful defense.
 
 2. **Restrict autonomous actions.** The more your agent can do without approval, the more damage a successful injection can cause.
 
@@ -256,44 +260,59 @@ If your agent reads email, scrapes websites, processes documents, or participate
 
 4. **Never route untrusted content through budget models.** Your orchestrator (frontier model) should be the one processing email, web scrapes, and group chat messages. Sub-agents should only receive sanitized, task-specific prompts from the orchestrator.
 
+## 8. A Dedicated Security-Review Lane
+
+Hardening is not only runtime fences. I also run changes through a separate review seat whose only job is defensive security review. It is a seat in the Brigade roster, backed by a dedicated security-review model, with these properties:
+
+- **Read-only capable.** It reads a diff or a repo and reports. It does not edit.
+- **Bounded scans.** Each run gets one scope (a PR, a directory, a dependency change) and a timeout of 25 minutes. It is not an open-ended crawl.
+- **No implementation work.** The seat's role text forbids routine implementation, so it cannot grade its own homework.
+- **Complementary to other reviewers.** It runs alongside the ordinary code review and the repo's CI scanners. It is a different model family from the one that wrote the change, which is the point.
+
+I dispatch it through the same tool I use for other workers (`brigade run`), not by hand-prompting a chat window. Findings still need a human or a second reviewer to confirm before anything is changed, since a security reviewer can be confidently wrong in both directions. Treat a clean pass as one signal, not clearance.
+
 ## Verification
 
 ```bash
-echo "=== Tool Permissions ==="
-jq '.agents.list[] | {id, exec: (.tools.exec.security // "default"), elevated: (.tools.elevated.enabled // "default")}' \
+echo "=== Per-agent tool fences ==="
+jq '.agents.entries | to_entries[] | {id: .key, tools: (.value.tools // "inherits global")}' \
   ~/.openclaw/openclaw.json
+
+echo ""
+echo "=== Exec posture ==="
+openclaw exec-policy show
 
 echo ""
 echo "=== Behavioral Plugins ==="
-jq '.plugins.entries | with_entries(select(.key == "tool-narration-guard" or .key == "content-scrubber"))' \
+jq '.plugins.entries | with_entries(select(.key == "tool-narration-guard" or .key == "content-scrubber")) | map_values(.enabled)' \
   ~/.openclaw/openclaw.json
 
 echo ""
-echo "=== Audit Log Directory ==="
-ls -la /var/log/openclaw-audit/ 2>/dev/null || echo "Not configured"
+echo "=== Audit sources ==="
+stat -c '%a %n' ~/.openclaw/logs/commands.log 2>/dev/null || echo "command log not found"
+systemctl is-active auditd wazuh-agent
 
 echo ""
 echo "=== API Endpoints Exposed ==="
-# Check if any local APIs expose destructive endpoints
-for port in 5200 5201 5202 5203 5204 8005; do
-  DOCS=$(curl -s http://127.0.0.1:$port/openapi.json 2>/dev/null)
-  if [ ! -z "$DOCS" ]; then
-    DELETES=$(echo "$DOCS" | python3 -c "
+# List PUT/DELETE routes on local APIs. Replace the placeholder with the ports you run.
+for port in <your-api-ports>; do
+  curl -s -m 3 "http://127.0.0.1:$port/openapi.json" 2>/dev/null | python3 -I -c "
 import sys, json
+port = sys.argv[1]
 try:
     spec = json.load(sys.stdin)
-    for path, methods in spec.get('paths', {}).items():
-        if 'delete' in methods:
-            print(f'  ⚠ DELETE {path} on :{sys.argv[1]}')
-except: pass
-" $port 2>/dev/null)
-    if [ ! -z "$DELETES" ]; then
-      echo "$DELETES"
-    fi
-  fi
+except Exception:
+    sys.exit(0)
+for path, methods in spec.get('paths', {}).items():
+    for verb in ('put', 'delete'):
+        if verb in methods:
+            print(f'  {verb.upper()} {path} on :{port}')
+" "$port"
 done
 echo "(check complete)"
 ```
+
+Expected result: the first block shows your fenced agents. `exec-policy show` prints your real posture, which may be `full`. Both plugins print `true`. The last block prints nothing between the header and `(check complete)` once every local API is read-only. Ports that do not serve an OpenAPI spec (or require auth) print nothing, which is not proof they are safe.
 
 ## Gotchas
 
@@ -305,6 +324,10 @@ echo "(check complete)"
 
 4. **Sub-agent sandbox gotcha.** Isolated sub-agents in OpenClaw can't access host git/gh CLI by default (sandbox has no git). Use sub-agents for file writing, then push from the main session.
 
-5. **Any model will find creative ways to be destructive.** Haiku didn't set out to delete our data. It was trying to be helpful. It read the API spec, saw a cleanup endpoint, and called it. This is not a small-model problem - GPT 5.5 and other frontier models will do the same given tool access. The lesson: if the destructive path exists, an agent will eventually find it. Remove the path.
+5. **Any model will find creative ways to be destructive.** Haiku didn't set out to delete our data. It was trying to be helpful. It read the API spec, saw a cleanup endpoint, and called it. This is not a small-model problem. Frontier models will do the same given tool access. The lesson: if the destructive path exists, an agent will eventually find it. Remove the path.
 
-6. **Main-agent model changes don't change the attack surface.** We moved from Opus to GPT 5.5 as the orchestrator in April 2026. None of the security rules in this guide changed. Prompt-level guards are still not a boundary. Allowlists still need to be tight. API design still matters more than model choice.
+6. **Main-agent model changes don't change the attack surface.** I have moved the orchestrator from Opus to the GPT-5 generation and then to GPT 6.1 Sol. None of the security rules in this guide changed. Prompt-level guards are still not a boundary. Fences still need to be tight. API design still matters more than model choice.
+
+7. **A cleanup you have not re-verified is a claim, not a fact.** An earlier version of this guide implied the destructive-endpoint cleanup was finished. A re-check found a write route still live on a second local API. Re-run the endpoint loop after every new local service.
+
+8. **A directory in a guide is not a log on disk.** The audit log path I once recommended was never created. Check that your audit sources exist and that something reads them, not only that a guide mentions them.

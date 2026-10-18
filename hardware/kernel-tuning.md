@@ -1,220 +1,221 @@
 # Kernel Tuning for an Always-On AI Host
 
-> Six sysctl knobs, one I/O scheduler decision, and a swap policy. Almost everything else the kernel ships with is fine. The defaults are tuned for "every workload," which means they are tuned for none.
+> Two sysctl files, a 16 GB swap file, and a handful of defaults left alone on purpose. This guide documents what the production host actually runs, not a tuning wishlist. A short optional section at the end covers knobs I looked at and did not apply.
+
+Last updated: 2026-10-17. Tested on Ubuntu 24.04.5 LTS, OEM kernel 6.17.0-1033-oem, 24-core Intel Core Ultra 9 285, 62 GiB RAM, two 1 TB NVMe drives.
 
 ## What this is
 
-A small set of kernel knobs that matter for a host running an agent stack, browser automation, local LLMs, and a desktop, all on one box. Mostly memory and I/O. The goal is not maximum throughput on synthetic benchmarks; it is keeping the agent responsive when the browser is loaded, the model is streaming, and a backup is in flight.
+The kernel settings on one box that runs an agent stack, browser automation, local LLMs, a desktop, and a few dozen long-lived services. Everything below was read from the live host with `sysctl`, `swapon`, `/sys`, and `/etc/sysctl.d/`. The goal is a host that stays responsive when the browser is loaded, a model is streaming, and a backup is in flight.
 
 ## Why this way
 
-The Linux kernel defaults are conservative for a reason: they target the median workload across desktops, servers, laptops, and embedded devices. For an always-on agent host with 64 GB of RAM and two fast NVMe drives, you can do better with five minutes of sysctl tuning than with any "performance" governor or third-party tool.
+The Ubuntu defaults are already sensible for a 64 GB desktop-class machine on a current kernel. The host overrides only what caused a real failure or a measurable annoyance:
 
-Three principles:
+1. **Swap eagerness.** With tens of GB free, the default `vm.swappiness=60` still pushed process pages out. Dropping it to 10 stopped that.
+2. **Inotify exhaustion.** Electron apps, editors, file watchers, and local services share one per-user pool. The stock limits ran out on large repos.
+3. **Fork failures despite free RAM.** Processes with big virtual address spaces (VMs, browsers, model runtimes) pushed `Committed_AS` far past `CommitLimit`, and `fork()` returned `EAGAIN` with gigabytes free. `vm.overcommit_memory=1` fixed it.
 
-1. **Memory should be used, not hoarded.** With 64 GB and a workload that comfortably fits in 30, the default `vm.swappiness=60` is too eager to push process pages to swap. Lower it.
-2. **Dirty-page writeback should be smooth, not bursty.** The default `vm.dirty_ratio=20` means up to ~12 GB of write cache before the kernel forces a flush. On modern NVMe, that turns into multi-second stalls.
-3. **Inotify and file descriptors are the limits agents trip first.** Editors, file watchers, n8n, browsers, and the agent itself all consume the same inotify pool. Raise it once.
-
-Everything else (CPU governor, NIC queues, transparent huge pages, BFQ vs none) is either already correct on a current kernel or has tradeoffs that are not worth the maintenance cost for a single-host setup.
+Everything else (dirty-page ratios, socket buffers, congestion control, watermark scale, CPU governor, THP, I/O scheduler) is at the distro default, and I have not found a reason to change any of it.
 
 ## Prerequisites
 
-- A current kernel (6.x or newer). Tuning advice for 5.x is similar but not identical
-- 32 GB+ RAM (some advice below assumes RAM is plentiful)
-- NVMe storage as primary disk; rotational disks invert several of the recommendations
+- A current kernel (6.x or newer)
+- 32 GB+ RAM. The swap and overcommit choices below assume memory is plentiful
+- NVMe primary storage
 - Root access via sudo
 
 ## Before / After
 
-**Before:** `vm.swappiness=60`, `vm.dirty_ratio=20`, `fs.inotify.max_user_watches=65536`. The agent is happy until you launch a third browser tab and the desktop hitches. `iostat` shows multi-second `await` spikes during backups. VS Code occasionally drops file-watch on a large repo.
+**Before:** `vm.swappiness=60`, default inotify limits, default overcommit heuristic. The kernel swapped with tens of GB free, file watchers ran out on large repos, and a big-VM `fork()` failed with `EAGAIN` while `free` showed plenty of memory.
 
-**After:** lower swap pressure, smoother writeback, larger inotify pool. The desktop stays responsive when the agent is busy. Backups do not stall foreground work. File watching survives the largest repo in the stack.
+**After:** swappiness 10, a 524288-watch inotify pool, and `vm.overcommit_memory=1`. Swap sits at a few GB used out of 16 GB, watchers survive the largest repo, and the fork failures stopped.
 
 ## Implementation
 
-### The whole tuning file
+### What runs on the host
 
-Drop one file in `/etc/sysctl.d/`. Pick a number that puts it after distro defaults but before any local one-offs (so 90- is good).
+Two local files under `/etc/sysctl.d/` carry every override. The numeric prefix `99-` puts them after the distro defaults (`10-*`), which also set `vm.max_map_count` and the `fq_codel` qdisc.
+
+The memory file (named by host and purpose, so I describe it by content here):
 
 ```bash
-sudo tee /etc/sysctl.d/90-agent-host.conf <<'EOF'
-# --- Memory ---
-
-# We have 64 GB and a working set that fits in <40. Don't aggressively swap.
+sudo tee /etc/sysctl.d/99-memory.conf <<'EOF'
+# Fix fork() EAGAIN on big-VM processes despite free RAM (Committed_AS >> CommitLimit)
+vm.overcommit_memory = 1
+# Stop needless swapping with tens of GB free
 vm.swappiness = 10
+EOF
+```
 
-# Inode/dentry cache vs page cache balance. Default 100 evicts both equally.
-# Agents read the same config files thousands of times - keep inodes hot.
-vm.vfs_cache_pressure = 50
+The inotify file:
 
-# Background writeback at 5% (~3.2 GB on 64 GB RAM), hard flush at 10%.
-# Default 10/20 buffers too much for NVMe and causes multi-second stalls.
-vm.dirty_background_ratio = 5
-vm.dirty_ratio = 10
-
-# Reclaim policy: don't let kswapd thrash on a host that mostly fits.
-vm.watermark_scale_factor = 200
-
-# --- File watchers and descriptors ---
-
-# Editors, browsers, n8n, agents all pull from this pool.
+```bash
+sudo tee /etc/sysctl.d/99-inotify-capacity.conf <<'EOF'
+# File-watching capacity for Electron applications and local development services.
+fs.inotify.max_user_instances = 1024
 fs.inotify.max_user_watches = 524288
-fs.inotify.max_user_instances = 512
-fs.inotify.max_queued_events = 65536
-
-# File descriptor limit ceiling. Per-process limit is set in limits.conf.
-fs.file-max = 2097152
-
-# --- Network (modest, only what matters for agent + local services) ---
-
-# Bigger socket buffers help SSH bulk transfers and rclone bisync.
-net.core.rmem_max = 16777216
-net.core.wmem_max = 16777216
-
-# BBR congestion control is materially better on long-haul links.
-net.ipv4.tcp_congestion_control = bbr
-net.core.default_qdisc = fq
+fs.inotify.max_queued_events = 32768
 EOF
 
 sudo sysctl --system
 ```
 
-Verify it took:
+Live values after `sysctl --system`:
 
-```bash
-sysctl vm.swappiness vm.dirty_ratio fs.inotify.max_user_watches net.ipv4.tcp_congestion_control
-```
+| Knob | Value | Source |
+|------|-------|--------|
+| `vm.swappiness` | 10 | local memory file |
+| `vm.overcommit_memory` | 1 | local memory file |
+| `fs.inotify.max_user_watches` | 524288 | local inotify file |
+| `fs.inotify.max_user_instances` | 1024 | local inotify file |
+| `fs.inotify.max_queued_events` | 32768 | local inotify file |
+| `vm.max_map_count` | 1048576 | Ubuntu default (`10-map-count.conf`) |
+| `vm.vfs_cache_pressure` | 100 | kernel default |
+| `vm.dirty_background_ratio` / `vm.dirty_ratio` | 10 / 20 | kernel default |
+| `vm.watermark_scale_factor` | 10 | kernel default |
+| `net.ipv4.tcp_congestion_control` | `cubic` | kernel default |
+| `net.core.default_qdisc` | `fq_codel` | Ubuntu default (`10-bufferbloat.conf`) |
+| `net.core.rmem_max` / `wmem_max` | 212992 | kernel default |
 
 ### Swap policy
 
-The Ubuntu installer creates `/swap.img` at boot, sized small (2-8 GiB). With 64 GB of RAM and `vm.swappiness=10`, that is fine. Do not size swap to "twice RAM" - that advice predates the SSD era and was for hibernate, which you are not using on this host (see [`bare-metal-setup.md`](bare-metal-setup.md)).
-
-Keep the swap file, but make sure:
+Swap is a 16 GB file at the top of the large home logical volume (`$SWAPFILE` below, a `swap.img` in that volume's mount point), not the installer's default `/swap.img` on the root filesystem. On a typical day a few GB of it is in use even with tens of GB of RAM free, which is expected with `swappiness=10`: cold pages leave, hot ones stay.
 
 ```bash
-# Swap is on, file-backed, small.
+SWAPFILE=$(swapon --show=NAME --noheadings | head -1)   # the active swap file
 swapon --show
+# NAME           TYPE SIZE USED PRIO
+# $SWAPFILE file  16G 4.9G   -2
 
-# It is not on a slow filesystem.
-findmnt -no FSTYPE -T /swap.img    # should be ext4 on the OS partition
+findmnt -no FSTYPE -T "$SWAPFILE"      # ext4
+grep swap /etc/fstab                     # $SWAPFILE none swap sw 0 0
 ```
 
-If swap usage creeps above ~50 % consistently, the answer is more RAM, not more swap.
+The file lives on the ext4 home volume (see [`disk-layout-lvm.md`](disk-layout-lvm.md)), which keeps the 100 GB root partition from filling. Hibernate is masked on this host, so the file does not need to be contiguous or sized for a RAM image (see [`bare-metal-setup.md`](bare-metal-setup.md)). If swap usage sits above half of 16 GB for days, the answer is a closer look at what is resident, or more RAM, not a bigger file.
 
 ### I/O scheduler
 
-Modern NVMe drives run faster than any scheduler can be smart about. The current kernel defaults to `none` (multi-queue, no scheduler) on NVMe and `mq-deadline` on rotational. Both are correct. Do not switch to BFQ on NVMe - it adds latency without adding fairness in any way you will notice.
-
-Check:
+Both NVMe drives use `none`, the kernel default for multi-queue NVMe. `mq-deadline` is listed as an alternative and is not selected. I did not try BFQ.
 
 ```bash
 for d in /sys/block/nvme*/queue/scheduler; do
   echo "$d: $(cat "$d")"
 done
+# /sys/block/nvme0n1/queue/scheduler: [none] mq-deadline
+# /sys/block/nvme1n1/queue/scheduler: [none] mq-deadline
 ```
-
-Expected: `[none]` on each NVMe device.
 
 ### Transparent huge pages
 
-Default is `madvise` on modern kernels. Leave it. The advice to set THP to `never` is from the Postgres / MongoDB world where THP defragmentation costs visible latency. The agent stack does not have that profile.
-
-Verify:
+THP is at the default: `enabled` is `madvise`, `defrag` is `madvise`. Only applications that ask for huge pages get them, and direct compaction only stalls those callers. Nothing on this host needed THP turned off.
 
 ```bash
-cat /sys/kernel/mm/transparent_hugepage/enabled
+cat /sys/kernel/mm/transparent_hugepage/enabled   # always [madvise] never
+cat /sys/kernel/mm/transparent_hugepage/defrag    # always defer defer+madvise [madvise] never
 ```
-
-Expected: `always madvise [never]` is fine, `always [madvise] never` is fine, do not change it.
 
 ### CPU governor
 
-On a desktop class CPU running an interactive workload, the `schedutil` (or `intel_pstate` powersave with HWP) defaults are correct. Do not lock the governor to `performance`:
-
-- It pegs CPU frequency, raising idle power draw and fan noise.
-- It does not measurably help an LLM-bound workload because the wait is on the network, not the CPU.
-- It interacts badly with thermal throttling on small-form-factor cases.
-
-Verify:
+The CPU runs the `intel_pstate` driver in `active` mode with the `powersave` governor. With hardware-managed P-states (HWP), `powersave` on this driver scales frequency on demand and is not the low-clock mode the name suggests. I have not locked it to `performance`: the agent workload waits on network and model latency, so a pinned clock buys idle power draw and fan noise.
 
 ```bash
-cpupower frequency-info | grep -E 'driver|governor'
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver     # intel_pstate
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor   # powersave
+cat /sys/devices/system/cpu/intel_pstate/status             # active
 ```
-
-Expected: driver is `intel_pstate` (or `amd-pstate`), governor is `powersave` or `schedutil`.
 
 ### Per-user resource limits
 
-The systemd default for per-user open files is 1024 soft / 4096 hard. The agent will trip this the first time it watches a large repo with many file handles. Bump it:
+No custom `limits.d` or `system.conf.d` files exist on this host. Open-file limits come from systemd's own defaults:
 
 ```bash
-sudo tee /etc/security/limits.d/90-agent.conf <<'EOF'
-*  soft  nofile  65536
-*  hard  nofile  1048576
-*  soft  nproc   32768
-*  hard  nproc   65536
-EOF
-
-# Plus systemd's own ceiling for user services:
-sudo mkdir -p /etc/systemd/system.conf.d
-sudo tee /etc/systemd/system.conf.d/90-agent.conf <<'EOF'
-[Manager]
-DefaultLimitNOFILE=65536:1048576
-DefaultLimitNPROC=32768:65536
-EOF
-
-sudo systemctl daemon-reexec
+systemctl show -p DefaultLimitNOFILE   # DefaultLimitNOFILE=524288
+ulimit -n                               # 1048576 (soft)
+ulimit -Hn                              # 1048576 (hard)
 ```
 
-Log out and back in for `limits.conf` to apply.
+The only drop-ins in `/etc/security/limits.d/` are from packages (a game-mode helper and PipeWire real-time limits). The old advice to add `/etc/security/limits.d/` and `system.conf.d` overrides is unnecessary on a current Ubuntu with systemd. If a particular service hits `EMFILE`, raise `LimitNOFILE=` in that unit instead of changing the global default.
+
+### Optional tuning not applied here
+
+These are values from the usual tuning advice. I have no measurement on this host that justifies them, so none are set. Treat them as starting points to test on your own workload, not recommendations.
+
+```ini
+# NOT APPLIED on the reference host.
+# Smoother writeback on fast NVMe: start background flush earlier.
+vm.dirty_background_ratio = 5
+vm.dirty_ratio = 10
+
+# Keep inode/dentry caches hotter than page cache.
+vm.vfs_cache_pressure = 50
+
+# Larger socket buffers for bulk transfers over fast links.
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+
+# BBR with fq. Matters on long-haul links, not on a LAN.
+net.ipv4.tcp_congestion_control = bbr
+net.core.default_qdisc = fq
+```
+
+The dirty-page ratios are the likeliest to help if you see multi-second `await` spikes in `iostat` during backups. Benchmark them against "is the desktop responsive while a backup runs?", not `dd` throughput. BBR needs the `tcp_bbr` module available and only pays off when the path has real latency.
 
 ## Verification
 
+Every line below passes on the reference host as written:
+
 ```bash
-# Swap policy.
+# Swap policy and overcommit.
 sysctl vm.swappiness | grep -q '= 10' && echo OK
-sysctl vm.dirty_ratio | grep -q '= 10' && echo OK
+sysctl vm.overcommit_memory | grep -q '= 1' && echo OK
 
 # Inotify ceiling.
 sysctl fs.inotify.max_user_watches | awk '$3>=524288 {print "OK"}'
 
-# Per-user fd limit.
-ulimit -n     # >=65536
+# Swap is a file on ext4 and is active.
+SWAPFILE=$(swapon --show=NAME --noheadings | head -1)
+findmnt -no FSTYPE -T "$SWAPFILE" | grep -q ext4 && echo OK
 
-# BBR is on.
-sysctl net.ipv4.tcp_congestion_control | grep -q bbr && echo OK
+# Per-user fd limit.
+[ "$(ulimit -n)" -ge 65536 ] && echo OK
 
 # No third-party I/O scheduler is in the way.
-cat /sys/block/nvme0n1/queue/scheduler | grep -q '\[none\]' && echo OK
+grep -q '\[none\]' /sys/block/nvme0n1/queue/scheduler && echo OK
+
+# THP is at the default.
+grep -q '\[madvise\]' /sys/kernel/mm/transparent_hugepage/enabled && echo OK
+
+# Governor is the intel_pstate default.
+grep -q powersave /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor && echo OK
 ```
 
 Real-world sanity check: run a backup while opening a browser tab. Neither should stutter.
 
 ## Gotchas
 
-**Setting `vm.swappiness=0` looks aggressive and breaks OOM behavior.** Zero tells the kernel to never swap process pages, even when reclaim is failing. The OOM killer then fires earlier than you want. Use 10, not 0. The difference between 10 and 0 in practice is invisible; the difference in OOM behavior is not.
+**Setting `vm.swappiness=0` looks aggressive and breaks OOM behavior.** Zero tells the kernel to never swap process pages, even when reclaim is failing, so the OOM killer fires earlier than you want. Use 10, not 0.
 
-**`fs.inotify.max_user_watches` is per-user, not per-process.** If the agent user, the desktop user, and a docker container all share UID 1000 (which is a separate problem), they share the inotify pool. Each gets less than you raised it to. Run the agent and the desktop under different users if you find yourself bumping inotify limits weekly.
+**`vm.overcommit_memory=1` trades safety for fewer spurious failures.** It never refuses an allocation up front, so a genuine memory leak ends in the OOM killer instead of a clean `ENOMEM`. I accepted that because the alternative was `fork()` failing with free RAM. If you do not run big-VM or browser-heavy processes, leave the default heuristic.
 
-**Lowering `vm.dirty_ratio` increases sync I/O during heavy writes.** This is the point - smoother writeback, fewer multi-second stalls - but it shows up on synthetic write benchmarks as lower peak throughput. Do not benchmark this knob with `dd`; benchmark it with "is the desktop responsive while a backup runs?"
+**`fs.inotify.max_user_watches` is per-user, not per-process.** If the agent, the desktop, and a container all share one UID, they share one pool. Each gets less than you raised it to. Run them under different users if you keep bumping the limit.
 
-**BBR is great on long-haul, neutral on LAN.** Switching to BBR on a fully-LAN workload changes nothing measurable. Keep it on for the SSH-over-VPN case to a NAS or to a cloud backup target; it costs nothing to enable.
+**The swap file is not where the installer puts it.** A stock Ubuntu install creates `/swap.img` on the root filesystem. This host keeps swap on the home volume. If you copy this layout, update `/etc/fstab` and run `swapoff` on any old file before deleting it.
 
-**`cpupower` setting the governor to `performance` will silently revert on suspend/resume on some firmware.** If you actually need `performance` (you do not), set it via a systemd service that re-applies on `resume.target`, not via `/etc/default/cpufrequtils`.
+**`powersave` on `intel_pstate` is not slow.** With HWP the governor name is misleading. Check `cpupower frequency-info` or the live MHz before assuming the CPU is throttled.
 
-**Tuned, ananicy, irqbalance, and similar daemons fight your sysctl file.** Install one or zero of these, not several. Each one ships with its own opinions about swappiness and dirty ratios and will quietly override your settings on its own schedule.
+**Tuned, ananicy, irqbalance, and similar daemons fight your sysctl files.** None of them run on this host (`systemctl is-active` reports inactive). Install one or zero, not several. Each ships its own opinions about swappiness and dirty ratios.
 
-**THP defrag set to `always` causes visible hitches on a heavy fork() workload.** The default is `madvise` and is correct. If you have ever seen a recommendation to set defrag to `always` for performance, ignore it.
+**An earlier version of this guide recommended values the host never used.** It listed bbr/fq, dirty ratios of 5/10, 16 MiB socket buffers, and `watermark_scale_factor=200`, plus `limits.d` and `system.conf.d` overrides. None of those were ever applied here, which is why they now live only in the optional section above.
 
 ## Templates
 
-This guide does not ship a template; the inline sysctl file above is the template. Pair with:
+This guide does not ship a template. The two inline sysctl files above are the template. Pair with:
 
-- [`../security/linux-hardening.md`](../security/linux-hardening.md) - the security-side `/etc/sysctl.d/` knobs (rp_filter, accept_redirects, etc.)
+- [`../security/linux-hardening.md`](../security/linux-hardening.md) for the security-side `/etc/sysctl.d/` knobs (rp_filter, accept_redirects, etc.)
 
 ## Related
 
-- [`bare-metal-setup.md`](bare-metal-setup.md) - hardware choices that make this tuning matter
-- [`disk-layout-lvm.md`](disk-layout-lvm.md) - the storage layout these dirty-page settings interact with
-- [`../security/linux-hardening.md`](../security/linux-hardening.md) - sysctl knobs for network security, complementary to these performance knobs
+- [`bare-metal-setup.md`](bare-metal-setup.md) for the hardware choices that make this tuning matter
+- [`disk-layout-lvm.md`](disk-layout-lvm.md) for the storage layout the swap file and dirty-page behavior sit on
+- [`../security/linux-hardening.md`](../security/linux-hardening.md) for network-security sysctl knobs, complementary to these

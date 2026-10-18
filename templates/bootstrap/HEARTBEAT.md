@@ -1,5 +1,7 @@
 # HEARTBEAT.md
 
+> Optional. Keep this file only if your harness actually sends heartbeat polls. If the heartbeat interval is zero or disabled, delete the file: `bootstrap-doctor` reports an absent `HEARTBEAT.md` as optional, not missing, and a file nothing reads still costs prompt tokens.
+
 The heartbeat is a low-cost periodic check-in from the harness. Reply with the configured acknowledgment (often `HEARTBEAT_OK`) unless something needs immediate attention.
 
 ## Default behavior

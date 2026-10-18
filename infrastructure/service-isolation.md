@@ -4,14 +4,14 @@ I run my homelab as a pile of small, boring, unprivileged LXC containers. One se
 
 This is the *why*, not the map. For the inventory of what runs where, see [`homelab-topology.md`](homelab-topology.md).
 
-**Tested on:** Proxmox VE 9.2 on a single Intel Ultra 9 node, 32GB RAM, unprivileged LXC + a few QEMU VMs. ~8 service containers running, ~5 build containers stopped-on-demand.
-**Last updated:** 2026-06-04
+**Tested on:** Proxmox VE 9.2 on a single Intel Ultra 9 node, 32GB RAM, unprivileged LXC plus two QEMU VMs. 15 service containers running. The stopped-on-demand build container tier described in earlier versions of this guide is retired (see below).
+**Last updated:** 2026-10-17
 
 ---
 
 ## The Rule: One Service, One Container
 
-Every long-lived service gets its own unprivileged LXC. DNS in one, the SIEM in another, the photo server in a third, the social-automation stack in a fourth. They share a kernel (that's what makes LXC cheap) but nothing else: separate rootfs, separate network interface, separate resource caps, separate snapshot timeline.
+Every long-lived service gets its own unprivileged LXC. DNS in one, the SIEM in another, the photo server in a third, the automation stack in a fourth. They share a kernel (that's what makes LXC cheap) but nothing else: separate rootfs, separate network interface, separate resource caps, separate snapshot timeline.
 
 The instinct early on is to consolidate. "Why spin up five containers when one Debian box could run all five daemons?" Because consolidation trades a one-time setup cost for a permanent operational tax, and the tax compounds every time something breaks.
 
@@ -83,61 +83,43 @@ Sizing principles I actually follow:
 - **Default small.** A DNS resolver gets 512MB and one core. A sync helper gets 256MB. You can always `pct set` upward. Starting big just normalizes waste.
 - **Disk is the cap people forget.** A container that fills its rootfs takes itself down, and if it shares the LVM-thin pool with everything else, a runaway log can starve the whole pool. Cap rootfs per service and watch pool usage, not just per-container usage.
 - **`unprivileged 1` is non-negotiable for services.** An unprivileged LXC maps container root to an unprivileged host UID. If the container is popped, the attacker is `nobody` on the host, not root. The only reason to run privileged is a specific feature that needs it, and that's usually a sign you wanted a VM (see below).
-- **`nesting=1` only when the service runs containers itself.** My docker-based stacks (the social-automation box runs Docker inside the LXC) need `nesting=1,keyctl=1`. Don't hand it out by default; it widens the container's capabilities.
+- **`nesting=1` only when the service runs containers itself.** My docker-based stacks (the automation box runs Docker inside the LXC) need `nesting=1,keyctl=1`. The fleet hub, which runs no containers, has `nesting=0`. Don't hand it out by default, because it widens the container's capabilities.
 
-## The Ephemeral Build-Container Pattern
+## The Ephemeral Build-Container Pattern (Retired)
 
-Here's the pattern I'm proudest of. PR builds, smoke tests, and CI-style jobs do not get a permanent home and they do not run on a service container. They get a dedicated container that is **stopped by default** and started only for the duration of the job.
+Earlier versions of this lab ran a tier of PR-build and smoke-test containers. Each was **stopped by default** and started only for the duration of a job, with a `pristine` snapshot rolled back before every run. That whole tier was destroyed in a September 2026 cleanup, and none of it exists today. I'm keeping the pattern here as history and as a recipe, because the isolation reasoning still holds and you may want it on a bigger box.
 
-The host keeps several of these around, stopped, as ready-to-go templates. One per project that needs clean-room builds:
-
-```
-112  openclaw-prbuild   stopped   clean OpenClaw build/test sandbox
-113  tokenjuice-prbuild  stopped   tokenjuice PR/build sandbox
-115  mcp-smoke           stopped   MCP smoke-test sandbox
-119  orca-prbuild        stopped   project build/test sandbox
-120  gh-runner           stopped   CI runner sandbox
-```
-
-The workflow is: clone or reset, start, build, capture result, stop.
+What it looked like: one stopped container per project that needed clean-room builds, plus a smoke-test container for MCP integration tests and a QEMU smoke template. The workflow was reset, start, build, capture, stop:
 
 ```bash
 # Spin up a clean build CT for a PR, run the build, tear it back down.
-ssh hypervisor "pct start 112"
-ssh hypervisor "pct exec 112 -- bash -lc '
-  cd /root/openclaw && git fetch origin && git checkout pr-branch &&
+ssh hypervisor "pct rollback <ctid> pristine && pct start <ctid>"
+ssh hypervisor "pct exec <ctid> -- bash -lc '
+  cd /root/project && git fetch origin && git checkout pr-branch &&
   pnpm install && pnpm build && pnpm test
 '"
-ssh hypervisor "pct stop 112"
+ssh hypervisor "pct stop <ctid>"
 ```
 
-Why a dedicated stopped container per project instead of a shared build box or just running it on the dev machine:
+Why it was worth doing while it lasted:
 
-- **Clean room every time.** A PR build that passes only because of leftover state from the last build is a lie. A snapshot-restored or freshly-reset container guarantees the build sees what a fresh checkout sees.
-- **Zero idle cost.** Stopped LXCs consume disk and nothing else. No RAM, no CPU. Keeping five of them around costs me disk I already have. They're templates that happen to also be runnable.
-- **Blast radius of a build is one throwaway container.** A malicious or buggy build script (npm postinstall hooks, anyone?) runs in a container with no secrets, no NAS mount, and a firewall on its NIC. When it's done, `pct stop` and the next run starts clean. Compare to running untrusted PR builds on your actual workstation.
-- **`firewall=1` on the build NIC.** Build containers get the Proxmox firewall enabled on their interface (`net0: ...,firewall=1`). A PR build does not need to phone home. Service containers I trust more; build containers I trust not at all.
+- **Clean room every time.** A PR build that passes only because of leftover state from the last build is a lie. A snapshot-restored container sees what a fresh checkout sees.
+- **Zero idle RAM.** Stopped LXCs consume disk and nothing else.
+- **Blast radius of a build was one throwaway container.** A buggy build script (npm postinstall hooks, anyone?) ran in a container with no secrets, no NAS mount, and `firewall=1` on its NIC.
 
-### Reset between runs with snapshots
+What it cost, and why I don't run it now:
 
-Pair build containers with a "pristine" snapshot so each run starts identical:
+- **Disk is not free.** A stopped container still holds its full volume on the thin pool, and the pool is now about two-thirds full.
+- **Templates rot.** A `pristine` snapshot from months ago builds against months-old toolchains. Without a scheduled refresh, the clean room turns into a museum.
+- **The IDs get reused.** Three of the freed IDs now belong to long-lived library containers, so the old numbering no longer reads as a build tier.
 
-```bash
-# One time: get the CT to a known-good state, then snapshot it.
-pct snapshot 112 pristine
-
-# Before each build job: roll back to pristine, then start.
-pct rollback 112 pristine
-pct start 112
-# ... run build ...
-pct stop 112
-```
+If you do keep a tier like this, schedule the start, update, re-snapshot, stop cycle so the snapshots stay current, and keep the build NIC firewalled. The one container from that era that survived is the CI runner, which now runs as an ordinary always-on service container.
 
 ### The ephemeral-state gotcha
 
 Ephemeral containers have a sharp edge: state you *want* to keep can live in the part of the container that gets thrown away. I hit this with a Docker-based automation service whose SSH `known_hosts` file lived in the container's writable layer rather than in a mounted data volume. Every container recreate wiped `known_hosts`, and SSH-using workflows started failing silently with host-key verification errors because the new layer didn't trust any hosts yet.
 
-The rule that falls out: **if it's ephemeral, treat anything outside an explicit persistent volume as gone on the next reset.** For build containers that's a feature. For services that happen to recreate their app containers (Docker-in-LXC), it's a trap. Audit where each service keeps its must-survive state, and make sure it's in a named volume or a bind-mount, not the disposable layer.
+The rule that falls out: **if it's ephemeral, treat anything outside an explicit persistent volume as gone on the next reset.** For disposable build containers that was a feature. For services that recreate their app containers (Docker-in-LXC), it's a trap, and it still applies to the automation and photo stacks today. Audit where each service keeps its must-survive state, and make sure it's in a named volume or a bind-mount, not the disposable layer.
 
 ## Snapshot Before Change
 
@@ -147,10 +129,10 @@ The cheap habit that makes everything above safe: snapshot the container before 
 pct snapshot 105 pre-maint-$(date +%Y%m%d-%H%M)
 # ... do the risky thing: apt full-upgrade, config edit, version bump ...
 # if it went sideways:
-pct rollback 105 pre-maint-20260604-1430
+pct rollback 105 pre-maint-20261003-1430
 ```
 
-Before my last host-wide maintenance window I snapshotted every service container that supported it (`pre-maint-<timestamp>`), upgraded, and verified. The snapshot timeline is per-container, so a botched upgrade on the monitoring box rolls back in seconds without touching anything else. That's isolation paying off again: a per-service rollback is only possible because services aren't sharing a rootfs.
+Before each host-wide maintenance window I snapshot every service container that supports it, upgrade, and verify. The October 2026 windows used `pre-fleet-update-20261003` and `pre-vendor-update-20261003`, one name per batch of containers. The snapshot timeline is per-container, so a botched upgrade on the monitoring box rolls back in seconds without touching anything else. That's isolation paying off again: a per-service rollback is only possible because services aren't sharing a rootfs.
 
 Two caveats from the field:
 
@@ -162,7 +144,7 @@ Two caveats from the field:
 I default to LXC, but the discipline includes knowing when LXC is the wrong tool. Reach for a QEMU VM when:
 
 - **You need a different or custom kernel.** LXC shares the host kernel. Anything that needs its own kernel modules, a different kernel version, or kernel-level features the host doesn't expose has to be a VM.
-- **The workload is a desktop or GUI.** Full desktop environments, anything wanting a real display server, and "I want a whole separate machine I can RDP into" are VM territory. I run a peer's whole separate environment as a 14GB VM precisely because it's a full OS install they manage independently, not a single service. Manage it with `qm`, not `pct`, and leave it alone during host maintenance.
+- **The workload is a desktop or GUI.** Full desktop environments, anything wanting a real display server, and "I want a whole separate machine I can RDP into" are VM territory. I run a peer's whole separate environment as an 8GB VM precisely because it's a full OS install they manage independently, not a single service. Manage it with `qm`, not `pct`, and leave it alone during host maintenance.
 - **You need hard isolation, not just namespace isolation.** Unprivileged LXC is strong, but it's still a shared kernel. For genuinely untrusted multi-tenant workloads or anything where a kernel escape is in your threat model, a VM's hardware-level boundary is worth the overhead.
 - **The thing flatly refuses to run unprivileged.** Some software needs capabilities that only make sense in a VM. If you find yourself reaching for a privileged LXC to make something work, that's usually the signal to make it a VM instead. A privileged container is most of the cost of a VM with less of the isolation.
 
@@ -181,22 +163,22 @@ qm list
 pct config <CTID> | grep -E 'memory|cores|unprivileged'
 # expected: memory: <cap>, cores: <cap>, unprivileged: 1
 
-# The snapshot habit is real: a pre-maint snapshot exists from the last window
+# The snapshot habit is real: a pre-change snapshot exists from the last window
 pct listsnapshot <CTID>
-# expected: at least one pre-maint-<timestamp> entry above "current"
+# expected: at least one dated pre-update entry above "current"
 ```
 
 If `pct config` shows no `unprivileged: 1` on a service container, or `pct listsnapshot` comes back empty on a box you upgraded last week, the discipline has drifted from the design.
 
 ## Gotchas
 
-1. **CTID and VMID share one numbering pool.** On Proxmox, `pct list` shows only LXC, `qm list` shows only VMs, and they draw from the same ID space. ID 110 can be a VM while 111 and 112 are containers. Always check *both* before assuming an ID is free or "doesn't exist."
+1. **CTID and VMID share one numbering pool.** On Proxmox, `pct list` shows only LXC, `qm list` shows only VMs, and they draw from the same ID space. ID 110 can be a VM while 109 and 111 are containers. Always check *both* before assuming an ID is free or "doesn't exist."
 
 2. **A bind-mount is a coupling, not a convenience.** Every shared mount you bind into a container extends that container's blast radius to include host-side state. Inventory them. The silent failures (empty mount after a boot race) are the ones that cost you an afternoon.
 
-3. **Stopped build containers still need upkeep.** They're templates, but a `pristine` snapshot from six months ago builds against six-month-old toolchains. Periodically start, update, re-snapshot, stop. Otherwise your "clean room" is a museum.
+3. **Stopped containers still need upkeep, and they still cost disk.** This is the lesson of the retired build tier. A `pristine` snapshot from six months ago builds against six-month-old toolchains, and the idle volume holds thin-pool space the whole time. Refresh on a schedule or don't keep the tier.
 
-4. **`unprivileged 1` can't always be toggled after create.** Flipping a container between privileged and unprivileged isn't a simple `pct set`; UID mapping changes how files on the rootfs are owned. Decide at create time. For services, the answer is always unprivileged.
+4. **`unprivileged 1` can't always be toggled after create.** Flipping a container between privileged and unprivileged isn't a simple `pct set`. UID mapping changes how files on the rootfs are owned. Decide at create time. For services, the answer is always unprivileged.
 
 5. **Resource caps are a contract you have to enforce.** Setting `--memory 512` caps the container, but a service that genuinely needs more will OOM-loop quietly inside its cap. Cap deliberately, then actually watch for the service hitting the ceiling instead of assuming the number you picked at 2am was right.
 

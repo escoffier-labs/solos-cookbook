@@ -21,7 +21,7 @@
   <img src="https://shieldcn.dev/badge/code-MIT-green.svg" alt="Code license: MIT">
   <img src="https://shieldcn.dev/badge/content-CC_BY--NC--ND_4.0-lightgrey.svg" alt="Content license: CC BY-NC-ND 4.0">
   <img src="https://shieldcn.dev/badge/guides-61-red.svg" alt="61 guides">
-  <img src="https://shieldcn.dev/badge/updated-2026--10--17-gold.svg" alt="Updated October 17, 2026">
+  <img src="https://shieldcn.dev/badge/updated-2026--10--18-gold.svg" alt="Updated October 18, 2026">
 </p>
 
 This repository is the source for [Le Répertoire](https://escoffierlabs.dev/cookbook/), a cookbook built from systems that were deployed, broken, repaired, and checked again. It covers OpenClaw and Hermes memory ownership, Codex and Claude Code handoffs, automation, self-hosted infrastructure, security, publishing, and the hardware underneath the stack.

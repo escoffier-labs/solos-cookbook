@@ -2,6 +2,9 @@
 
 > Every MCP repo in the catalog ships with the same five-block README. If a setup block is missing, half your potential users walk away. Five clients, one shape, copy-paste tested against each.
 
+**Tested on:** Claude Code 2.1.302, codex-cli 0.163.0, OpenClaw 2026.10.4, Brigade 0.28.0
+**Last updated:** 2026-10-17
+
 ## What this is
 
 A README pattern for any MCP server published from this stack. Every README contains:
@@ -13,7 +16,7 @@ A README pattern for any MCP server published from this stack. Every README cont
 5. A "Remote service via SSH tunnel" block for any MCP that targets a backend on a different host.
 6. Example prompts + their resolved tool calls.
 
-The five-client section is the part this guide is about. The order is not arbitrary; it goes from most-restrictive (Desktop, JSON config only) to most-flexible (Codex CLI, command-line registration).
+The five-client section is the part this guide is about. The order is not arbitrary. It goes from most-restrictive (Desktop, JSON config only) to most-flexible (Codex CLI, command-line registration). I run more than five clients now, and the last section before the SSH tunnel block covers the others without adding a sixth full block to every README.
 
 ## Why this way
 
@@ -65,7 +68,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 \`\`\`
 ```
 
-Linux is not officially supported by Claude Desktop. Do not include a Linux path here; it confuses users on Linux into thinking it is supposed to work.
+Linux is not officially supported by Claude Desktop. Do not include a Linux path here. It confuses users on Linux into thinking it is supposed to work.
 
 ### Block 2: Claude Code
 
@@ -114,10 +117,11 @@ openclaw mcp set <mcp-shortname> '{
 }'
 \`\`\`
 
-Then restart the OpenClaw gateway so the new server is picked up:
+Then make OpenClaw pick the new server up. `openclaw mcp reload` disposes the cached MCP runtimes so the new config is used on the next turn. If you would rather be sure, restart the gateway:
 
 \`\`\`bash
-systemctl --user restart openclaw-gateway
+openclaw mcp reload
+systemctl --user restart openclaw-gateway   # optional, heavier
 openclaw mcp list   # confirm "<mcp-shortname>" is registered
 \`\`\`
 ```
@@ -183,6 +187,32 @@ codex mcp list
 \`\`\`
 ```
 
+### Other clients
+
+I also run MCP servers from T3 Code, Cursor, opencode, and Antigravity. None of them gets a full README block, because each one is the same idea in a different file:
+
+| Client | Where the config lives | Format |
+|--------|------------------------|--------|
+| Cursor | `~/.cursor/mcp.json` (user) or `.cursor/mcp.json` (project) | JSON, `mcpServers` key |
+| opencode | `~/.config/opencode/opencode.json` (user) or `opencode.json` (project) | JSON, `mcp` key |
+| Antigravity | `~/.gemini/config/mcp_config.json` | JSON, `mcpServers` key |
+| T3 Code | Uses the Claude Code or Codex configuration of whichever harness the thread runs | See those blocks |
+
+A README that shows the `command`, `args`, and `env` triple once makes all of these a copy-and-adapt job. The key names differ (`mcpServers`, `mcp`, `servers`, `mcp_servers`), so state the triple clearly and let readers translate.
+
+If you run several clients on one machine, hand-editing six files drifts. Brigade keeps one canonical catalog and projects it into each client's config:
+
+```bash
+brigade mcp init                 # scaffold .brigade/mcp.json
+brigade mcp add --name <server-name> --command <executable> --args "<arguments>"   # add or update a stdio server (--name is required)
+brigade mcp add --name <server-name> --url <https-url> --transport http              # add or update a remote server
+brigade mcp plan                 # read-only preview of what a sync would change
+brigade mcp sync                 # dry-run by default
+brigade mcp sync --write --verify   # write the configs, then probe runtime health
+```
+
+User-scoped targets (the global configs above) need `--user-scope`, and writing a stdio server into a user-wide config also needs `--allow-global-stdio`, because every active client session then spawns its own child process for that server. Run `brigade mcp sync --help` for the full flag list. Brigade also serves its own cards and skills as read-only MCP servers (`brigade memory serve-mcp --stdio` and `brigade skills serve-mcp --stdio`), which is how this stack exposes them to clients.
+
 ### Optional: SSH tunnel block
 
 If the MCP targets a backend that often lives on a different host (a media server on a Windows box, a Postiz instance in a container), add a tunnel example after the five client blocks:
@@ -236,17 +266,23 @@ codex mcp add jellyfin --env JELLYFIN_URL=... --env JELLYFIN_API_KEY=... -- jell
 codex mcp list | grep jellyfin
 
 # Claude Desktop and Hermes Agent: edit the config file by hand, restart the client, verify the MCP appears in the tool palette.
+
+# Everything at once, if you use Brigade's catalog: preview, then write and probe.
+brigade mcp plan
+brigade mcp sync --write --verify
 ```
 
 ## Gotchas
 
-**Claude Desktop on Linux is unofficial.** Some users will be running Linux Claude Desktop ports. Do not document a Linux config path; it varies by port. If users ask, point at Claude Code instead.
+**Claude Desktop on Linux is unofficial.** Some users will be running Linux Claude Desktop ports. Do not document a Linux config path. It varies by port. If users ask, point at Claude Code instead.
 
 **`claude mcp add` without `--` parses everything after the env block as more flags.** This is the number one setup mistake. Always show the `--` before the binary name.
 
 **OpenClaw `mcp set` is JSON-as-a-string, single-quoted, no trailing comma.** The shell quoting is fiddly. Show the full single-quoted JSON in the README rather than relying on the user to escape it themselves.
 
-**Hermes Agent's `/reload-mcp` is in-session, not a CLI command.** A new contributor will reach for `hermes reload` or `hermes mcp reload`; those do not exist. Make the in-session reload explicit.
+**Client config key names differ, so a block copied between clients needs its top-level key changed.** Claude uses `mcpServers`, VS Code uses `servers`, opencode uses `mcp`, Codex and Hermes use `mcp_servers`, and OpenClaw nests under `mcp.servers`. `brigade mcp doctor` validates the canonical catalog and reports gaps.
+
+**Hermes Agent's `/reload-mcp` is in-session, not a CLI command.** A new contributor will reach for `hermes reload` or `hermes mcp reload`. Those do not exist. Make the in-session reload explicit.
 
 **Codex CLI writes TOML, not JSON.** A user who is comfortable hand-editing Claude Desktop's JSON will look for the equivalent file and find `config.toml`. Mentioning the file path saves them the lookup.
 
@@ -265,3 +301,4 @@ This guide is itself the template. The reference implementation is in [`jellyctr
 - [`mcp-catalog.md`](mcp-catalog.md) - the MCP servers that follow this README pattern
 - [`repo-redeploy.md`](repo-redeploy.md) - how source-checkout MCPs stay up to date so the path in the README actually works
 - [`../ai-stack/skills-development.md`](../ai-stack/skills-development.md) - skill patterns that wrap a single MCP tool
+- [`brigade.md`](brigade.md) - the Brigade CLI that projects one MCP catalog into every client

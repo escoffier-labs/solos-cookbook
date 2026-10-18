@@ -189,7 +189,7 @@ If the chain dead-ends at `next=none`, you are exhausted, not unpaid. Wait for t
 
 **Cause:** Fallbacks are tried in list order. A less-preferred model listed first takes over after one primary failure. An empty list has the opposite property: nothing takes over, so a rate limit or an auth failure surfaces directly as the user-visible error.
 
-**Recovery:** Put the preferred fallback first and keep the chain to providers you actually run. My current main agent has an empty fallback list. That is a gap I still need to close, not a pattern to copy: every auth problem in this guide shows up immediately, which makes diagnosis faster, but it also turns one dead token into a full outage. See [model retirement and fallbacks](model-retirement-and-fallbacks.md) for the trade-off.
+**Recovery:** Put the preferred fallback first and keep the chain to providers you actually run. My main agent's chain now ends on a different provider (Opus 5.5 through the `claude-cli` runtime), so a dead OpenAI token degrades to a slower answer instead of an outage. For months it was empty, which made auth failures loud but turned one dead token into a full outage. See [model retirement and fallbacks](model-retirement-and-fallbacks.md) for the trade-off.
 
 ```bash
 jq '.agents.defaults.model' "$HOME/.openclaw/openclaw.json"
@@ -265,7 +265,7 @@ Expected result: `clean`.
 
 6. **402 is usually a lie about billing.** It maps to rate-limit exhaustion after the fallback chain empties far more often than to a payment failure. Check the chain before the invoice.
 
-7. **An empty fallback list makes failures loud.** That is a choice, not a default to copy blindly. It means an auth problem takes the turn down immediately.
+7. **A cross-provider fallback hides auth failures.** The flip side of a populated chain: an expired OpenAI token now degrades quietly to the fallback. Check the model a turn actually used (`openclaw sessions --active 60 --json`) after any auth change, not just whether it answered.
 
 8. **A stale `CLAUDE_CODE_OAUTH_TOKEN` in the environment beats a fresh Claude login.** If the Claude lane returns 401 after a clean `/login`, check the environment of the process that spawns it. See [the auth boundary](acp-claude-code.md#the-auth-boundary).
 

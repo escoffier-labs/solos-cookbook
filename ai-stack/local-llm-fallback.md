@@ -302,7 +302,7 @@ Check OpenClaw config for accidental main-chain fallback:
 jq '.agents.defaults.model.fallbacks' ~/.openclaw/openclaw.json
 ```
 
-Expected result: no local utility aliases in the list. On my config it is `[]`: the main model has no fallback chain at all, so there is nothing for a local model to sneak into.
+Expected result: only hosted models you chose on purpose, and no local utility aliases. On my config it lists Luna 6 and then Opus 5.5, so a local model cannot end up behind the main agent unnoticed.
 
 ## Gotchas
 
