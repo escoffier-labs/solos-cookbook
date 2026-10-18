@@ -196,7 +196,7 @@ The old version of this step enabled "QMD" session indexing under `memory.qmd.se
     "citations": "auto",
     "search": {
       "provider": "openai",
-      "remote": { "baseUrl": "http://127.0.0.1:11434/v1/" },
+      "remote": { "baseUrl": "http://127.0.0.1:11434/v1/", "apiKey": "ollama-local" },
       "fallback": "none",
       "model": "qwen3-embedding:8b"
     }

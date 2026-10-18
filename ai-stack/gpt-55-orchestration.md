@@ -128,6 +128,8 @@ The mechanical guards are the fix. These soft adjustments reduce how often they 
 
 Minimum config for Sol 6.1 as main with the guards active (shape from the live file):
 
+`plugins.allow` is an exclusive list: the `codex` runtime and the `openai` provider must both be on it, or the primary model resolves as disabled with `not in allowlist`. If you already have an allowlist, merge into it instead of replacing it.
+
 ```json
 {
   "agents": {
@@ -150,7 +152,7 @@ Minimum config for Sol 6.1 as main with the guards active (shape from the live f
     }
   },
   "plugins": {
-    "allow": ["tool-narration-guard", "acpx"],
+    "allow": ["codex", "openai", "tool-narration-guard", "acpx"],
     "entries": {
       "tool-narration-guard": {
         "enabled": true,

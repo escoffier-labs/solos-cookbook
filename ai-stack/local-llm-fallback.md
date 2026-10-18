@@ -131,7 +131,8 @@ Embedding models are infrastructure, not chat fallbacks. Configure memory search
     "search": {
       "provider": "openai",
       "remote": {
-        "baseUrl": "<ollama-openai-compatible-base-url>"
+        "baseUrl": "<ollama-openai-compatible-base-url>",
+        "apiKey": "ollama-local"
       },
       "fallback": "none",
       "model": "qwen3-embedding:8b"
@@ -139,6 +140,8 @@ Embedding models are infrastructure, not chat fallbacks. Configure memory search
   }
 }
 ```
+
+The `apiKey` is a non-secret placeholder. Ollama ignores it, but OpenClaw refuses a custom embedding destination without one (`embedding credentials are not configured`), and with `fallback: "none"` that silently turns semantic memory search off.
 
 `provider: "openai"` here means "speaks the OpenAI embeddings API", which Ollama's `/v1` endpoint does. `fallback: "none"` is deliberate: if the embedding model is down, I want search to fail loudly instead of silently switching to a different vector space.
 
