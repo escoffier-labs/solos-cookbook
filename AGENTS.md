@@ -44,7 +44,7 @@ e.g. `export SCRUB_HOSTNAMES=host1,host2` (comma-separated; format in
   (OpenClaw or Hermes as memory owner, Codex CLI / Claude Code / OpenCode as
   writer harnesses). Guides live in category directories at the repo root:
   `ai-stack/`, `automation/`, `infrastructure/`, `security/`, `knowledge/`,
-  `hardware/`, `tools/`, `publishing/`, `philosophy/`, `plans/`, `skills/`,
+  `hardware/`, `tools/`, `publishing/`, `philosophy/`, `skills/`,
   plus drop-in artifacts in `templates/`.
 - `site/` is an Astro 6 site rendering those root directories
   (`site/src/content.config.ts`). Vercel deploys via `vercel.json`
@@ -66,8 +66,8 @@ e.g. `export SCRUB_HOSTNAMES=host1,host2` (comma-separated; format in
   runnable Verification commands with expected output.
 - Adding or removing a guide: update the README badge counts (guide count,
   updated date) in the same change. The `guides-NN` count is the number of
-  reader-facing guides and essays linked in the README `## Guides` table (the
-  nine categories shown there); it excludes `plans/`, `skills/`, and
+  reader-facing guides and essays linked from the nine chapters in the README `## Chapters` table. It
+  excludes `skills/` and
   `EXEMPT_FILES`, and is neither the total site page count nor the
   `structure-check` skeleton count.
 - Guide content is plain markdown plus existing `templates/` artifacts only.

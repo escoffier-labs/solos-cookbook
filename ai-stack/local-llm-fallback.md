@@ -2,14 +2,16 @@
 
 > Use local models for boring, bounded work so your paid models stay available for judgment.
 
-**Tested on:** OpenClaw 2026.6.2 with Ollama local models, local embeddings, and cloud-model offload lanes
-**Last updated:** 2026-05-11
+**Tested on:** OpenClaw 2026.10.4 with Ollama 0.18.0, one local embedding model, and Ollama cloud-model entries
+**Last updated:** 2026-10-17
 
 ## What this is
 
 A local LLM fallback is a cheap utility lane for work that does not need a frontier model: embeddings, commit-message drafts, simple classification, dedupe, and first-pass triage. It is not a replacement for your orchestrator, and it should not sit blindly in the main model fallback chain.
 
 The shape is: keep Ollama local, expose it through a loopback-only API, route only bounded jobs to it, and escalate anything ambiguous back to the main agent.
+
+**What I actually run today:** one local model, `qwen3-embedding:8b`, which powers memory search. The utility-chat roles below (triage, commit drafts) are a pattern I used on earlier hardware and models. I no longer keep chat models pulled locally, because the quota-backed hosted lanes (GPT 6 Luna for cheap bounded work) cover those jobs with less babysitting. The policy sections still apply to any local chat model you add. The local-versus-hosted line moved. The rules did not.
 
 ## Why this way
 
@@ -76,21 +78,24 @@ Bad local jobs:
 
 ### 2. Install only the models you actually route to
 
-Pull a small set and give each a job:
+Pull a small set and give each a job. My whole local set is one model:
 
 ```bash
 ollama pull qwen3-embedding:8b
-ollama pull qwen3:7b
-ollama pull qwen3-coder:14b
 ```
-
-Example roles:
 
 | Model | Role | Notes |
 |-------|------|-------|
-| `qwen3-embedding:8b` | memory and code-search embeddings | keep stable, re-index if changed |
+| `qwen3-embedding:8b` | memory search embeddings (4096-dimension vectors) | keep stable, re-index if changed |
+
+If you do want local chat roles, the earlier set looked like this, and each entry needs its own benchmark before you trust it:
+
+| Model | Role | Notes |
+|-------|------|-------|
 | `qwen3:7b` | constrained triage and labels | require JSON, short outputs, and escalation labels |
 | `qwen3-coder:14b` | commit-message and code-summary drafts | inspect output before using it |
+
+`ollama list` on my host also shows a dozen entries tagged `:cloud` (for example `kimi-k2.5:cloud`, `deepseek-v4-flash:cloud`). Those are Ollama's cloud-offload entries: they appear in the local model list with no local size, the weights are not on disk, and requests go to Ollama's hosted service. They count as hosted models for the purposes of this guide, not as local ones. Don't read a long `ollama list` as proof that you are running anything locally. Check the `SIZE` column.
 
 The exact models can change. The durable rule is to tie each local model to a job, benchmark it on that job, and remove it if it drifts.
 
@@ -117,31 +122,31 @@ Do not publish local service ports, hostnames, or private bind addresses in publ
 
 ### 4. Wire embeddings separately from chat
 
-Embedding models are infrastructure, not chat fallbacks. Configure memory search as its own surface:
+Embedding models are infrastructure, not chat fallbacks. Configure memory search as its own surface. In current OpenClaw that surface is the top-level `memory.search` key. Older releases kept it at `agents.defaults.memorySearch`, so if you are migrating an old config, move it. My live block:
 
 ```json
 {
-  "agents": {
-    "defaults": {
-      "memorySearch": {
-        "provider": "openai",
-        "remote": {
-          "baseUrl": "<ollama-openai-compatible-base-url>",
-          "apiKey": "ollama"
-        },
-        "fallback": "none",
-        "model": "qwen3-embedding:8b"
-      }
+  "memory": {
+    "citations": "auto",
+    "search": {
+      "provider": "openai",
+      "remote": {
+        "baseUrl": "<ollama-openai-compatible-base-url>"
+      },
+      "fallback": "none",
+      "model": "qwen3-embedding:8b"
     }
   }
 }
 ```
 
+`provider: "openai"` here means "speaks the OpenAI embeddings API", which Ollama's `/v1` endpoint does. `fallback: "none"` is deliberate: if the embedding model is down, I want search to fail loudly instead of silently switching to a different vector space.
+
 If you change `qwen3-embedding:8b` to another embedding model, rebuild the index. Vector spaces are not interchangeable.
 
-### 5. Use named utility aliases
+### 5. Use named utility aliases (pattern, not in my current config)
 
-Put local models behind explicit aliases so call sites reveal intent:
+If you run local chat models, put them behind explicit aliases so call sites reveal intent. My live `agents.defaults.models` has no Ollama entries any more, so treat this block as a template:
 
 ```json
 {
@@ -226,14 +231,14 @@ Create a smoke check that covers:
 - daemon reachable
 - expected models installed
 - embedding model responds
-- utility model returns parseable JSON
+- utility model returns parseable JSON (only if you run one)
 - no unexpected network bind
 
 Run it after upgrades, before enabling cron jobs, and any time local jobs start escalating unexpectedly.
 
 ## Verification
 
-List installed models:
+List installed models and check the `SIZE` column. Local models have a size. `:cloud` entries show `-`:
 
 ```bash
 ollama list
@@ -251,18 +256,42 @@ Confirm the embedding model exists:
 ollama list | awk '{print $1}' | grep -x 'qwen3-embedding:8b'
 ```
 
-Run a constrained triage smoke test:
+Confirm it actually embeds:
+
+```bash
+curl -fsS "$OLLAMA_OPENAI_BASE_URL/embeddings" \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"qwen3-embedding:8b","input":"backup completed"}' \
+  | jq '{model, dims: (.data[0].embedding | length)}'
+```
+
+Expected: `"model": "qwen3-embedding:8b"` and `"dims": 4096`. A different dimension count means the model changed and the memory index needs a rebuild.
+
+Confirm memory search points at it, and that the old location is gone:
+
+```bash
+jq '.memory.search | {provider, model, fallback}' ~/.openclaw/openclaw.json
+jq '.agents.defaults | has("memorySearch")' ~/.openclaw/openclaw.json
+```
+
+Expected: `qwen3-embedding:8b` with `fallback: "none"`, then `false`.
+
+Confirm Ollama is loopback-only:
+
+```bash
+ss -ltn | grep 11434
+```
+
+Expected: a single listener on `127.0.0.1:11434`.
+
+If you run a local utility model, add a constrained triage smoke test:
 
 ```bash
 printf '%s\n' 'Backup completed successfully.' \
-  | ollama run qwen3:7b 'Return JSON only with decision skip, summarize, or escalate.'
+  | ollama run <utility-model> 'Return JSON only with decision skip, summarize, or escalate.'
 ```
 
-Expected result:
-
-- output parses as JSON or the wrapper escalates it
-- safe routine input becomes `skip` or `summarize`
-- ambiguous, external-send, auth, billing, or security input becomes `escalate`
+Expected result: output parses as JSON or the wrapper escalates it. Safe routine input becomes `skip` or `summarize`. Ambiguous, external-send, auth, billing, or security input becomes `escalate`.
 
 Check OpenClaw config for accidental main-chain fallback:
 
@@ -270,7 +299,7 @@ Check OpenClaw config for accidental main-chain fallback:
 jq '.agents.defaults.model.fallbacks' ~/.openclaw/openclaw.json
 ```
 
-Expected result: local utility aliases should not appear in the main model fallback list.
+Expected result: no local utility aliases in the list. On my config it is `[]`: the main model has no fallback chain at all, so there is nothing for a local model to sneak into.
 
 ## Gotchas
 

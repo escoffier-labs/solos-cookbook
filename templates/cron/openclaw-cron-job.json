@@ -1,30 +1,37 @@
 {
-  "_comment": "Append this object to the array in ~/.openclaw/cron/jobs.json. Replace every <ANGLE_BRACKETS> placeholder.",
+  "_comment": "Reference shape of one gateway cron job as reported by `openclaw cron list --json` (OpenClaw 2026.10.x). The job store is gateway-owned and SQLite-backed: do not hand-edit files under ~/.openclaw/cron/. Create jobs with `openclaw cron add` (see _create_comment) and read them back with `openclaw cron list --json`. Replace every <ANGLE_BRACKETS> placeholder.",
+  "_create_comment": "openclaw cron add --name <short-id> --description '<one-line description>' --cron '0 7 * * *' --tz <IANA/Timezone> --session isolated --model <provider>/<model> --thinking low --timeout-seconds 600 --message 'Run /path/to/your/script.sh and post the result.' --announce --channel <channel-plugin-id> --to <channel-type>:<channel-id>",
+
   "name": "<short-id>",
   "description": "<one-line description shown in admin UI>",
-  "schedule": "0 7 * * *",
-  "_schedule_comment": "Standard cron syntax. Daily 7am in this example.",
   "enabled": true,
+  "agentId": "<agent-id>",
 
-  "agent": "<agent-name>",
-  "model": "<provider>/<model>:cron",
-  "_model_comment": "Use a model alias with thinking: 'low'. Reserve high-thinking for interactive.",
+  "schedule": {
+    "kind": "cron",
+    "expr": "0 7 * * *",
+    "tz": "<IANA/Timezone>"
+  },
+  "_schedule_comment": "Standard 5-field cron syntax. Always set tz; the default is the gateway host clock.",
 
-  "prompt": "Run /path/to/your/script.sh and post the result.",
-  "_prompt_comment": "Reference a script file. Do NOT compose shell here - heredoc detection will trip the security gate.",
+  "sessionTarget": "isolated",
+  "_sessionTarget_comment": "isolated runs in a fresh session. current posts into the session that created the job.",
+  "wakeMode": "now",
+
+  "payload": {
+    "kind": "agentTurn",
+    "model": "<provider>/<model>",
+    "thinking": "low",
+    "timeoutSeconds": 600,
+    "message": "Run /path/to/your/script.sh and post the result.",
+    "toolsAllow": ["exec", "read"]
+  },
+  "_payload_comment": "Pin the model and thinking level per job; there is no shared :cron alias. Keep toolsAllow minimal: every exposed tool schema adds input tokens to every run. Reference a script file instead of composing shell in the message.",
 
   "delivery": {
     "mode": "announce",
-    "to": "<channel-type>:<channel-id>",
-    "_to_comment": "ALWAYS set explicit target. Bare announce with multiple channels picks the wrong one."
+    "channel": "<channel-plugin-id>",
+    "to": "<channel-type>:<channel-id>"
   },
-
-  "tools": {
-    "elevated": {
-      "enabled": false,
-      "_comment": "Most cron jobs do not need elevated. Turn on per-job only when needed."
-    }
-  },
-
-  "timeout": 600
+  "_delivery_comment": "Always set an explicit channel and target. A bare announce with several channels configured can land in the wrong one."
 }

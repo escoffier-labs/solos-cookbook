@@ -2,17 +2,17 @@
 
 How to let OpenClaw drive Claude Code through an interactive tmux session, both for second-opinion review and for scripted one-shot calls, keeping Claude in its first-party harness rather than treating it as a raw backend.
 
-**Tested on:** Claude Code first-party OAuth, Opus 4.8, tmux, OpenClaw 2026.6.2 host workflow
-**Last updated:** 2026-06-29
+**Tested on:** Claude Code 2.1.302 with first-party login, Claude Opus 5.5 (`--model opus`), tmux 3.4, OpenClaw 2026.10.4 host workflow
+**Last updated:** 2026-10-17
 
-> **Update (late June 2026):** Anthropic reverted the print-mode change this guide was written around. `claude -p` / print mode works again, so this relay is no longer required and `claude -p` is fine for scripted automation. Keep this guide anyway: the tmux relay is still the better lane when you want a recoverable, human-attachable, first-party Claude Code session (interactive review with visible permission prompts), and the one-shot bridge below is a resilient JSON-envelope fallback. The June 2026 breakage is kept below as the war story that explains why the relay exists.
+> **Security warning:** Never put `CLAUDE_CODE_OAUTH_TOKEN` (or any credential) on a tmux command line. `tmux new-session -e CLAUDE_CODE_OAUTH_TOKEN=...` and `tmux new-session 'CLAUDE_CODE_OAUTH_TOKEN=... claude'` both place the value in process arguments, where every local `ps` listing and any captured process tree can read it. An earlier version of this guide, and my own relay script, did exactly that. See [Handling the OAuth token](#handling-the-oauth-token) for the safe patterns.
 
 There are two lanes here:
 
-1. **Interactive review sessions** - a long-lived named tmux session you send prompts to and capture answers from. Good for second opinions and cross-review.
-2. **One-shot relay** - a script that spins up a throwaway tmux session per request, gets the answer as a JSON envelope, and tears the session down. It is a drop-in replacement for `claude -p --output-format json` that does not depend on print mode at all, and it is what one-liner wrappers and cron jobs call.
+1. **Interactive review sessions.** A long-lived named tmux session you send prompts to and capture answers from. Good for second opinions and cross-review.
+2. **One-shot relay.** A script that spins up a throwaway tmux session per request, gets the answer as a JSON envelope, and tears the session down. It is a drop-in replacement for `claude -p --output-format json` that does not depend on print mode at all. One-liner wrappers and cron jobs call it.
 
-The first lane is the original pattern. The second is what made the whole `claude -p` script ecosystem survive the June 2026 print-mode outage (since reverted) and stays useful as insurance against a repeat.
+The first lane is the original pattern. The second is what kept the whole `claude -p` script ecosystem alive during the June 2026 print-mode outage, and it is still the lane I use for OpenClaw-side Claude one-shots.
 
 ## What this is
 
@@ -21,43 +21,52 @@ Claude Code can run as a normal interactive terminal app inside tmux. OpenClaw o
 - start a named tmux session
 - send prompts with `tmux send-keys` or `tmux paste-buffer`
 - capture output with `tmux capture-pane`
-- keep Claude Code inside Anthropic's first-party harness and OAuth path
+- keep Claude Code inside Anthropic's first-party harness and login path
 
-This is a strong Claude escalation lane for code review and architecture review when you want a real, recoverable second opinion from Claude Code. With print mode working again you can also call `claude -p` directly for simple scripted reviews; the relay wins when you want an attachable session and visible permission prompts.
+This is a good Claude escalation lane for code review and architecture review when you want a real, recoverable second opinion. ACP still has a place when you explicitly need an ACP endpoint (see [Running Claude Code in OpenClaw via ACP](acp-claude-code.md)), but the tmux relay is simpler to inspect, easier to recover, and closer to how Claude Code is meant to be used.
 
-ACP still has a place when you explicitly need an ACP endpoint, but the tmux relay is simpler to inspect, easier to recover, and closer to how Claude Code is meant to be used.
+## Which lane for which caller
 
-## The June 2026 lesson
+The rule on my host, in one place:
 
-The lesson is not just "tmux works." The real lesson is that Claude Code should stay in Claude Code.
+| Caller | Lane |
+|---|---|
+| OpenClaw scripts, cron jobs, and agent exec calls that need a Claude one-shot | The one-shot relay below. I do not use bare `claude -p` for OpenClaw tool use |
+| A headless reviewer or worker dispatched from a coding harness | `claude --print --model opus --disallowedTools Task Agent`, prompt on stdin, one flat pass |
+| A person or orchestrator wanting an attachable, recoverable review session | The interactive tmux lane below |
+| An explicit ACP endpoint | [ACP via ACPX](acp-claude-code.md) |
+
+The two print-mode rows do not contradict each other. They have different callers. The headless worker row follows my dispatch policy: Opus only, no `Task` or `Agent` tools, so one invocation cannot fan out. The OpenClaw row exists because of a concrete failure: in mid-2026, bare `claude -p` run from spawned environments returned `401 Invalid authentication credentials` on this host while the interactive login worked, and long jobs had no way to report back. The relay fixes both. If you are not on OpenClaw, `claude -p` may be all you need.
+
+## History: why the relay exists
 
 In April 2026, direct Claude subscription OAuth through third-party harnesses stopped being reliable. ACPX was the first working repair because it launched Claude Code instead of impersonating it.
 
-By the June 2026 notes, `claude -p` / print-mode automation briefly had a second problem: it drew from Claude's separate **Usage** bucket. Anthropic reverted that in late June 2026, so `claude -p` is fine again. Driving an interactive Claude Code session through tmux is still the more recoverable lane when OpenClaw or Codex needs Claude, but it is now a choice, not a forced workaround.
+In June 2026, print-mode automation hit a second problem. Anthropic changed how `claude -p` usage was metered, and on my host `claude -p --output-format json` started failing auth (`401` on print mode while interactive sessions still worked). A late-June note in an earlier revision of this guide said Anthropic had reverted the change. I did not rebuild around that note. Bare `claude` from spawned environments kept returning 401s on my host into August 2026, so the relay stayed the one-shot path for OpenClaw callers. OpenClaw's own docs currently say that `claude -p` and Agent SDK usage draw from the signed-in subscription's limits and that Anthropic can change this without notice, so check `claude auth status` if cost matters.
 
-That keeps:
+The lesson is that Claude Code should stay in Claude Code. That keeps:
 
-- Claude Code's OAuth and entitlement checks inside the first-party harness
+- Claude Code's login and entitlement checks inside the first-party harness
 - permission prompts and trust prompts visible in a real terminal
 - review sessions recoverable with `tmux attach`
-- one-shot review possible through prompt files without using print mode
+- one-shot review possible through prompt files without print mode
 
 ## Why this way
 
-The old post-April-2026 fix was "run Claude Code through ACPX." That avoided direct third-party OAuth use, but it still turned Claude Code into a subprocess endpoint and often pushed users toward one-shot print-mode habits.
+The old post-April fix was "run Claude Code through ACPX." That avoided direct third-party OAuth use, but it turned Claude Code into a subprocess endpoint and pushed people toward one-shot print-mode habits.
 
 The tmux relay keeps the interaction model honest:
 
 | Need | tmux relay behavior |
 |------|---------------------|
-| First-party auth | Claude Code owns OAuth in `~/.claude/` |
+| First-party auth | Claude Code owns its login in `~/.claude/` |
 | Human recovery | Attach with `tmux attach -t <session>` |
 | OpenClaw control | Use ordinary shell tools to start, send, capture, and stop |
 | Review safety | Launch in `--permission-mode plan` for read-only critique |
 | Coding smoke tests | Use `--permission-mode acceptEdits` only in contained workspaces |
-| One-shot prompts | Paste a prompt file into the existing session instead of `claude -p` |
+| One-shot prompts | Paste a prompt file into the session instead of `claude -p` |
 
-The orchestrator is not pretending Claude is just another stateless model. It is delegating to the Claude Code harness and collecting the result.
+The orchestrator is not pretending Claude is a stateless model. It is delegating to the Claude Code harness and collecting the result.
 
 ## Prerequisites
 
@@ -69,26 +78,74 @@ The orchestrator is not pretending Claude is just another stateless model. It is
 Verify Claude Code is using the first-party provider:
 
 ```bash
-claude auth status
+claude auth status | jq '{loggedIn, apiProvider}'
 ```
 
-The useful fields are:
+Expected:
 
 ```json
 {
   "loggedIn": true,
-  "authMethod": "oauth_token",
   "apiProvider": "firstParty"
 }
 ```
 
-Do not copy token values into notes, prompts, issues, or public docs.
+The `authMethod` field in the same output shows how you logged in (`claude.ai` for a browser login, `oauth_token` when an environment token is driving it). Do not copy token values into notes, prompts, issues, or public docs.
 
 ## Before / After
 
-**Before:** OpenClaw routes Opus work through direct Claude backends, `claude -p`, or ACPX one-shots. Recovery is awkward, permission prompts can fail in non-interactive sessions, and the review lane is easy to confuse with a normal model backend.
+**Before:** OpenClaw routes Claude work through direct Claude backends, `claude -p`, or ACPX one-shots. Recovery is awkward, permission prompts can fail in non-interactive sessions, and the review lane is easy to confuse with a normal model backend.
 
 **After:** Claude Code runs in a named tmux session. OpenClaw sends bounded review prompts, captures the answer, and uses the result as review evidence. Codex and Claude can review each other's work without sharing one context window or bypassing either harness.
+
+## Handling the OAuth token
+
+Freshly spawned `claude` processes read `~/.claude/.credentials.json` when no `CLAUDE_CODE_OAUTH_TOKEN` is set. In clean contexts (systemd units, cron, non-login shells) people often added an explicit token to the relay because the credentials file had gone stale. The risk is in how the token gets there.
+
+**What leaks.** Any of these puts the secret in process arguments:
+
+```bash
+# DO NOT DO THIS
+tmux new-session -d -s review -e "CLAUDE_CODE_OAUTH_TOKEN=$TOKEN" 'claude --model opus'
+tmux new-session -d -s review "CLAUDE_CODE_OAUTH_TOKEN=$TOKEN claude --model opus"
+```
+
+While the tmux client runs, `ps -eo args` and `/proc/<pid>/cmdline` show the full value to every local user and to any tool that prints a process tree. If a transcript or log captured a process listing during a relay run, treat that token as exposed and rotate it. The `-e` form looks safer than putting it in the command string because the value stays out of the pane's visible command line, but it is still argv.
+
+**Pattern 1: inject nothing.** Keep the login fresh, keep stale environment tokens out of the relay's environment, and let Claude Code use its own credentials file. This works from cron and systemd as long as the unit runs as the same OS user with the same `HOME`. It is the safest option because there is no second copy of the secret to protect. Note that an exported `CLAUDE_CODE_OAUTH_TOKEN` overrides the credentials file, so an old token left in a profile or secrets render will silently win. See [the auth boundary](acp-claude-code.md#the-auth-boundary).
+
+**Pattern 2: a 0600 env file read inside the session.** If you do need an explicit token, store it in a file only your user can read, and have the shell inside tmux read it. Only the file path appears in argv:
+
+```bash
+# one-time: create the file with tight permissions before the secret goes in
+install -m 600 /dev/null "$HOME/.config/claude-relay.env"
+# then add the line CLAUDE_CODE_OAUTH_TOKEN=<token> with your secret manager or an editor
+
+tmux new-session -d -s claude-code-review \
+  'set -a; . "$HOME/.config/claude-relay.env"; set +a; cd /path/to/repo && claude --model opus --permission-mode plan --name openclaw-review'
+```
+
+The [wrapper template](../templates/ai-stack/claude-tmux-relay.sh) does this when you set `CLAUDE_TOKEN_FILE`, and it refuses a file that is not mode 600 or 400.
+
+**Pattern 3: stdin.** If the secret comes from a secret manager and you do not want a file at all, pipe it into the tmux server's session environment over stdin, then start Claude in a pane spawned after that. `source-file -` reads tmux commands from stdin, and `printf` is a shell builtin, so the value never appears in any process's arguments:
+
+```bash
+tmux new-session -d -s claude-code-review 'sleep 3600'
+tok="$(your-secret-manager read claude-code-oauth-token)"   # command substitution, not argv of a long-lived process
+printf 'set-environment -t claude-code-review CLAUDE_CODE_OAUTH_TOKEN %s\n' "$tok" | tmux source-file -
+unset tok
+tmux respawn-pane -k -t claude-code-review:0.0 \
+  'cd /path/to/repo && claude --model opus --permission-mode plan --name openclaw-review'
+```
+
+I checked on tmux 3.4 with a stand-in program that the respawned process sees the variable and that no process listing contains it. The session environment is still readable by your own user through `tmux show-environment`, so this protects against `ps` exposure, not against code running as you.
+
+**Whatever you choose:**
+
+- Do not print broad process trees (`ps aux`, `pstree -a`) around relay jobs, and do not paste them into tickets.
+- Keep the token out of prompts, pane captures, and relay result files.
+- Rotate any token that was ever visible in a process listing or retained transcript.
+- Scrub `capture-pane` output before you store it. A relay error includes the pane tail, and a pane can echo whatever the launch command printed.
 
 ## Implementation
 
@@ -119,7 +176,7 @@ tmux send-keys -t claude-code-review:0.0 -l -- \
 tmux send-keys -t claude-code-review:0.0 Enter
 ```
 
-For a longer one-shot prompt, write the prompt to a local file and paste it into the tmux session:
+For a longer prompt, write it to a local file and paste it into the tmux session:
 
 ```bash
 tmux load-buffer /tmp/claude-review-prompt.txt
@@ -161,35 +218,40 @@ templates/ai-stack/claude-tmux-relay.sh capture -200
 
 ## One-shot relay: print-mode behavior without print mode
 
-Print mode works again as of late June 2026, so this bridge is now a resilience choice rather than a necessity. It earned its keep during the June 2026 outage, when `claude -p --output-format json` started failing auth (`401` on print mode while interactive sessions still worked) - and it is still worth having, because a relay caller never depends on print mode at all. If you want that insurance, build a one-shot bridge that drives the real TUI through tmux and emits the same JSON envelope the callers already parse.
+If you build a one-shot bridge that drives the real TUI through tmux and emits the same JSON envelope your callers already parse, no caller depends on print mode. The bridge I run is a single Python script, `claude-tmux-oneshot.py`, kept under `~/.openclaw/vendor/`. It does this per request:
 
-The bridge does this per request:
-
-1. **Spawn a throwaway session.** Name it `<prefix>-<pid>-<timestamp>` so concurrent calls never collide, launch `claude --model <model> --permission-mode <mode>` in the requested working directory.
+1. **Spawn a throwaway session.** Name it `<prefix>-<pid>-<timestamp>` so concurrent calls never collide, and launch `claude --model <model> --permission-mode <mode> --name <session>` in the requested working directory. An optional `--effort low|medium|high` is passed through to `claude`.
 2. **Auto-answer the trust prompt only.** Poll `capture-pane` for the folder-trust prompt text and send Enter once. Nothing else gets auto-approved.
-3. **Ask for the answer as a file, not chat.** Wrap the user prompt with an instruction that the task is not complete until the model uses its Write tool to put ONLY the final answer at an exact temp file path. Chat output scrolls, wraps, and interleaves with the TUI; a file is unambiguous.
-4. **Paste, then submit with `C-m`.** Send the prompt via `load-buffer` + `paste-buffer`, sleep briefly, then `send-keys C-m`. A symbolic `Enter` after a bracketed paste sometimes leaves the text sitting at the prompt; `C-m` has been reliable.
+3. **Ask for the answer as a file, not chat.** Wrap the user prompt with an instruction that the task is not complete until the model uses its Write tool to put ONLY the final answer at an exact temp file path. Chat output scrolls, wraps, and interleaves with the TUI. A file is unambiguous. The file lives in a per-run directory under `<cwd>/.claude-tmux-results/` and is deleted afterward, so add that directory to `.gitignore`.
+4. **Paste, then submit with `C-m`.** Send the prompt via `load-buffer` + `paste-buffer`, sleep briefly, then `send-keys C-m`. A symbolic `Enter` after a bracketed paste sometimes leaves the text sitting at the prompt. `C-m` has been reliable.
 5. **Poll the result file for stability.** Wait until the file exists, is non-empty, and its size has been stable for a second. Claude may write incrementally.
-6. **Refuse permission prompts.** If the pane shows `Do you want to proceed?` or similar, fail with the pane tail in the error instead of auto-approving. A one-shot text task should never need tool escalations beyond the single Write; if it asks, something is wrong.
-7. **Emit the envelope.** Print `{"is_error": false, "result": "<file contents>", ...}` on success, `{"is_error": true, "result": "<reason>"}` on failure, then kill the session. Existing `claude -p` callers keep working unchanged.
+6. **Refuse permission prompts.** If the pane shows `Do you want to proceed?` or `Do you want to create`, fail with the pane tail in the error instead of auto-approving. A one-shot text task should never need tool escalations beyond the single Write.
+7. **Emit the envelope.** Print `{"is_error": false, "result": "<file contents>", ...}` on success and `{"is_error": true, "result": "<reason>", "pane_tail": "..."}` on failure, then kill the session. Existing `claude -p --output-format json` callers keep working unchanged.
 
-Two robustness details that earn their keep:
+Defaults in mine: model `opus`, permission mode `acceptEdits`, 600 second request timeout, 30 second startup timeout, `--keep-session` to leave the tmux session up for debugging, and `--prompt-file` to read the prompt from a file instead of stdin.
 
-- **Load the OAuth token explicitly.** Freshly spawned `claude` processes fall back to `~/.claude/.credentials.json` (which can be expired) when `CLAUDE_CODE_OAUTH_TOKEN` is absent, and it is absent in clean contexts: systemd units, cron, non-login shells. Have the bridge read the token from your env file and export it before launching, so the relay works the same from any caller.
-- **Detached mode for agent callers.** For calls made from an agent turn, add a mode that re-launches the bridge as a transient `systemd-run --user --collect` unit and returns `{"detached": true, "job_id": ...}` immediately. The unit lives outside the gateway's cgroup, so a gateway restart cannot kill in-flight work; an independent outbox timer delivers the result to the requesting channel. Synchronous mode stays the default for cron and shell scripts.
+### Detached mode with durable report-back
+
+For calls made from an agent turn, a synchronous relay is the wrong shape: the turn can end, or the gateway can restart, before Claude finishes. The bridge takes `--report-to <channel>:<target>` (for example `discord:channel:<channel-id>`). With it set, the call:
+
+1. Validates the destination, writes the prompt to a temp file, and re-launches itself as a transient `systemd-run --user --collect` unit, then returns `{"detached": true, "job_id": ...}` immediately. The unit lives outside the gateway's cgroup, so a gateway restart cannot kill in-flight work.
+2. Runs the normal relay inside that unit. On success or failure, the worker drops the outcome (including a `Relay job failed: ...` message) into an on-disk outbox directory as a small JSON file.
+3. An independent `relay-outbox.timer` fires a flush script on a short interval. The script delivers each pending entry with `openclaw message send --channel <channel> --target <target> --message <body> --json`, retries a bounded number of times (five by default), truncates bodies to fit Discord's 2000 character limit, and moves entries to `delivered/` or `failed/`.
+
+Because the outbox and the timer are independent of the gateway process, delivery survives restarts, and it does not depend on the model remembering to report back. Synchronous mode (no `--report-to`) stays the default for cron and shell scripts.
 
 ## One-liner wrappers
 
-With the bridge in place, task-specific one-liners become trivial bash: build a system prompt, feed stdin or a file through the relay, gate on the envelope, print `.result`. The pattern:
+With the bridge in place, task-specific one-liners are plain bash: build a system prompt, feed stdin or a file through the relay, gate on the envelope, print `.result`. The pattern:
 
 ```bash
 #!/usr/bin/env bash
-# opus-rewrite - one-shot Opus text task via the tmux relay
+# opus-rewrite - one-shot Claude text task via the tmux relay
 set -euo pipefail
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
-TMUX_RELAY="$HOME/.local/share/agent-scripts/claude-tmux-oneshot.py"
-RELAY_MODEL="claude-opus-4-8"
+TMUX_RELAY="${CLAUDE_TMUX_RELAY:-$HOME/.openclaw/vendor/claude-builder/claude-tmux-oneshot.py}"
+RELAY_MODEL="opus"
 RELAY_TIMEOUT="${OPUS_RELAY_TIMEOUT:-600}"
 
 SYSTEM_PROMPT="You are a precise rewriting assistant. Output ONLY the rewritten text, no commentary."
@@ -222,11 +284,11 @@ RESULT=$(jq -r '.result // empty' <<<"$ENVELOPE")
 printf '%s\n' "$RESULT"
 ```
 
-On this stack a handful of task-specific wrappers in `~/bin` follow this exact shape, and cron jobs call them like any other shell command, with the relay timeout bumped for batch work.
+A handful of task-specific wrappers in `~/bin` follow this exact shape, and cron jobs call them like any other shell command, with the relay timeout raised for batch work. When a task contract pins reasoning effort, add `--effort medium` (or `low` / `high`) to the relay call.
 
-Watch the jq gate carefully. `jq '.is_error // true'` looks right and is wrong: `//` fires on `false` as well as `null`, so a successful envelope (`is_error: false`) would read as an error. Compare explicitly with `if .is_error == false`.
+Watch the jq gate. `jq '.is_error // true'` looks right and is wrong: `//` fires on `false` as well as `null`, so a successful envelope (`is_error: false`) reads as an error. Compare explicitly with `if .is_error == false`.
 
-One migration note: converting wrappers is per-script surgery. Every script that shells out to `claude --print` or `claude -p` keeps failing until it is moved onto the relay, and the failures look like auth problems, not code problems. Inventory your wrappers (`grep -l 'claude.*-p\|--print' ~/bin/*`) and migrate the ones you actually use first.
+Wrapper migration is per-script surgery. Every script that shells out to `claude --print` or `claude -p` from an OpenClaw context keeps failing until it moves onto the relay, and the failures look like auth problems, not code problems. Inventory them (`grep -l 'claude.*-p\|--print' ~/bin/*`) and migrate the ones you use first.
 
 ## OpenClaw agent usage
 
@@ -254,17 +316,19 @@ Capture the pane and summarize the actionable findings back into the OpenClaw tu
 templates/ai-stack/claude-tmux-relay.sh capture -300
 ```
 
-For longer prompts, OpenClaw should write a local prompt file and use `send-file`:
+For longer prompts, write a local prompt file and use `send-file`:
 
 ```bash
 templates/ai-stack/claude-tmux-relay.sh send-file /tmp/claude-review-prompt.txt
 ```
 
+For a review that may outlive the turn, use the one-shot relay with `--report-to` instead of polling a pane.
+
 Do not put Claude Code in `agents.defaults.model.fallbacks`. The fallback chain is for compatible model backends, not an interactive review harness.
 
 ## Codex usage
 
-Codex can use the same relay after it implements or reviews a change. The useful loop is:
+Codex can use the same relay after it implements or reviews a change. The loop:
 
 1. Codex makes the change and runs the normal tests.
 2. Codex writes a review prompt that includes the task, acceptance criteria, and current diff focus.
@@ -330,7 +394,23 @@ tmux send-keys -t claude-code-tmux-test:0.0 Enter
 tmux capture-pane -t claude-code-tmux-test:0.0 -p -S -100
 ```
 
-Expected result: the captured pane includes `TMUX_OK`.
+Expected result: the captured pane includes `TMUX_OK`. Clean up with `tmux kill-session -t claude-code-tmux-test`.
+
+Check the one-shot relay envelope the same way:
+
+```bash
+echo "Reply exactly: RELAY_OK" | ~/.openclaw/vendor/claude-builder/claude-tmux-oneshot.py --model opus --cwd /tmp/relay-probe | jq '{is_error, result, transport}'
+# Expected: {"is_error": false, "result": "RELAY_OK", "transport": "claude-code-tmux"}
+```
+
+Confirm no token is exposed in process arguments while a relay session is running (prints a count of matching command lines, not the values). If this returns a nonzero count, do not paste the offending lines anywhere. Fix the launch path and rotate the token:
+
+```bash
+ps -eo args | grep 'CLAUDE_CODE_OAUTH_TOKEN=' | grep -v grep | wc -l
+# Expected: 0. Anything higher means a launch command is carrying the token in argv.
+```
+
+Confirm the safe-injection wrapper path (with a stand-in binary, no real token): create a mode 600 file with a dummy value, set `CLAUDE_TOKEN_FILE` and `CLAUDE_BIN` to a script that writes `${CLAUDE_CODE_OAUTH_TOKEN:-unset}` to a file, run `claude-tmux-relay.sh start`, and check that the file holds the dummy value while the dummy value is in no `ps` line. A mode 644 file must be refused.
 
 For a contained coding smoke test, create a scratch directory and use `acceptEdits` only there:
 
@@ -344,33 +424,40 @@ Do not use `acceptEdits` in a production repo unless that is the explicit task.
 
 ## Gotchas
 
-1. **A fresh workspace may block on the trust prompt.** Attach once, answer the prompt, then detach.
+1. **The token must never be on the tmux command line.** `-e CLAUDE_CODE_OAUTH_TOKEN=...` and inline `VAR=value claude` both leak through `ps`. Use the credentials file, a 0600 env file sourced inside the session, or stdin. Rotate anything that was exposed. See [Handling the OAuth token](#handling-the-oauth-token).
 
-2. **`tmux ls` exits non-zero when no server exists.** Scripts should treat that as "no sessions yet," not as a broken host.
+2. **A fresh workspace may block on the trust prompt.** Attach once, answer the prompt, then detach. The one-shot relay answers only that prompt automatically.
 
-3. **Plan mode is the default for review.** It keeps Claude in a critique lane and avoids surprise edits.
+3. **`tmux ls` exits non-zero when no server exists.** Scripts should treat that as "no sessions yet," not as a broken host.
 
-4. **One-shot does not have to mean print mode.** For interactive sessions, use a prompt file plus `tmux paste-buffer`. For scripted callers, the one-shot relay bridge above avoids print mode entirely. `claude -p` works again as of late June 2026, so it is a fine option for simple scripted calls; reach for the relay when you want recoverable, attachable sessions.
+4. **Plan mode is the default for review, and it can stall a one-shot.** It keeps Claude in a critique lane and avoids surprise edits, but a plan-mode review can stop at Claude Code's implementation approval screen instead of writing the result file. The relay refuses permission prompts, so that surfaces as an error with the pane tail rather than a hang. For headless one-shots, give the task a bounded timeout and read the pane tail on failure.
 
-5. **Capture output is evidence, not memory.** Review artifacts can be noisy. Promote only durable, verified facts through memory handoffs.
+5. **One-shot does not have to mean print mode.** For interactive sessions, use a prompt file plus `tmux paste-buffer`. For scripted callers, the one-shot relay avoids print mode entirely.
 
-6. **Keep ACPX documented as an explicit compatibility lane.** Some OpenClaw setups still need ACP. Do not present ACPX as the only path to Claude Code.
+6. **Capture output is evidence, not memory.** Review artifacts can be noisy. Promote only durable, verified facts through memory handoffs.
 
-7. **`jq '.is_error // true'` is a bug.** The `//` alternative operator treats `false` like `null`, so a healthy envelope reads as an error. Use `if .is_error == false then ... end`. This one shipped and bit us.
+7. **Keep ACPX documented as an explicit compatibility lane.** Some OpenClaw setups still need ACP. Do not present ACPX as the only path to Claude Code.
 
-8. **Submit pasted prompts with `C-m`, not `Enter`.** After a bracketed paste, a symbolic `Enter` keystroke sometimes leaves the prompt text unsubmitted in the TUI input. A short sleep then `send-keys C-m` submits reliably.
+8. **`jq '.is_error // true'` is a bug.** The `//` alternative operator treats `false` like `null`, so a healthy envelope reads as an error. Use `if .is_error == false then ... end`. This one shipped and bit me.
 
-9. **Never auto-approve tool permission prompts in the one-shot lane.** The bridge auto-answers exactly one prompt, folder trust, and fails loudly with the pane tail on anything else. A text task that suddenly wants shell access is a prompt-injection smell, not an inconvenience to click through.
+9. **Submit pasted prompts with `C-m`, not `Enter`.** After a bracketed paste, a symbolic `Enter` sometimes leaves the prompt text unsubmitted in the TUI input. A short sleep then `send-keys C-m` submits reliably.
 
-10. **Wrapper migration is per-script (historical, June 2026).** During the June 2026 outage, print mode dying did not break your scripts in one obvious place; it broke each `claude -p` caller individually with what looked like an auth flake. Anthropic has since reverted that, so `claude -p` callers work again. This note stays as the recovery playbook if print mode ever regresses: inventory wrappers (`grep -l 'claude.*-p\|--print' ~/bin/*`) and migrate the ones you use.
+10. **Never auto-approve tool permission prompts in the one-shot lane.** The bridge auto-answers exactly one prompt, folder trust, and fails loudly with the pane tail on anything else. A text task that suddenly wants shell access is a prompt-injection smell, not an inconvenience to click through.
+
+11. **A terminal refusal screen looks like a timeout.** My bridge has no detection for a subscription-refusal or login-expired screen, so those surface as a startup or result timeout with the pane tail in the error. Read the tail before retrying.
+
+12. **Add `.claude-tmux-results/` to `.gitignore`.** The one-shot relay creates it under the working directory. It deletes each run directory afterward, but a crash can leave one behind.
+
+13. **Wrapper migration is per-script (historical, June 2026).** When print mode died, it broke each `claude -p` caller individually with what looked like an auth flake. The inventory command in the wrapper section is the recovery playbook if it happens again.
 
 ## Templates
 
-- [`../templates/ai-stack/claude-tmux-relay.sh`](../templates/ai-stack/claude-tmux-relay.sh) - start, send, send-file, capture, and stop helpers for a named Claude Code tmux session
+- [`../templates/ai-stack/claude-tmux-relay.sh`](../templates/ai-stack/claude-tmux-relay.sh) - start, send, send-file, capture, and stop helpers for a named Claude Code tmux session, with an optional 0600 token-file mode
 
 ## Related
 
 - [`multi-model-orchestration.md`](multi-model-orchestration.md) - where the Claude review lane fits in the full stack
-- [`acp-claude-code.md`](acp-claude-code.md) - ACPX compatibility path for setups that need ACP
+- [`acp-claude-code.md`](acp-claude-code.md) - ACPX compatibility path for setups that need ACP, and the auth boundary
+- [`oauth-token-lifecycle.md`](oauth-token-lifecycle.md) - token rotation and recovery across providers
 - [`sub-agent-patterns.md`](sub-agent-patterns.md) - orchestration and escalation patterns
 - [`../tools/brigade.md`](../tools/brigade.md) - installable workspace and review loop support

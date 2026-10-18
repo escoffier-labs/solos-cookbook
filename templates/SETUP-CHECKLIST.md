@@ -2,7 +2,7 @@
 
 A terse, one-page path from a fresh control host or OpenClaw node to a working
 agent stack. Work top to bottom. Each step names the template path to copy from
-and, where one exists, the matching free guide at https://escoffierlabs.dev/cookbook.
+and, where one exists, the matching guide at https://escoffierlabs.dev/cookbook.
 
 Fill in every placeholder yourself. The templates ship with no secrets, no real
 hostnames, and no private IPs on purpose. Keep it that way in your own copies.
