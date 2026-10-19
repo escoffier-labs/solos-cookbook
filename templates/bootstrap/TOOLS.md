@@ -119,7 +119,6 @@ Replace the table with your actual local services. Use placeholders here for exa
 | Service | Port | Purpose |
 |---------|------|---------|
 | `<code-search>` | `<port>` | semantic + grep search |
-| `<prompt-library>` | `<port>` | reusable prompt store |
 | `<agent-intel>` | `<port>` | research index |
 | `<embedding-server>` | `<port>` | local embeddings for memory search |
 
