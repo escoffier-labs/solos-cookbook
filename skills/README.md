@@ -13,13 +13,13 @@ Persistent agent memory built from a slim master index, atomic knowledge cards, 
 A deterministic redaction layer for outbound agent messages. Useful when your agent touches internal infrastructure, customer data, or operational notes.
 
 ### `ops-deck-lite`
-A lightweight local productivity stack: semantic code search plus a reusable prompt library.
+A lightweight local code-search stack: semantic search over your repos with one small API and one small database.
 
 ### `last30days`
-A repeatable research workflow for surveying recent discussion across Reddit, X, and the broader web. Independent from-scratch take on the concept popularized by [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill); if you want the full-featured original, install that one.
+A repeatable research workflow for surveying recent discussion across Reddit, X, and the broader web. Independent from-scratch take on the concept popularized by [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill). If you want the full-featured original, install that one.
 
 ### `frontend-design`
-An opinionated design-direction skill for avoiding generic AI-looking frontend work. Inspired by Anthropic's `frontend-design` skill; this is a rewritten, trimmed-down variant, not the original.
+An opinionated design-direction skill for avoiding generic AI-looking frontend work. Inspired by Anthropic's `frontend-design` skill. This is a rewritten, trimmed-down variant, not the original.
 
 ## Structure
 

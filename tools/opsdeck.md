@@ -3,11 +3,11 @@
 > A self-hosted dashboard that surfaces the parts of the stack you'd otherwise check by opening five terminals. Forty-odd routes, a companion Express API on port 8005, and one place to inspect projects, services, memory, usage, security, and agent operations.
 
 **Tested on:** React 19, Vite 7, Express 5, Node 22
-**Last updated:** 2026-10-17
+**Last updated:** 2026-10-18
 
 ## What this is
 
-A React dashboard called `opsdeck` that reads live operator state through a companion API and renders 43 routes over the daily stack (42 explicit routes plus a catch-all that keeps the sidebar visible on an unknown URL). The source is not published, so this guide describes the shape and the decisions rather than a clone command. It started as 20 routes and grew a page every time a manual check became a habit.
+A React dashboard called `opsdeck` that reads live operator state through a companion API and renders 42 routes over the daily stack (41 explicit routes plus a catch-all that keeps the sidebar visible on an unknown URL). The source is not published, so this guide describes the shape and the decisions rather than a clone command. It started as 20 routes and grew a page every time a manual check became a habit.
 
 The table groups the pages by purpose. The router has more entries than rows here, because related pages share a row:
 
@@ -19,7 +19,7 @@ The table groups the pages by purpose. The router has more entries than rows her
 | **Memory / Journal** | Long-term memory, daily logs, diary entries | What the agent learned and did |
 | **Usage / Observability** | Token, session, and tool-call analytics | Cost and behavior drift without log spelunking |
 | **Projects** | Unified repo catalog with live git state and per-project detail | The repo map plus current local status |
-| **Search / Prompts** | Code/content search and prompt library browsing | Reuse prior work without leaving the dashboard |
+| **Search** | Code and content search | Find prior work without leaving the dashboard |
 | **Security / Architecture / Config** | Audit logs, controls, backups, port registry, config files, skills, rules, crons | The operator view when something feels off |
 | **Social / Network / Intel** | Publishing pipeline, tracking data, agent intelligence feed | The non-code loops that still need status |
 | **Media / Blog / Tweet planner** | Content candidates, drafts, banner studio, post analytics | The publishing pipeline in one place, with the scrub gates applied server-side |
@@ -34,7 +34,7 @@ The companion API is a separate Express 5 app (a single ESM `server.js` under pm
 
 Three forces shape the design:
 
-1. **The default `openclaw dashboard` is fine for "is the gateway up?" and nothing else.** Once you have memory cards, a prompt library, semantic search, and a daily session journal, you need a place to read them that is not VS Code.
+1. **The default `openclaw dashboard` is fine for "is the gateway up?" and nothing else.** Once you have memory cards, semantic search, and a daily session journal, you need a place to read them that is not VS Code.
 
 2. **The data the dashboard cares about already lives on disk as flat files.** No new database. The companion API reads the workspace and serves it through a thin service layer, and the Memory and Journal pages only read from it. If the dashboard dies, the data is untouched. If a card moves, the dashboard picks it up on next page load.
 
@@ -44,7 +44,7 @@ The alternatives that lose:
 
 | Alternative | Why it loses |
 |-------------|--------------|
-| A Grafana board over Prometheus | Real metrics, no narrative content. No memory cards, no journal, no prompt library |
+| A Grafana board over Prometheus | Real metrics, no narrative content. No memory cards, no journal, no code search |
 | Notion / Obsidian over the same files | One-way render only, no search-backed code surfaces, no live repo state |
 | The OpenClaw CLI for everything | Fine for queries, terrible for browsing 100+ memory cards |
 | Building a fresh UI per data source | The data sources are flat files. One UI over all of them is cheaper to maintain |
@@ -53,7 +53,7 @@ The alternatives that lose:
 
 - Node.js 22 or newer
 - An OpenClaw workspace at `~/.openclaw/workspace` (the Memory and Journal pages read it)
-- Optional: a code-search service (port 5204) and a prompt-library service (port 5202) for the Search and Prompts pages
+- Optional: a code-search service (port 5204) for the Search page
 - The `gh` CLI authenticated, if you want live repo data
 - An API key for the companion API (see Auth). The API refuses to start on a non-loopback address without one
 
@@ -118,13 +118,12 @@ A `repos.json` skeleton:
 
 The dashboard treats the overlays as read-only inputs.
 
-### Bring code search and prompts online
+### Bring code search online
 
-The Search and Prompts pages call out to a separate skill:
+The Search page calls out to a separate skill:
 
 - A code-search service listens on port 5204.
-- A prompt-library service listens on port 5202.
-- The dashboard's UI detects whether those ports are answering and either lights the pages up or shows an empty state.
+- The dashboard's UI detects whether that port is answering and either lights the page up or shows an empty state.
 
 This split is intentional. The dashboard does not embed a vector database, the search service does that work.
 
@@ -186,7 +185,7 @@ A healthy install: the UI loads, `/api/health` returns `ok`, a direct call to an
 
 **`gh repo list` calls fail if `gh` is unauthenticated.** If you have not run `gh auth login` on the host, the Projects page cannot show live GitHub state and falls back to local repo data.
 
-**The semantic-search and prompt-library services are not bundled.** This is deliberate (they have their own data and lifecycle), but it confuses first-time users who expect the Search page to "just work." The dashboard surfaces a clear empty state, but if your users assume it is broken, document the optional companion install in your README.
+**The semantic-search service is not bundled.** This is deliberate (it has its own data and lifecycle), but it confuses first-time users who expect the Search page to "just work." The dashboard surfaces a clear empty state, but if your users assume it is broken, document the optional companion install in your README.
 
 **Port 5173 and 8005 collide with common dev servers.** If you run Vite for another project on 5173 or have a separate service on 8005, the dashboard ports clash. Override the Vite port and the companion API port together.
 
