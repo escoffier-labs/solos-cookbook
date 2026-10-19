@@ -1,10 +1,9 @@
 ---
 name: ops-deck-lite
-version: 1.0.0
-description: "Local agent productivity stack: semantic code search plus a reusable prompt library. Lightweight, cheap to run, and useful long before you need a giant ops dashboard."
+version: 1.1.0
+description: "Local agent productivity stack: one small semantic code search service. Lightweight, cheap to run, and useful long before you need a giant ops dashboard."
 tags:
   - code-search
-  - prompt-library
   - embeddings
   - productivity
   - local-tools
@@ -13,15 +12,13 @@ category: tools
 
 # Ops Deck Lite
 
-Build two small local services before you build a giant agent dashboard.
+Build one small local service before you build a giant agent dashboard.
 
 ## Goal
 
-Give the agent two capabilities that pay off immediately:
-1. semantic code search
-2. a reusable prompt library
+Give the agent a capability that pays off immediately: semantic code search.
 
-## Component 1: Semantic code search
+## Component: Semantic code search
 
 Search code by meaning, not only exact text.
 
@@ -38,17 +35,6 @@ Useful for queries like:
 - store chunks, metadata, and optional summaries in a small database
 - expose one search endpoint with a few modes: `hybrid`, `code`, `summary`
 
-## Component 2: Prompt library
-
-Store prompts as reusable templates instead of rewriting them every session.
-
-Each prompt should have:
-- title
-- category
-- body
-- optional tags
-- optional variables
-
 ## Why this stack works
 
 - cheap to run
@@ -61,38 +47,27 @@ Each prompt should have:
 
 Use any stack you like, but keep the shape simple:
 - one code-search API
-- one prompt-library API
-- one small database per service or shared storage if you prefer
+- one small database
 - one lightweight process manager or service supervisor
 
 ## Agent integration pattern
 
-Teach the agent two habits:
-
-1. Check semantic code search before grepping dozens of files.
-2. Check the prompt library before drafting a fresh prompt from scratch.
+Teach the agent one habit: check semantic code search before grepping dozens of files.
 
 ## Suggested API shape
 
-### Code search
 - `POST /api/search`
 - `GET /api/health`
 - `POST /api/index`
 
-### Prompt library
-- `GET /api/prompts`
-- `GET /api/prompts/:id`
-- `POST /api/prompts`
-- `PUT /api/prompts/:id`
-- `DELETE /api/prompts/:id`
+Keep `POST /api/index` behind a credential or off the network. It rewrites the index, and an agent with tool access will find and call it.
 
 ## Verification
 
 A good smoke test:
 - query a concept not literally present in source code
 - confirm semantic search still finds the right area
-- retrieve a known prompt by category and reuse it successfully
 
 ## Anti-pattern
 
-Do not start with a full control plane, analytics wall, sprint board, and seven side panels. Start with the two tools that actually save tokens and time.
+Do not start with a full control plane, analytics wall, sprint board, and seven side panels. Start with the one tool that actually saves tokens and time.

@@ -111,7 +111,7 @@ What I still do not do: staging environments, blue-green deploys, canary rollout
 
 ### Skeptical of: heavy meta-tooling for prompts
 
-The prompt library is a directory of markdown files and a tiny FastAPI service that lists them. There is no template engine, no version control beyond git, no A/B testing harness. Prompts are short enough and stable enough that a `prompts/` directory works. If I were building prompts for a team with many concurrent experiments, I would reach for something heavier.
+I do not run a prompt service, a template engine, or an A/B testing harness. I tried a small one and retired it: the prompts I actually reuse live in skills and bootstrap files, which are plain markdown under git, and the agent loads them without a lookup step. Prompts are short and stable enough that versioned files cover it. If I were building prompts for a team with many concurrent experiments, I would reach for something heavier.
 
 ## When this list expires
 
