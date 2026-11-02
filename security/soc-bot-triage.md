@@ -2,14 +2,14 @@
 
 > How the agent that watches my home SOC actually works: what it reads on its own, what it may write, what only I can approve, and where the written record ends up. It costs one scheduled agent turn per routine.
 
-**Tested on:** Wazuh manager 4.14.8 (LXC container on a Proxmox hypervisor), TheHive 5.7.5 and Cortex 4.1.0 (Docker compose inside one Hyper-V VM on a Windows desktop), MISP (a second Hyper-V VM), Hotwash with a 17-tool MCP server, mitre-mcp with ATT&CK data refreshed 2026-10-31 (706 techniques), OpenClaw 2026.10.8
+**Tested on:** Wazuh manager 4.14.8 (LXC container on a Proxmox hypervisor), TheHive 5.7.5 and Cortex 4.1.0 (Docker compose inside one Hyper-V VM on a Windows desktop), MISP (a second Hyper-V VM), Hotwash with a 22-tool MCP server (a shared read-only instance plus a dedicated write-enabled instance for the bot), mitre-mcp with ATT&CK data refreshed 2026-10-31 (706 techniques), OpenClaw 2026.10.8
 **Last updated:** 2026-11-02
 
 ## What this is
 
 "SOC Bot" is a named agent bot in my desktop chat client. It lives in no repo of its own and runs on the OpenClaw gateway. It has its own workspace folder, its own policy files, two scheduled routines, and a short list of MCP tools. It reads Wazuh, checks the rest of the SOC tier, writes dated reports into its own library, and sends me a review card or a page when something crosses a threshold.
 
-The bot is deliberately narrower than the loop in [`mcp-incident-response.md`](mcp-incident-response.md). That guide shows the full chain (alert, case, analyzers, threat intel, ATT&CK) driven from an interactive session. This guide is about the standing, unattended version: what runs on a schedule, which steps are live, which are approved on paper but not wired yet, and how the result gets documented so I can audit it later.
+The bot is deliberately narrower than the loop in [`mcp-incident-response.md`](mcp-incident-response.md). That guide shows the full chain (alert, case, analyzers, threat intel, ATT&CK) driven from an interactive session. This guide is about the standing, unattended version: what runs on a schedule, which steps are live, how the write path was turned on without opening it to every agent, and how the result gets documented so I can audit it later.
 
 Where the pieces run:
 
@@ -90,7 +90,7 @@ The hypervisor side is in [`../infrastructure/homelab-topology.md`](../infrastru
            ▼
   ┌──────────────────┐  case + hash observables + analyzers,
   │ 4. ENRICH + CASE │  through Hotwash's TheHive connector only
-  └────────┬─────────┘  (approved scope; see tier table for status)
+  └────────┬─────────┘  (live since 2026-11-02, dedicated MCP instance)
            ▼
   ┌──────────────────┐  operator's own direct message in the bot's chat
   │ 5. DECISION GATE │  required for every FP entry and every closure
@@ -176,11 +176,27 @@ The TheHive case carries a closing summary listing the hashes, the package-verif
 |------|---------|--------|
 | 0. Read, autonomous | Wazuh version, agents, alerts, rootcheck, vulnerabilities, SCA, and FIM inventory. Proxmox guest and backup-job lists. AdGuard status. Hotwash playbook, run, and case reads. Read-only status commands on the SOC VMs. ATT&CK lookups | Live |
 | 1. Write to own library or notify, autonomous | Write dated markdown and JSON reports. Send a page for a threshold-qualified event (six hour dedup per key). Post a review card | Live |
-| 2. Bounded Hotwash actions, autonomous within one playbook | Accept an ingest suggestion. Check for an existing run before starting one. Start and advance only the evidence steps of Suspicious Binary Triage. Attach sanitized artifacts | Approved in policy. The scheduled routines' tool lists contain only the playbook list tool, so unattended runs cannot do any of this |
-| 3. Case writes and enrichment, autonomous after verification | Create a low-severity triage case, add hash and file-path observables and comments, run the two hash analyzers, all through Hotwash's TheHive connector with a duplicate check first | Approved in scope, inactive. The MCP exposes no TheHive mutation tools, so there is no callable write route yet |
+| 2. Bounded Hotwash actions, autonomous within one playbook | Accept an ingest suggestion. Check for an existing run before starting one. Start and advance only the evidence steps of Suspicious Binary Triage. Attach sanitized artifacts | Live in the daily routine since 2026-11-02, through the dedicated `hotwash-soc` server. Run cancel and suggestion dismiss are deliberately not in its tool list. The weekly routine keeps only the playbook list read |
+| 3. Case writes and enrichment, autonomous after verification | Create a low-severity triage case, add hash and file-path observables and comments, run the two hash analyzers, all through Hotwash's TheHive connector with a duplicate check first | Live since 2026-11-02 for a qualifying finding only. Four bounded tools enforce the scope in code, per-run caps limit volume (3 cases, 10 observables per case, 2 launches per hash, 5 comments), and every write is one attempt. No qualifying finding has arrived since, so the bot has created no case yet |
 | 4. Operator only | Add a false-positive entry. Close a case. Resolve Hotwash approval or Close Out steps. Change Wazuh rules, decoders, config, groups, or active response. MISP writes and Cortex responders. Run any other playbook. Cancel a run the bot did not start. Use any alternative TheHive or Cortex route | Never delegated |
 
-The line between tiers 3 and 4 is the one I care most about. Read success on a test record does not prove the create, enrich, and decide chain works end to end, so I keep that tier closed until the tools, allowlists, duplicate checks, and result reads are each verified.
+The line between tiers 3 and 4 is the one I care most about. Tier 3 stayed closed until the tools, allowlists, duplicate checks, and result reads each existed and were checked. Tier 4 does not open: closing a case or recording a false positive still needs my own message in the bot's chat.
+
+### Turning on case writes without opening them to every agent
+
+The Hotwash MCP server has an operator switch, `HOTWASH_MCP_ALLOW_MUTATIONS`. My shared instance, which every agent session sees, runs with it unset, so every write tool refuses with a "this MCP server is read-only" error. Flipping it there would have let any session start or cancel runs and create cases. Instead the bot gets its own instance:
+
+| | Shared `hotwash` | Dedicated `hotwash-soc` |
+|---|---|---|
+| Listener | loopback, own port | loopback, own port |
+| Bearer token | shared MCP token | separate token; each server answers 401 to the other's |
+| Mutations | off | on |
+| Analyzer allowlist | n/a | `CIRCLHashlookup_1_1` and `MISP_2_1`, mapped to their Cortex worker IDs |
+| Who can call it | every agent session | the bot's daily routine tool list; the browser agent has an explicit `hotwash-soc__*` deny |
+
+Both run the same release, so the bounds are identical code. The four write tools each require the switch and `confirm: true`, reject unknown fields, cap severity at 2 and TLP and PAP at AMBER, always add the `soc-bot` tag, accept only complete hashes or file paths as observables, and launch an analyzer only on a hash observable they first prove belongs to the case. A write whose response comes back malformed returns an error that says the write may have happened, so the caller re-reads instead of retrying.
+
+One limit I accepted: OpenClaw filters tools per agent and per scheduled job, not per conversation, and the bot runs as my main agent. My own interactive main sessions can see the `hotwash-soc` tools too. Giving the bot its own agent identity would close that, and it is the next change on the list.
 
 ## Verification
 
@@ -258,17 +274,30 @@ Weekly SOC Posture	true	15 10 * * 1	18
 
 The weekly tool list is 18 entries: three exec variants, nine Wazuh reads, three Proxmox reads (containers, VMs, backup jobs), two AdGuard reads, and `hotwash_list_playbooks`. No TheHive, Cortex, or MISP tool is in it, so those three are checked with read-only status commands on the VMs. The bot's library showed that day's weekly and daily reports with 10:16 and 08:40 timestamps.
 
-**8. TheHive, Cortex, and VM state.** An unauthenticated `curl` of `/api/status` on each returned version `5.7.5-1` for TheHive and `4.1.0-1` for Cortex. `Get-VM` over SSH PowerShell on the Windows desktop reported both SOC VMs (the TheHive plus Cortex VM and the MISP VM) as `Running`.
+**8. The write path is fenced.** Each MCP server rejects the other's token, both refuse an out-of-range create before any request, and only the dedicated one gets past the mutation switch:
+
+```text
+dedicated port with shared token -> 401
+shared port with dedicated token -> 401
+create_case severity 9 (either server) -> Input validation error: expected number to be <=2 at severity
+create_case valid args (shared server) -> Refusing to create this case: this MCP server is read-only.
+openclaw mcp doctor hotwash-soc --probe -> hotwash-soc: ok
+Daily SOC Triage toolsAllow -> 32 entries, no cancel_run or dismiss_suggestion
+```
+
+The Hotwash API log showed no `create_case` request during those checks.
+
+**9. TheHive, Cortex, and VM state.** An unauthenticated `curl` of `/api/status` on each returned version `5.7.5-1` for TheHive and `4.1.0-1` for Cortex. `Get-VM` over SSH PowerShell on the Windows desktop reported both SOC VMs (the TheHive plus Cortex VM and the MISP VM) as `Running`.
 
 ## Gotchas
 
-1. **TheHive turns read-only when the license lapses, and the failure looks like a permissions bug.** On TheHive 5.3 and later, the trial expires and the instance becomes effectively read-only for licensed permissions. I hit this on 5.4: case, task, observable, and comment writes failed with 403 while permissions looked correct. One expired trial day made case creation fail while alert creation still worked. Check the license state first (`GET /api/v1/license/challenge` shows the challenge for a Community license). I have not re-checked the license state on 5.7.5 for this guide, so check yours before you trust a write path.
+1. **TheHive turns read-only when the license lapses, and the failure looks like a permissions bug.** On TheHive 5.3 and later, the trial expires and the instance becomes effectively read-only for licensed permissions. I hit this on 5.4: case, task, observable, and comment writes failed with 403 while permissions looked correct. One expired trial day made case creation fail while alert creation still worked. Check the license state first (`GET /api/v1/license/current`, and `GET /api/v1/license/challenge` for the challenge when requesting a Community license). On 5.7.5 mine reports a current Community license, and the SOC analyst user holds `manageCase/create`, `manageObservable`, `manageComment`, and `manageAnalyse`.
 
 2. **The admin identity cannot do analyst work.** TheHive's `admin` account lives in the platform's admin organisation. It can manage users and configuration but cannot create cases or alerts in the SOC organisation. Use an analyst user in the SOC organisation for Hotwash and for any write path, and keep the admin key for user management. The same split exists in Cortex between superadmin and org admin.
 
 3. **Hotwash cannot authenticate approvers.** All callers share one API key, so marking a step complete is not approval. The playbook says this in its own text, and the policy enforces it outside Hotwash: approval is my direct message in the bot's own chat, a relayed approval does not count, and Hotwash stores only the reference. If you build something similar, do not let a ticket comment or a workflow step stand in for the human.
 
-4. **Reads are not dedup.** `hotwash_list_runs` and `hotwash_list_cases` both declare themselves inventory only, with `identity_unbound` and `coverage: unverified` in the response. Four runs sat active since June with no step progress, and the case list reports overflow. A closed-only match, an ambiguous read, or an uncertain write means stop and report. A blind create or retry makes duplicate cases.
+4. **Reads are not dedup.** `hotwash_list_runs` and `hotwash_list_cases` both declare themselves inventory only, with `identity_unbound` and `coverage: unverified` in the response. Four runs sat active since June with no step progress, and the case list reports overflow. The bot's duplicate check runs `hotwash_check_finding` and then matches the finding's association tag on the case list. A closed-only match, an ambiguous read, or an uncertain write means stop and report. A blind create or retry makes duplicate cases.
 
 5. **A run step advance does not execute anything.** Advancing a Hotwash step records state. It does not run the step's connector. A run that looks complete is a log of what someone said they did. Evidence collection that touches hosts, such as the package check, is a manual step with an artifact attached.
 
@@ -282,13 +311,19 @@ The weekly tool list is 18 entries: three exec variants, nine Wazuh reads, three
 
 10. **A sample is not a clearance.** Wazuh pagination totals stop being trustworthy at 10,000. The bot's reports label totals as lower bounds, record the time window and caps, and treat missing data as unknown, never as zero or recovery. A quiet daily report says "bounded observations", not "all clear".
 
-11. **Two places can hold a routine definition.** My bot's routine file lists the daily job as enabled, while `openclaw cron list --all` shows it disabled, and a daily report still landed at 08:40 today. I have not traced which scheduler fired it. If you keep routine definitions beside the bot and also in the gateway, compare them, and judge a routine by whether its report appears.
+11. **Two places can hold a routine definition, and only one is live.** The bot's routine file listed the daily job as enabled with 8 tools. The gateway's cron store, which is what actually runs, had it at 12 tools and disabled after 10 consecutive failed runs. Every failure since late October traced to the routine reading a helper in fixed 40-line ranges up to line 200 when the helper is 158 lines: the empty last range came back as an exec placeholder that the bot spliced into the JavaScript. Judge a routine by `openclaw cron runs <id>`, and read its last error before you trust its report.
 
 12. **MISP audit tables grow fast with bulk feeds.** A full import of three large abuse feeds wrote about 45 million audit rows and filled the VM's disk, so those feeds became caching-only and the audit log is pruned to 14 days. Watch the disk on the MISP VM before you turn on feed imports, and remember a MISP analyzer result of zero events with unknown verdict is no verdict.
 
-13. **The Hotwash README lags its MCP.** The README lists 10 tools. The MCP I run exposes 17, including read tools for cases, comments, observables, and analyzer jobs. Read the tool list your server actually registers.
+13. **Check the tool list your server registers.** The MCP I run exposes 22 tools. Older Hotwash READMEs listed fewer, and a stale list is how a routine ends up allowlisting a tool that does not exist.
 
 14. **Existing guides name older versions.** [`mcp-incident-response.md`](mcp-incident-response.md) was written against Cortex 3.x. The Cortex in this stack is now 4.1.0. The loop is unchanged, but re-run your integration checks after the upgrade.
+
+15. **Cortex launches analyzers by worker ID, not by name.** `CIRCLHashlookup_1_1` is a definition name. TheHive's launch call wants the worker ID, a 32-character hash Cortex generates per deployment. An allowlist of names would refuse nothing and launch nothing. Read the IDs from `GET /api/connector/cortex/analyzer` and map name to ID in operator config, so the bot names the analyzer and the server supplies the ID.
+
+16. **The exec tool appends text after a failing command's JSON.** A nonzero exit adds `(Command exited with code 1)` to the output, so a strict JSON receipt parser throws "unexpected non-whitespace after JSON" and hides the real error. The bot's real failure in that run was a duplicate source and offset for a second alert-detail batch. Strip the suffix before parsing and surface the receipt's own failure field.
+
+17. **Association tags are longer than tag limits you might pick.** Hotwash links a case to a finding with `hotwash:finding:v1:<64 hex>` (82 characters) and `hotwash:rootcheck:v2:<scope>:<64 hex>`. A 64-character tag cap on the create tool would have made every bot-created case invisible to the finding check. Size tag limits from the formats your dedup actually matches.
 
 ## Templates
 
