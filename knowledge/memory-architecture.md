@@ -1,7 +1,7 @@
 # Memory Architecture
 
-**Tested on:** OpenClaw 2026.10.4, Brigade 0.28.0, Claude Code 2.1.302, `miseledger` 0.6.0
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.4, Brigade 0.31.0, Claude Code 2.1.302, `miseledger` 0.6.0
+**Last updated:** 2026-11-02
 
 > Memory in an agent stack is a layered store of point-in-time claims, not live state. Pick the wrong relationship between memory and current reality and your agent will confidently recommend file paths that were renamed three weeks ago, write duplicate cards every session, and treat its own out-of-date notes as ground truth.
 
@@ -36,7 +36,7 @@ Pay the verify cost. The other two costs compound.
 
 ## Before / After
 
-**Before:** A few months in, your stack has 100+ memory cards. (Mine passed 1,600.) The agent confidently cites a card claiming a function lives at `dist/embedded-CQnl8oWA.js:382`. The bundle hasn't been called that for five releases. You spend twenty minutes debugging why the recommendation doesn't apply to current code before realizing the citation rotted. Two cards say almost the same thing about the n8n workflow_history gotcha because nobody read the existing one before writing the second. Maintenance feels like an unpaid second job and you start wondering if memory is worth it at all.
+**Before:** A few months in, your stack has 100+ memory cards. (Mine passed 1,600.) The agent confidently cites a card claiming a function lives at `dist/embedded-CQnl8oWA.js:382`. The bundle hasn't been called that for five releases. You spend twenty minutes debugging why the recommendation doesn't apply to current code before realizing the citation rotted. Two cards say almost the same thing about the n8n workflow_history gotcha because nobody read the existing one before writing the second. Maintenance feels like an unpaid second job and you start wondering if you should keep memory at all.
 
 **After:**
 
@@ -146,11 +146,11 @@ confidence: high | medium | low | verified | unknown
 evidence: [<evidence-id>]      # ledger ids that back the claim, when you have them
 ```
 
-The dates are not decoration. They are how the trust hierarchy resolves "recent vs older." `last_reviewed` and `fresh_until` matter more than `created`, because a card written in March and re-verified yesterday is fresher than one written last week from memory. On my set the older cards use `title` instead of `topic` and most lack `confidence` and `evidence`. Mixed shapes are survivable. Backfill them when you touch a card, and let `brigade memory care backfill` (dry-run by default) propose the missing metadata in bulk.
+The dates are not decoration. They are how the trust hierarchy resolves "recent vs older." `last_reviewed` and `fresh_until` outrank `created`, because a card written in March and re-verified yesterday is fresher than one written last week from memory. On my set the older cards use `title` instead of `topic` and most lack `confidence` and `evidence`. Mixed shapes are survivable. Backfill them when you touch a card, and let `brigade memory care backfill` (dry-run by default) propose the missing metadata in bulk.
 
 ### The decay loop
 
-Memory accumulates wrong claims if nothing is removing them. The decay loop is what keeps the store healthy:
+Memory accumulates wrong claims if nothing is removing them. The decay loop keeps the store healthy:
 
 1. **At read time, surface age.** When a memory entry is loaded, the system should annotate it with how old the claim is. (OpenClaw and Claude Code both do this - the system reminders that say "this memory is N days old" exist for exactly this reason.)
 2. **At verify time, replace stale claims.** When verify-before-recommend catches a memory that's wrong (path renamed, line moved), update the card immediately. Bump the `updated` date. Do not amend around the wrong claim with a "(formerly at line 380, now at line 414)" note - those don't decay either.
@@ -217,9 +217,9 @@ A healthy store has: bootstrap index under its soft limit, no card older than yo
 
 **Index truncation is invisible until it bites.** Most agent harnesses load the index into the prompt and truncate past some line count (Claude Code's auto-memory truncates after ~200 lines, OpenClaw's MEMORY.md is bounded by the context budget). Pointers below the truncation line silently disappear from prompt context. **Fix:** keep the index under target size *with margin*. When it grows, consolidate (multiple related lines → one line + sub-card) before adding. Never put long content in the index itself - that's what cards are for.
 
-**Cross-machine drift from multiple canonical writers.** If two machines both write canonical memory, eventually they diverge in non-trivial ways (one ingested handoff A first, the other B, both updated the same card differently). **Fix:** exactly one host is the canonical writer. Other hosts produce handoffs that sync to the canonical host's inbox. The pipeline is in [claude-code-memory-handoffs](claude-code-memory-handoffs.md). This guide just states the rule: one canonical writer, full stop.
+**Cross-machine drift from multiple canonical writers.** If two machines both write canonical memory, eventually they diverge in non-trivial ways (one ingested handoff A first, the other B, both updated the same card differently). **Fix:** exactly one host is the canonical writer. Other hosts produce handoffs that sync to the canonical host's inbox. The pipeline is in [claude-code-memory-handoffs](claude-code-memory-handoffs.md). This guide just states the rule: one canonical writer.
 
-**"User said remember X" is not a durability check.** A user asking you to remember something does not, on its own, mean it belongs in long-term memory. They might be venting, working through a thought, or assuming the memory system is the right fit when CLAUDE.md or a project-level note is. **Fix:** when explicitly asked to save, save the thing - but pick the right store. Stable preferences → user-profile memory. Workflow rules → `rules/*.md`. Architecture decisions → cards. Project state → conversation/plan tools, not memory.
+**"User said remember X" is not a durability check.** A user asking you to remember something does not, on its own, mean it belongs in long-term memory. They might be venting, working through a thought, or assuming the memory system is the right fit when CLAUDE.md or a project-level note is. **Fix:** when explicitly asked to save, save the thing - but pick the right store. Stable preferences go to user-profile memory, workflow rules to `rules/*.md`, architecture decisions to cards, and project state to conversation/plan tools, not memory.
 
 **Conversation context written as memory rots immediately.** "We're currently debugging X, the next step is Y" is plan/task content, not memory. By the next session it's stale. By next week it's actively misleading. **Fix:** use the plan/task tools for in-flight work. Save memory only when the *outcome* of the work is durable knowledge. The thing that gets saved is "X was caused by Y because of Z," not "we are debugging X."
 

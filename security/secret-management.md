@@ -1,9 +1,9 @@
 # Secret Management
 
-> Secrets belong in narrow local stores with boring permissions, not in prompts, repos, screenshots, or memory.
+> Secrets belong in narrow local stores with narrow permissions and never in prompts, repos, screenshots, or memory.
 
-**Tested on:** Ubuntu 24.04, systemd 255 user services, 1Password CLI 2.41, Claude Code 2.1.302, OpenClaw 2026.10.4, Brigade 0.28.0
-**Last updated:** 2026-10-17
+**Tested on:** Ubuntu 24.04, systemd 255 user services, 1Password CLI 2.41, Claude Code 2.1.302, OpenClaw 2026.10.4, Brigade 0.31.0
+**Last updated:** 2026-11-02
 
 ## What this is
 
@@ -17,7 +17,7 @@ There are two variants in this guide. The minimal one is a directory of `0600` e
 
 Agent stacks make secret sprawl easy. A human copies a token into chat for debugging, the agent writes a config example, a cron job logs its environment, a browser profile gets backed up with notes, and suddenly the "secret" exists in transcripts, memory, git, screenshots, and exports.
 
-The fix is not "trust the model to be careful." The fix is to make secret paths boring and mechanical:
+The fix is to make secret paths mechanical and independent of how careful the model is:
 
 - one local place for service env files
 - one local place for browser profiles
@@ -54,7 +54,7 @@ After:
 - Real secret values live only in a vault, plus env files that are rendered into tmpfs at boot (or, in the minimal variant, local `0600` env files).
 - Repo templates contain placeholders, never real values.
 - systemd services load secrets through `EnvironmentFile`.
-- Agents refer to secret handles, not secret values.
+- Agents refer to secret handles and never to secret values.
 - Browser profiles and OAuth state are treated as credentials.
 - Publish-time scrubbers and Brigade guard run before artifacts leave the host.
 
@@ -123,7 +123,7 @@ Expected env-file mode is `600`. Expected profile-directory mode is `700`.
 
 ### 4. Load secrets through systemd
 
-Use `EnvironmentFile` rather than checked-in config values:
+Use `EnvironmentFile` instead of checked-in config values:
 
 ```ini
 [Service]
@@ -234,7 +234,7 @@ After=secrets-render.service
 EnvironmentFile=%t/agent-secrets/gateway.env
 ```
 
-Two settings in the oneshot came from a real outage. A `Type=oneshot` unit defaults to `TimeoutStartSec=infinity`. After a reboot with linger enabled, my renderer started before the desktop login unlocked the keyring, blocked on the token lookup forever, and the gateway that required it never started (about five hours of downtime). Bounding the start time fixes the hang. A retry timer fixes the recovery:
+Two settings in the oneshot came from a real outage. A `Type=oneshot` unit defaults to `TimeoutStartSec=infinity`. After a reboot with linger enabled, my renderer started before the desktop login opened the keyring, blocked on the token lookup forever, and the gateway that required it never started (about five hours of downtime). Bounding the start time fixes the hang. A retry timer fixes the recovery:
 
 ```ini
 # ~/.config/systemd/user/secrets-render.timer
@@ -253,7 +253,7 @@ Active does not mean fresh. With `RemainAfterExit=yes`, an `active (exited)` uni
 
 #### Seal the service-account credential to the TPM
 
-The oneshot needs the service-account token at boot, with nobody logged in. Rather than leaving it in a file, seal it to the TPM and let systemd decrypt it into the service's private credentials directory:
+The oneshot needs the service-account token at boot, with nobody logged in. Instead of leaving it in a file, seal it to the TPM and let systemd decrypt it into the service's private credentials directory:
 
 ```bash
 # read the token from the keyring and seal it, without it touching disk or argv
@@ -313,7 +313,7 @@ printf 'OPENCLAW_PROVIDER_TOKEN length=%s\n' "${#OPENCLAW_PROVIDER_TOKEN}"
 
 ### 7. Keep secrets out of memory
 
-Memory systems are for durable knowledge, not secret storage.
+Memory systems store durable knowledge and must not store secrets.
 
 Good memory:
 
@@ -336,9 +336,9 @@ Claude Code passes its entire launching environment to stdio MCP servers by defa
 - `CLAUDE_CODE_MCP_ALLOWLIST_ENV=1` limits each server to a safe baseline plus the `env` block configured for it.
 - `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` strips credential-shaped variables from subprocesses.
 
-I recorded this against Claude Code 2.1.289 from the project's environment-variable documentation and have not re-tested it on 2.1.302, so confirm on your version before relying on it. Turning the allowlist on breaks any server that was quietly relying on an inherited variable, so move those servers to an explicit `env` block first.
+I recorded this against Claude Code 2.1.289 from the project's environment-variable documentation and have not re-tested it on 2.1.302, so confirm on your version before relying on it. Turning the allowlist on breaks any server that relied on an inherited variable, so move those servers to an explicit `env` block first.
 
-A wrapper that sources a secrets file and then `exec`s the server is the other common approach. If you use one, give each server its own file. A single shared file hands every wrapped server every other server's credentials. Make the wrapper exit non-zero when the file is unreadable, because a wrapper that logs a warning and starts the server anyway fails open. Pin third-party servers to a version rather than `@latest`.
+A wrapper that sources a secrets file and then `exec`s the server is the other common approach. If you use one, give each server its own file. A single shared file hands every wrapped server every other server's credentials. Make the wrapper exit non-zero when the file is unreadable, because a wrapper that logs a warning and starts the server anyway fails open. Pin third-party servers to a version and avoid `@latest`.
 
 ### 9. Treat browser profiles as credentials
 
@@ -408,7 +408,7 @@ findmnt -no FSTYPE -T "$d"
 
 Expected result: `700` for the directory, `600` for each file, and `tmpfs` from `findmnt`.
 
-Check that the render ran after the last boot and is not just "active":
+Check that the render ran after the last boot, since "active" alone proves nothing:
 
 ```bash
 systemctl --user show secrets-render.service -p ActiveState,SubState,Result
@@ -467,7 +467,7 @@ Check service config uses `EnvironmentFile`:
 systemctl --user cat openclaw-gateway.service | rg 'EnvironmentFile|OPENCLAW_|BRIGADE_' || true
 ```
 
-Expected result: service reads a local env file or environment references, not hardcoded secret values.
+Expected result: service reads a local env file or environment references and holds no hardcoded secret values.
 
 Check public-boundary files:
 
@@ -494,7 +494,7 @@ Expected result: no blockers. Warnings should be reviewed or rewritten with plac
 
 3. **Debug logs are leak factories.** `set -x`, full env dumps, failed curl commands, and verbose SDK logs can print secrets. Disable shell tracing around secret-bearing commands.
 
-4. **Memory handoffs need the same discipline.** Handoffs should say which secret handle changed, not the value. If a handoff contains a value, rotate before ingestion.
+4. **Memory handoffs need the same discipline.** Handoffs should say which secret handle changed and omit the value. If a handoff contains a value, rotate before ingestion.
 
 5. **Placeholders must look fake.** Use `<secret>` or `[redacted-secret]`, not realistic key-shaped examples that can confuse scanners and humans.
 

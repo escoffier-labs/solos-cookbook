@@ -2,8 +2,8 @@
 
 > One vault, one sync layer, one place for automation to write. That is how you get bidirectional cloud sync without waking up to three "conflicted copy" files and a broken notes index.
 
-**Tested on:** rclone 1.73.5 bisync against a Google Drive remote, systemd 255 user timer, OpenClaw 2026.10.4, Brigade 0.28.0, Ubuntu 24.04
-**Last updated:** 2026-10-17
+**Tested on:** rclone 1.73.5 bisync against a Google Drive remote, systemd 255 user timer, OpenClaw 2026.10.4, Brigade 0.31.0, Ubuntu 24.04
+**Last updated:** 2026-11-02
 
 ## What this is
 
@@ -18,8 +18,8 @@ There are three common approaches:
 | Approach | Feels easy | Actually breaks because |
 |----------|------------|-------------------------|
 | **Two independent vault copies** | No setup beyond pointing each device at a folder | They drift immediately. Plugins, attachment paths, and note IDs stop matching. |
-| **Multiple sync tools stacked together** | "Extra safety" | It is not safety. It is conflict multiplication. One tool uploads while the other rewrites metadata. |
-| **One canonical vault + one sync layer + writer rules** | Slightly stricter up front | This is the one that stays boring, which is the whole point. |
+| **Multiple sync tools stacked together** | "Extra safety" | It multiplies conflicts instead of adding safety. One tool uploads while the other rewrites metadata. |
+| **One canonical vault + one sync layer + writer rules** | Slightly stricter up front | This is the one that stays predictable. |
 
 The hard truth: sync failures are usually not a cloud-provider problem. They are a writer-discipline problem. If phone capture, desktop editing, and automation all touch the same long-lived files, conflict copies are inevitable.
 
@@ -85,7 +85,7 @@ Mobile should be optimized for fast capture, not perfect filing.
 - Desktop: process inbox notes into their long-term folders
 - Automation: write only to approved target folders, usually inbox or a dedicated generated-notes area
 
-This keeps sync boring because only one surface is doing heavy reorganization.
+This keeps sync predictable because only one surface is doing heavy reorganization.
 
 ### 4. Give summary files a single owner
 
@@ -123,7 +123,7 @@ Atomic notes sync cleanly. Monolithic notes invite merge hell.
 
 ### 6. Normalize filenames and attachment paths
 
-Set and enforce a few boring rules:
+Set and enforce a few plain rules:
 
 - One attachment folder for the whole vault or one per folder. Pick one and stick to it.
 - Filename scheme should be deterministic. Date prefix + slug works well.
@@ -239,9 +239,9 @@ If that six-step loop is clean, your sync model is probably healthy.
 
 **Generated index files are conflict magnets.** If an automation job rewrites a dashboard note while you are staring at it on another device, the sync tool has no magical way to know which copy you "meant." Give summary files one owner and keep the other devices read-mostly.
 
-**Attachments drift more quietly than notes.** Text sync failures are obvious. Attachment failures are sneaky. The note is there, the image link looks fine, and the actual file never arrived on the phone. Check attachment paths during reconciliation.
+**Attachments drift more silently than notes.** Text sync failures are obvious. Attachment failures are sneaky. The note is there, the image link looks fine, and the actual file never arrived on the phone. Check attachment paths during reconciliation.
 
-**Filename normalization matters more than people think.** Two notes that differ only by punctuation, whitespace, or letter case will eventually hurt you on a mixed device fleet. Decide the naming scheme once and keep it boring.
+**Filename normalization causes more trouble than people expect.** Two notes that differ only by punctuation, whitespace, or letter case will eventually hurt you on a mixed device fleet. Decide the naming scheme once and keep it simple.
 
 ## Related
 

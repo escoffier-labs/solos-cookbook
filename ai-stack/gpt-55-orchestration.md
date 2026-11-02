@@ -1,9 +1,9 @@
 # Orchestrating with GPT 6.1 Sol: Execution Contract, Narration Guards, and Silent Loops
 
-Running a Codex-subscription model as your main orchestrator is cheap and fast compared to frontier API billing, but it has specific failure modes that quietly eat hours until you know to guard against them. This guide documents the ones I have actually hit: tool-call narration, planning-only stalls, the `executionContract` setting and what it covers, and the silent-tool-loop false alarm. The filename keeps its old `gpt-55` slug so existing links still resolve. The content now describes GPT 6.1 Sol.
+Running a Codex-subscription model as your main orchestrator is cheap and fast compared to frontier API billing, but it has specific failure modes that eat hours until you know to guard against them. This guide documents the ones I have actually hit: tool-call narration, planning-only stalls, the `executionContract` setting and what it covers, and the silent-tool-loop false alarm. The filename keeps its old `gpt-55` slug so existing links still resolve. The content now describes GPT 6.1 Sol.
 
-**Tested on:** OpenClaw 2026.10.4, GPT 6.1 Sol (`openai/gpt-6.1-sol`, Codex runtime), `embeddedAgent.executionContract: strict-agentic`, the `tool-narration-guard` plugin
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8, GPT 6.1 Sol (`openai/gpt-6.1-sol`, Codex runtime), `embeddedAgent.executionContract: strict-agentic`, the `tool-narration-guard` plugin
+**Last updated:** 2026-11-02
 
 ---
 
@@ -74,7 +74,7 @@ Two things changed from the 2026.4 behavior that this guide used to document:
 Reading the 2026.10.4 build, the strict-agentic check only treats provider `openai` models whose id matches `gpt-5` (a `/^gpt-5(?:[.o-]|$)/` pattern) as supported. `gpt-6.1-sol` does not match. I read this from source and did not test it behaviorally, but the practical reading is that the setting is inert for Sol 6.1 and Luna 6 on this build. My config still carries it (`"executionContract": "strict-agentic"`), which is harmless. Two consequences:
 
 1. Do not count on it to catch plan-only turns on a GPT 6 model. Verify against the version you run.
-2. The narration guard plugin is doing the real work. It does not depend on the model id.
+2. The narration guard plugin does the work. It does not depend on the model id.
 
 This is the kind of drift the [model retirement guide](model-retirement-and-fallbacks.md) warns about: a setting that looks active in the config and does nothing after a model change.
 

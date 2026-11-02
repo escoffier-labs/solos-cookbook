@@ -1,9 +1,9 @@
 # Local LLM Fallback
 
-> Use local models for boring, bounded work so your paid models stay available for judgment.
+> Use local models for routine, bounded work so your paid models stay available for judgment.
 
-**Tested on:** OpenClaw 2026.10.4 with Ollama 0.18.0, one local embedding model, and Ollama cloud-model entries
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 with Ollama 0.18.0 and local embedding models only
+**Last updated:** 2026-11-02
 
 ## What this is
 
@@ -11,13 +11,13 @@ A local LLM fallback is a cheap utility lane for work that does not need a front
 
 The shape is: keep Ollama local, expose it through a loopback-only API, route only bounded jobs to it, and escalate anything ambiguous back to the main agent.
 
-**What I actually run today:** one local model, `qwen3-embedding:8b`, which powers memory search. The utility-chat roles below (triage, commit drafts) are a pattern I used on earlier hardware and models. I no longer keep chat models pulled locally, because the quota-backed hosted lanes (GPT 6 Luna for cheap bounded work) cover those jobs with less babysitting. The policy sections still apply to any local chat model you add. The local-versus-hosted line moved. The rules did not.
+**What I actually run today:** local embedding models only. `qwen3-embedding:8b` powers memory search, and `qwen3-embedding:0.6b` plus `nomic-embed-text` are pulled for comparison runs. The utility-chat roles below (triage, commit drafts) are a pattern I used on earlier hardware and models. I no longer keep chat models pulled locally, because the quota-backed hosted lanes (GPT 6 Luna for cheap bounded work) cover those jobs with less babysitting. The policy sections still apply to any local chat model you add. The local-versus-hosted line moved. The rules did not.
 
 ## Why this way
 
 Local models are excellent when the task is narrow and the consequence of a weak answer is low. They are also fast enough to use constantly, which matters for memory search and background maintenance.
 
-They are a bad fit when the task needs policy judgment, adversarial reasoning, tool orchestration, or high-quality user-facing prose. A small local model can look confident while being wrong. The fallback policy has to make that failure mode boring: local models may suggest, label, embed, summarize trusted input, or decline. They should not silently decide.
+They are a bad fit when the task needs policy judgment, adversarial reasoning, tool orchestration, or high-quality user-facing prose. A small local model can look confident while being wrong. The fallback policy has to contain that failure mode: local models may suggest, label, embed, summarize trusted input, or decline. They should not silently decide.
 
 This is the key distinction:
 
@@ -95,7 +95,7 @@ If you do want local chat roles, the earlier set looked like this, and each entr
 | `qwen3:7b` | constrained triage and labels | require JSON, short outputs, and escalation labels |
 | `qwen3-coder:14b` | commit-message and code-summary drafts | inspect output before using it |
 
-`ollama list` on my host also shows a dozen entries tagged `:cloud` (for example `kimi-k2.5:cloud`, `deepseek-v4-flash:cloud`). Those are Ollama's cloud-offload entries: they appear in the local model list with no local size, the weights are not on disk, and requests go to Ollama's hosted service. They count as hosted models for the purposes of this guide, not as local ones. Don't read a long `ollama list` as proof that you are running anything locally. Check the `SIZE` column.
+`ollama list` on my host used to show a dozen entries tagged `:cloud` (for example `kimi-k2.5:cloud`, `deepseek-v4-flash:cloud`). I have since removed them. Those are Ollama's cloud-offload entries: they appear in the local model list with no local size, the weights are not on disk, and requests go to Ollama's hosted service. They count as hosted models for the purposes of this guide, not as local ones. Don't read a long `ollama list` as proof that you are running anything locally. Check the `SIZE` column.
 
 The exact models can change. The durable rule is to tie each local model to a job, benchmark it on that job, and remove it if it drifts.
 
@@ -211,7 +211,7 @@ else
 fi
 ```
 
-The important part is not the exact threshold. It is that a malformed or low-confidence local answer routes upward.
+The exact threshold matters less than the routing: a malformed or low-confidence local answer goes upward.
 
 ### 7. Use local commit drafts as drafts
 
@@ -225,7 +225,7 @@ git diff --staged --no-ext-diff --unified=3 \
 
 Review before using it. Local commit helpers are for reducing blank-page friction, not for outsourcing judgment about what changed.
 
-### 8. Keep health checks boring
+### 8. Keep health checks simple
 
 Local fallback is useful only if it is quiet when healthy and obvious when broken.
 

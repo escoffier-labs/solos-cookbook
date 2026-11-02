@@ -2,8 +2,8 @@
 
 How to build an AI agent that learns from corrections, captures mistakes as institutional knowledge, runs automated memory sweeps, and gets better over time instead of repeating the same errors.
 
-**Tested on:** OpenClaw 2026.10.4 with GPT 6.1 Sol (main) and GPT 6 Luna (memory sweep), tool-narration-guard plugin, Brigade 0.28.0
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.4 with GPT 6.1 Sol (main) and GPT 6 Luna (memory sweep), tool-narration-guard plugin, Brigade 0.31.0
+**Last updated:** 2026-11-02
 
 ---
 
@@ -260,7 +260,7 @@ Set up an automated cron job that reviews recent sessions across all channels an
 
 ### Cron Configuration
 
-This is the job shape I run (message abbreviated):
+Here is the cron job definition I run (message abbreviated):
 
 ```json
 {

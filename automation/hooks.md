@@ -33,7 +33,7 @@ Specific hook names below are from Claude Code (boundary + tool-call + lifecycle
 | Claude Code | git hooks, outbound-boundary scripts | `PreToolUse`, `PostToolUse` | `SessionStart`, `Stop`, `UserPromptSubmit` |
 | OpenClaw | git hooks, outbound-boundary scripts | `before_tool_call`, `after_tool_call`, `tool_result_persist` | `before_prompt_build`, `llm_output`, `message_sending`, `agent_end` |
 | Hermes Agent | git hooks, outbound-boundary scripts | Whatever its current tool-event surface exposes | Whatever lifecycle events it exposes |
-| No orchestrator-level hooks | git hooks + CLI scrubs are still load-bearing - start there | Skip - push enforcement to system prompts and trust verification | Skip |
+| No orchestrator-level hooks | git hooks + CLI scrubs still do the enforcement - start there | Skip - push enforcement to system prompts and trust verification | Skip |
 
 The universal rule: the further from the LLM turn the hook runs, the more reliable it is. Boundary hooks always work. Lifecycle hooks usually work. Tool-call hooks often have surprising contracts.
 
@@ -84,7 +84,7 @@ The two boundary hooks worth running on a stack like this:
 git config core.hooksPath hooks
 ```
 
-The hook in this repo runs `brigade guard git` with the embedded public-repo policy. It scans tracked files and the content introduced by commits being pushed. If it blocks, fix the content or add a narrow allow comment for a genuinely public example. Do not bypass the hook.
+The hook in this repo runs `brigade guard git` with the embedded public-repo policy. It scans tracked files and the content introduced by commits being pushed. If it blocks, fix the content or add a narrow allow comment for a public example. Do not bypass the hook.
 
 **Stage-boundary CLI** that scrubs staged artifacts before they move downstream. The shape that works on this stack is a sed-rules script with a preview mode and an apply mode:
 
@@ -110,13 +110,13 @@ Three things to get right (orchestrator-agnostic):
 
 1. **Substitution is rarely what it looks like.** Most schemas advertise a "block" or "replace" decision on post-tool hooks. In practice, frameworks vary in whether that actually rewrites the message the next turn sees. Verify by running the agent with full transcript logging and diffing the tool-result content against your hook's output. If the schema lies, fall back to PreToolUse-style rewriting (change the tool's input so it produces the output you want natively) or live with append-only `additionalContext`.
 
-2. **Sync vs async matters more than the docs say.** Some hook runners are strictly synchronous and silently drop Promise returns. Others are async-aware. Read the runner source before relying on `await`. If sync-only: pre-load any data you need at plugin registration time and cache in module scope.
+2. **Sync vs async is easy to get wrong.** Some hook runners are strictly synchronous and silently drop Promise returns. Others are async-aware. Read the runner source before relying on `await`. If sync-only: pre-load any data you need at plugin registration time and cache in module scope.
 
 3. **Capture in `before`, read in `persist`.** When you need to know what command produced a given tool result (for log redaction, command-aware reduction, etc.), capture in the `before_tool_call`/`PreToolUse` hook keyed on `toolCallId`, then read in `tool_result_persist`/`PostToolUse`. The id is present in both events, so a `Map<toolCallId, command>` works cleanly.
 
 #### Claude Code specifics
 
-Claude Code hooks are configured in `~/.claude/settings.json` (or `$CLAUDE_CONFIG_DIR/settings.json` if set). Each entry is a shell command the binary spawns; communication is JSON over stdin/stdout. The events that matter most for tool-call layer:
+Claude Code hooks are configured in `~/.claude/settings.json` (or `$CLAUDE_CONFIG_DIR/settings.json` if set). Each entry is a shell command the binary spawns, and communication is JSON over stdin/stdout. These events cover the tool-call layer:
 
 - `PreToolUse` - fires before a tool call. Returning `{ "decision": "block", "reason": "..." }` actually blocks the call. Returning a rewrite is also supported.
 - `PostToolUse` - fires after a tool call. **`decision: "block"` plus `reason` does NOT replace the tool result content** (verified through 2.1.116, see Gotchas). Only `hookSpecificOutput.additionalContext` lands. If you need to replace tool output, rewrite the call in `PreToolUse`.
@@ -132,9 +132,9 @@ OpenClaw plugins register hooks via the SDK's `api.on(eventName, handler)` from 
 └── index.ts               # default export: (api: OpenClawPluginApi) => void
 ```
 
-The events that matter most:
+The most useful events:
 
-- `before_tool_call` - async-safe. Can rewrite `params`, block with `blockReason`, or require approval. Use for command rewriting and dangerous-call gates.
+- `before_tool_call` - async-safe. Can block with `blockReason` or require approval. Since 2026.10.5 an ordinary hook can no longer rewrite tool arguments that were already approved inline without a second approval, and a transforming plugin must request approval for its final arguments or the call is blocked (OpenClaw's `docs/plugins/hooks/tool-policy.md` covers the migration). Use it for dangerous-call gates first and argument rewriting second.
 - `after_tool_call` - append-only. Returns void. Same trap as Claude Code `PostToolUse` - do not use for substitution.
 - `tool_result_persist` - **strictly synchronous**. Returning `{ message }` substitutes the persisted toolResult. Promise returns are silently dropped with a warning in the gateway log. Use for substitution only when your work can run sync.
 - `before_message_write` - also synchronous. Broader than `tool_result_persist` (fires for all messages, not just toolResults). Same `{ block: true }` and `{ message }` semantics.
@@ -160,7 +160,7 @@ Three patterns from this plugin worth lifting:
 
 1. **Track per `runId`, not per `lastAssistant`.** A naïve narration check on "did the last assistant message call a tool?" produces false positives in multi-turn tool-use flows. Tracking tool calls keyed on the run id (which spans the whole turn) is correct.
 
-2. **Persist state to disk, expire by TTL.** The plugin writes its violation map to `state.json` in the plugin dir on every change, and loads it back on plugin init filtered by a configurable TTL (default 10 min). Survives gateway restarts; auto-clears stale violations.
+2. **Persist state to disk, expire by TTL.** The plugin writes its violation map to `state.json` in the plugin dir on every change, and loads it back on plugin init filtered by a configurable TTL (default 10 min). It survives gateway restarts and auto-clears stale violations.
 
 3. **Inject enforcement at `before_prompt_build`, not at `message_sending`.** The framework's behavior shapes via the prompt, not the chat output. Putting the warning in `prependContext` reaches the model. Putting it in the outbound message just yells at the user.
 
@@ -188,7 +188,7 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 
 **`PostToolUse` `decision: "block"` does not replace tool output in Claude Code.** Verified persistent across Claude Code 2.1.113 through 2.1.116: a `PostToolUse` hook returning `{ "decision": "block", "reason": "<reduced text>", "hookSpecificOutput": { "additionalContext": "<hint>" } }` logs `outcome: "success"`, the agent receives the `additionalContext`, but the `tool_result` block in the transcript is byte-identical to what would have landed without the hook. The reduced text is dropped on the floor. **Fix:** if you need to *replace* tool output, rewrite the tool call in `PreToolUse` so the tool produces reduced output natively. If you need to *append*, use `additionalContext` and accept the original is still in context.
 
-**OpenClaw `tool_result_persist` is strictly synchronous and silently drops Promise returns.** The runner logs `"[hooks] tool_result_persist handler from <pluginId> returned a Promise; this hook is synchronous and the result was ignored."` and continues with the original message. **Fix:** any substitution work must run sync. Pre-load inputs at plugin registration time, cache in module scope, then transform inline in the handler. If you genuinely need async work, pivot to `before_tool_call` (which is async-safe and can rewrite the tool's `params` so the tool produces the output you want directly).
+**OpenClaw `tool_result_persist` is strictly synchronous and silently drops Promise returns.** The runner logs `"[hooks] tool_result_persist handler from <pluginId> returned a Promise; this hook is synchronous and the result was ignored."` and continues with the original message. **Fix:** any substitution work must run sync. Pre-load inputs at plugin registration time, cache in module scope, then transform inline in the handler. If you need async work, pivot to `before_tool_call` (which is async-safe and can rewrite the tool's `params` so the tool produces the output you want directly).
 
 **`message_sending` hooks scrub everything, including the DMs you rely on.** A content-scrubber prototype wired as a `message_sending` hook caught its target (staged artifact text leaking internal hostnames), but it also scrubbed every chat reply the bot sent the operator. Real hostnames and ports were sometimes useful in those DMs. **Fix:** don't put downstream-policy enforcement at the chat boundary. Push it to a stage-boundary CLI run against files before they leave the host. The boundary you care about is "artifacts leave the host," not "bot sends a message."
 
@@ -207,7 +207,7 @@ A live behavioral hook should also show up in its plugin dir as a `state.json` (
 ## Related
 
 - [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model that the hook layering here mirrors
-- [`automation/sandbox-shims.md`](sandbox-shims.md) - wrapping git/network/exec for sub-agents that should not have free access; pairs with tool-call hooks
+- [`automation/sandbox-shims.md`](sandbox-shims.md) - wrapping git/network/exec for sub-agents that should not have free access, which pairs with tool-call hooks
 - [`../publishing/pr-comment-boundary.md`](../publishing/pr-comment-boundary.md) - outbound checks for PR and review comments before they leave the host
 - [Brigade guard](https://brigade.tools/docs/commands/guard) - the embedded policy scanner used by the pre-push template
-- [tokenjuice](https://github.com/vincentkoc/tokenjuice) - Claude Code `PostToolUse` reducer; useful prior art for the `additionalContext`-only constraint
+- [token-glace](https://github.com/vincentkoc/tokenjuice) - Claude Code `PostToolUse` reducer, useful prior art for the `additionalContext`-only constraint

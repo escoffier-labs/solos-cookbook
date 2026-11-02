@@ -1,9 +1,9 @@
 # OpenClaw Host Topology
 
-**Tested on:** OpenClaw 2026.10.4 (promoted from a release worktree), Ubuntu 24.04, systemd user services
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 (promoted from a release worktree), Ubuntu 24.04, systemd user services
+**Last updated:** 2026-11-02
 
-> A production agent host is not just one daemon. It is config, channels, cron, memory, browser automation, plugins, health checks, and the boring glue that keeps all of it observable.
+> A production agent host is more than one daemon: config, channels, cron, memory, browser automation, plugins, health checks, and the glue that keeps all of it observable.
 
 ## What this is
 
@@ -77,8 +77,8 @@ The gateway does not run from a source checkout or a global npm install. Each re
 
 ```text
 ~/openclaw/                       git source, only used to fetch tags (not the running code)
-~/worktrees/openclaw-v2026.10.4/  the build the gateway runs (dist/index.js)
-~/worktrees/openclaw-v2026.10.1/  older builds, kept for rollback
+~/worktrees/openclaw-v2026.10.8/  the build the gateway runs (dist/index.js)
+~/worktrees/openclaw-v2026.10.5/  older builds, kept for rollback
 ~/.config/systemd/user/openclaw-gateway.service.d/
     beta-exec.conf                ExecStart= (cleared) then node <worktree>/dist/index.js gateway --port <port>
     version.conf                  unit description and OPENCLAW_SERVICE_VERSION label
@@ -147,7 +147,7 @@ Then link each group to the guide or template that explains it. If no guide exis
 
 ### 6. Inventory cron as production workload
 
-OpenClaw cron is real production work, not a toy reminders list.
+OpenClaw cron runs real production work.
 
 ```bash
 openclaw cron list --json | \

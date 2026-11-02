@@ -1,11 +1,11 @@
 # Service Isolation: One Service Per Container
 
-I run my homelab as a pile of small, boring, unprivileged LXC containers. One service each. Not one fat VM with a docker-compose monolith, not a single Debian box hand-fed twelve daemons. This guide is the discipline behind that choice: why I do it, where the blast radius gets drawn, and the handful of cases where a full VM is actually the right call.
+I run my homelab as a pile of small, unprivileged LXC containers. One service each. Not one fat VM with a docker-compose monolith, not a single Debian box hand-fed twelve daemons. This guide is the discipline behind that choice: why I do it, where the blast radius gets drawn, and the handful of cases where a full VM is actually the right call.
 
 This is the *why*, not the map. For the inventory of what runs where, see [`homelab-topology.md`](homelab-topology.md).
 
-**Tested on:** Proxmox VE 9.2 on a single consumer node, ample RAM, unprivileged LXC plus two QEMU VMs. 15 service containers running. The stopped-on-demand build container tier described in earlier versions of this guide is retired (see below).
-**Last updated:** 2026-10-17
+**Tested on:** Proxmox VE 9.2 on a single node, unprivileged LXC plus two QEMU VMs, a dozen long-lived service containers. The stopped-on-demand build container tier described in earlier versions of this guide is retired (see below).
+**Last updated:** 2026-11-02
 
 ---
 
@@ -22,7 +22,7 @@ The instinct early on is to consolidate. "Why spin up five containers when one D
 - **Independent failure.** When one service eats all its RAM and gets OOM-killed, the cap is per-container. It dies alone. On a shared box, one runaway daemon starves everything.
 - **Independent blast radius for me, the operator.** When I (or an agent acting on my behalf) run a destructive command, it lands in one container. `pct rollback` puts that one service back. Nothing else noticed.
 
-That last point is the real reason. The threat model isn't just "software crashes." It's "I am tired, it is late, and I am about to paste a command I half-understand into a root shell." Isolation means that mistake costs me one service, not the whole lab. 🦞
+That last point is the main reason. The threat model includes software crashes and also "I am tired, it is late, and I am about to paste a command I half-understand into a root shell." Isolation means that mistake costs me one service, not the whole lab. 🦞
 
 ## Blast-Radius Thinking
 
@@ -41,7 +41,7 @@ My photo server (its own LXC) bind-mounts a directory from a NAS share into the 
 Two lessons baked in:
 
 - **A bind-mount is a dependency edge.** It couples the container to host-side state (the mount). "Isolated container" is only true until you bind-mount shared storage into it. When you do, that mount becomes part of the container's blast radius even though it isn't in the rootfs.
-- **Harden the host mount so an empty mount fails loud, not quiet.** Use `x-systemd.automount` and `_netdev` so the bind-mount source is actually present before the container's storage tries to use it, and add a health check that asserts the mount is non-empty rather than just "the daemon is running."
+- **Harden the host mount so an empty mount fails loudly.** Use `x-systemd.automount` and `_netdev` so the bind-mount source is actually present before the container's storage tries to use it, and add a health check that asserts the mount is non-empty, in addition to checking that "the daemon is running."
 
 The fix was two lines (remount the NAS share, restart the one app container). The diagnosis took an hour because everything *looked* fine. Isolation didn't fail here. It worked: only one service went down. But a hidden shared dependency is the seam where isolation leaks, so go find your bind-mounts and treat each one as a coupling you signed up for on purpose.
 
@@ -51,7 +51,7 @@ Isolation without caps is a polite fiction. If every container can burst to all 
 
 ```bash
 # A small, stateless service: DNS resolver. Tiny on purpose.
-pct create 176 local:vztmpl/debian-12-standard_amd64.tar.zst \
+pct create <ctid> local:vztmpl/debian-12-standard_amd64.tar.zst \
   --hostname dns \
   --cores 1 --memory 512 --swap 512 \
   --rootfs local-lvm:4 \
@@ -61,7 +61,7 @@ pct create 176 local:vztmpl/debian-12-standard_amd64.tar.zst \
 
 ```bash
 # A heavy service: SIEM. Gets real resources, still capped.
-pct create 150 local:vztmpl/debian-12-standard_amd64.tar.zst \
+pct create <ctid> local:vztmpl/debian-12-standard_amd64.tar.zst \
   --hostname siem \
   --cores 4 --memory 8192 --swap 512 \
   --rootfs local-lvm:50 \
@@ -70,12 +70,12 @@ pct create 150 local:vztmpl/debian-12-standard_amd64.tar.zst \
   --unprivileged 1 --onboot 1 --start 1
 ```
 
-Adjust caps live when a service genuinely needs more, but do it deliberately:
+Adjust caps live when a service needs more, but do it deliberately:
 
 ```bash
-pct set 150 --memory 8192     # bump RAM
-pct set 150 --cores 4         # bump CPU
-pct resize 150 rootfs +10G    # grow disk (can grow, cannot shrink)
+pct set <ctid> --memory 8192     # bump RAM
+pct set <ctid> --cores 4         # bump CPU
+pct resize <ctid> rootfs +10G    # grow disk (can grow, cannot shrink)
 ```
 
 Sizing principles I actually follow:
@@ -83,7 +83,7 @@ Sizing principles I actually follow:
 - **Default small.** A DNS resolver gets 512MB and one core. A sync helper gets 256MB. You can always `pct set` upward. Starting big just normalizes waste.
 - **Disk is the cap people forget.** A container that fills its rootfs takes itself down, and if it shares the LVM-thin pool with everything else, a runaway log can starve the whole pool. Cap rootfs per service and watch pool usage, not just per-container usage.
 - **`unprivileged 1` is non-negotiable for services.** An unprivileged LXC maps container root to an unprivileged host UID. If the container is popped, the attacker is `nobody` on the host, not root. The only reason to run privileged is a specific feature that needs it, and that's usually a sign you wanted a VM (see below).
-- **`nesting=1` only when the service runs containers itself.** My docker-based stacks (the automation box runs Docker inside the LXC) need `nesting=1,keyctl=1`. The fleet hub, which runs no containers, has `nesting=0`. Don't hand it out by default, because it widens the container's capabilities.
+- **`nesting=1` only when the service runs containers itself.** My docker-based stacks (the automation box runs Docker inside the LXC) need `nesting=1,keyctl=1`. In practice nearly every container here ended up with it, including the fleet hub, which runs no containers but had nesting turned on in October. That is drift, not a recommendation: `nesting=1` widens the container's capabilities, so audit for it with `grep nesting /etc/pve/lxc/*.conf` and hand it out only where a service needs it.
 
 ## The Ephemeral Build-Container Pattern (Retired)
 
@@ -109,9 +109,9 @@ Why it was worth doing while it lasted:
 
 What it cost, and why I don't run it now:
 
-- **Disk is not free.** A stopped container still holds its full volume on the thin pool, and the pool is now about two-thirds full.
+- **Disk is not free.** A stopped container still holds its full volume on the thin pool, and the pool is now about three-quarters full.
 - **Templates rot.** A `pristine` snapshot from months ago builds against months-old toolchains. Without a scheduled refresh, the clean room turns into a museum.
-- **The IDs get reused.** Three of the freed IDs now belong to long-lived personal containers, so the old numbering no longer reads as a build tier.
+- **The IDs get reused.** The freed IDs now belong to long-lived containers, so the old numbering no longer reads as a build tier.
 
 If you do keep a tier like this, schedule the start, update, re-snapshot, stop cycle so the snapshots stay current, and keep the build NIC firewalled. The one container from that era that survived is the CI runner, which now runs as an ordinary always-on service container.
 
@@ -126,10 +126,10 @@ The rule that falls out: **if it's ephemeral, treat anything outside an explicit
 The cheap habit that makes everything above safe: snapshot the container before you change it.
 
 ```bash
-pct snapshot 150 pre-maint-$(date +%Y%m%d-%H%M)
+pct snapshot <ctid> pre-maint-$(date +%Y%m%d-%H%M)
 # ... do the risky thing: apt full-upgrade, config edit, version bump ...
 # if it went sideways:
-pct rollback 150 pre-maint-20261003-1430
+pct rollback <ctid> pre-maint-20261003-1430
 ```
 
 Before each host-wide maintenance window I snapshot every service container that supports it, upgrade, and verify. The October 2026 windows used `pre-fleet-update-20261003` and `pre-vendor-update-20261003`, one name per batch of containers. The snapshot timeline is per-container, so a botched upgrade on the monitoring box rolls back in seconds without touching anything else. That's isolation paying off again: a per-service rollback is only possible because services aren't sharing a rootfs.
@@ -145,7 +145,7 @@ I default to LXC, but the discipline includes knowing when LXC is the wrong tool
 
 - **You need a different or custom kernel.** LXC shares the host kernel. Anything that needs its own kernel modules, a different kernel version, or kernel-level features the host doesn't expose has to be a VM.
 - **The workload is a desktop or GUI.** Full desktop environments, anything wanting a real display server, and "I want a whole separate machine I can RDP into" are VM territory. I run a peer's whole separate environment as an 8GB VM precisely because it's a full OS install they manage independently, not a single service. Manage it with `qm`, not `pct`, and leave it alone during host maintenance.
-- **You need hard isolation, not just namespace isolation.** Unprivileged LXC is strong, but it's still a shared kernel. For genuinely untrusted multi-tenant workloads or anything where a kernel escape is in your threat model, a VM's hardware-level boundary is worth the overhead.
+- **You need hard isolation, not just namespace isolation.** Unprivileged LXC is strong, but it's still a shared kernel. For untrusted multi-tenant workloads or anything where a kernel escape is in your threat model, a VM's hardware-level boundary is worth the overhead.
 - **The thing flatly refuses to run unprivileged.** Some software needs capabilities that only make sense in a VM. If you find yourself reaching for a privileged LXC to make something work, that's usually the signal to make it a VM instead. A privileged container is most of the cost of a VM with less of the isolation.
 
 What does *not* justify a VM: "it's a big service," "it has a database," "it runs Docker." LXC handles all of those fine. Heavy and isolated are different axes. My SIEM is 8GB and 4 cores in an LXC and it's still isolated from everything else.
@@ -172,7 +172,7 @@ If `pct config` shows no `unprivileged: 1` on a service container, or `pct lists
 
 ## Gotchas
 
-1. **CTID and VMID share one numbering pool.** On Proxmox, `pct list` shows only LXC, `qm list` shows only VMs, and they draw from the same ID space. ID 110 can be a VM while 109 and 111 are containers. Always check *both* before assuming an ID is free or "doesn't exist."
+1. **CTID and VMID share one numbering pool.** On Proxmox, `pct list` shows only LXC, `qm list` shows only VMs, and they draw from the same ID space. A VM can hold an ID that sits between two containers. Always check *both* before assuming an ID is free or "doesn't exist."
 
 2. **A bind-mount is a coupling, not a convenience.** Every shared mount you bind into a container extends that container's blast radius to include host-side state. Inventory them. The silent failures (empty mount after a boot race) are the ones that cost you an afternoon.
 
@@ -180,7 +180,7 @@ If `pct config` shows no `unprivileged: 1` on a service container, or `pct lists
 
 4. **`unprivileged 1` can't always be toggled after create.** Flipping a container between privileged and unprivileged isn't a simple `pct set`. UID mapping changes how files on the rootfs are owned. Decide at create time. For services, the answer is always unprivileged.
 
-5. **Resource caps are a contract you have to enforce.** Setting `--memory 512` caps the container, but a service that genuinely needs more will OOM-loop quietly inside its cap. Cap deliberately, then actually watch for the service hitting the ceiling instead of assuming the number you picked at 2am was right.
+5. **Resource caps are a contract you have to enforce.** Setting `--memory 512` caps the container, but a service that needs more will OOM-loop inside its cap. Cap deliberately, then actually watch for the service hitting the ceiling instead of assuming the number you picked at 2am was right.
 
 6. **Snapshot before change is a habit, not a feature you enable.** Proxmox won't snapshot for you. The discipline is yours: `pct snapshot` before every upgrade, config edit, or risky command. The five seconds it costs is the cheapest insurance in the lab.
 

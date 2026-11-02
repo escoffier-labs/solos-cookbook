@@ -9,13 +9,13 @@
 
 Sandbox shims are tiny executable wrappers placed earlier in `PATH` than the real tools. They let a restricted worker run harmless commands while blocking dangerous ones such as `git push`, `ssh`, `curl`, package-manager installs, or broad shell operations.
 
-This is not a full container sandbox. It is a practical guardrail for agent and sub-agent lanes where the worker should read, analyze, and edit inside an assigned scope, but should not publish, deploy, exfiltrate, or mutate shared state.
+This is a practical guardrail for agent and sub-agent lanes where the worker should read, analyze, and edit inside an assigned scope, but should not publish, deploy, exfiltrate, or mutate shared state. It is not a full container sandbox.
 
 ## Why this way
 
 Agent permission systems are uneven. One runtime gives you per-tool allowlists. Another gives a shell. A sub-agent may run inside a harness that can edit files but cannot use your host git setup. A hook can block some calls, but only if the orchestrator actually routes through that hook.
 
-`PATH` shims are boring and portable:
+`PATH` shims are portable and need no extra tooling:
 
 - they work with any process that calls `git`, `curl`, `ssh`, or package managers by name
 - they fail before the real command runs
@@ -277,7 +277,7 @@ bash -n templates/sandbox/deny-command.sh templates/sandbox/git-wrapper.sh
 
 5. **Workers may need real git history.** Do not block `git log`, `show`, or `diff` for code-review lanes. Read-only git is high value and low risk.
 
-6. **Shims are not containers.** They do not restrict filesystem reads, syscalls, or absolute binary paths. Use them as a cheap front door, not the whole house.
+6. **Shims are not containers.** They do not restrict filesystem reads, syscalls, or absolute binary paths. Use them as a cheap first check.
 
 7. **Main lane owns publishing.** Let workers propose patches. Let the main lane stage, commit, push, deploy, or publish after review.
 

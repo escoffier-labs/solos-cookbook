@@ -2,7 +2,7 @@
 
 > Install and operate the cookbook's agent workspace shape instead of copying it by hand: bootstrap files, per-writer memory handoffs, content guards, MCP sync, local work loops, operator checks, research receipts, and security scans.
 
-_Current as of brigade 0.28.0, 2026-10-17. PyPI's newest `brigade-cli` was 0.27.0 on that date (`pip index versions brigade-cli`), and `brigade update --dry-run` resolved 0.27.0, so a plain `pipx install brigade-cli` gets you one release behind what I run. Command names below were checked against `--help` on 0.28.0._
+_Current as of brigade 0.31.0 (a main-branch build), 2026-11-02. PyPI's newest `brigade-cli` is 0.30.0 (`pip index versions brigade-cli`), so a plain `pipx install brigade-cli` gets you one release behind what I run. Every command shown below was checked against `--help` on 0.31.0._
 
 ## What this is
 
@@ -113,7 +113,7 @@ brigade stations verify ../graphtrail/station.json --json
 brigade stations verify ../graphtrail --check-managed
 ```
 
-`stations verify` never runs the manifest's install command. On POSIX it runs declared read-only commands, bounded support probes, or manifest-local skill-roster verification from the sidecar directory. It replaces `HOME` and the XDG paths with temporary directories but inherits the rest of the environment, so this is process containment, not an OS sandbox. Each probe has a finite timeout and a 64 KiB combined-output ceiling. Use `--check-managed` when coordinated fleet checks should fail on drift from Brigade's managed catalog.
+`stations verify` never runs the manifest's install command. On POSIX it runs declared read-only commands, bounded support probes, or manifest-local skill-roster verification from the sidecar directory. It replaces `HOME` and the XDG paths with temporary directories but inherits the rest of the environment, so this is process containment and does not amount to an OS sandbox. Each probe has a finite timeout and a 64 KiB combined-output ceiling. Use `--check-managed` when coordinated fleet checks should fail on drift from Brigade's managed catalog.
 
 The main station health commands are also available directly:
 
@@ -140,7 +140,7 @@ brigade run "review this repo" --handoff        # write a Memory Handoff for a s
 brigade run "review this repo" --wait=300       # wait up to five minutes for the target lock
 ```
 
-A roster is a list of named seats. A seat binds one agent CLI to a model and a role (planner, builder, reviewer, researcher), and Brigade decides what to dispatch from the roster you wrote, not from a built-in default. Keep the real roster private to your machine. The generic shape is all this guide needs. Direct roster adapters include `claude`, `codex`, `opencode`, `antigravity`, `pi`, `cursor`, `aider`, `goose`, `continue`, `copilot`, `qwen`, `kimi`, `adal`, `openhands`, `grok`, `amp`, and `crush`. Local Ollama seats use `ollama:<model>`. A `codex-cloud:<env-id>` seat submits a task to Codex Cloud and returns its summary and diff without applying it. Brigade shells out to authenticated tools and keeps no provider keys.
+A roster is a list of named seats. A seat binds one agent CLI to a model and a role (planner, builder, reviewer, researcher), and Brigade decides what to dispatch from the roster you wrote and has no built-in default. Keep the real roster private to your machine. The generic shape is all this guide needs. Direct roster adapters include `claude`, `codex`, `opencode`, `antigravity`, `pi`, `cursor`, `aider`, `goose`, `continue`, `copilot`, `qwen`, `kimi`, `adal`, `openhands`, `grok`, `amp`, and `crush`. Local Ollama seats use `ollama:<model>`. A `codex-cloud:<env-id>` seat submits a task to Codex Cloud and returns its summary and diff without applying it. Brigade shells out to authenticated tools and keeps no provider keys.
 
 Brigade derives a deterministic route from the task, changed paths, and an optional template hint. Inspect it before a run or correct one bad heuristic without disabling the router:
 
@@ -154,7 +154,7 @@ brigade run "prepare the release" --approve-ship --show-plan
 
 Cursor workers can opt into the reviewed ACP transport with `transport = "acpx"` and `transport_version = "0.12.0"`. ACP seats are worker-only, so keep the orchestrator on a direct adapter.
 
-#### `brigade run` flags worth knowing
+#### `brigade run` flags
 
 | Flag | Use |
 |------|-----|
@@ -175,7 +175,7 @@ brigade run "refactor the parser" --worktree --detach
 brigade run "migrate the config loader" --scheduler dag --show-plan
 ```
 
-For self-contained repository issues you would rather hand to a hosted agent, `brigade run cloud launch` submits a Cursor Cloud or Jules session from a private prompt file (`--provider cursor-cloud|jules`, plus `--repo`, `--label`, and `--prompt-file`). The prompt text is never stored in the registry or passed as an argv value, `--auto-create-pr` is opt-in, and `brigade run cloud status` and `brigade run cloud doctor --provider <name>` check the result without submitting anything. `brigade run-cloud` still works as a deprecated alias.
+For self-contained repository issues you would rather hand to a hosted agent, `brigade run cloud launch` submits a Codex Cloud or Cursor Cloud session from a private prompt file (`--provider codex-cloud|cursor-cloud`, plus `--repo`, `--label`, and `--prompt-file`). The prompt text is never stored in the registry or passed as an argv value, `--auto-create-pr` is opt-in (and rejected for Codex Cloud), and `brigade run cloud status` and `brigade run cloud doctor --provider <name>` check the result without submitting anything. `brigade run-cloud` still works as a deprecated alias.
 
 After enough runs, `brigade model scorecard` aggregates run artifacts into a read-only per-(CLI, model) table, which is the evidence for changing which seat gets which job.
 
@@ -300,7 +300,7 @@ brigade receipts export miseledger --target . --new-only --import
 
 The export uses the receipt digest as its content identity when present. Legacy receipts fall back to the receipt file's SHA-256, then a canonical JSON digest if the file cannot be hashed. `--new-only` tracks that resulting raw hash, so repeated imports deduplicate instead of copying the same run again.
 
-`brigade outcome` is the verified-learning ledger: it scores learned cards and skills by what actually passed verification, so promotion and rollback rest on evidence rather than a one-time guess.
+`brigade outcome` is the verified-learning ledger: it scores learned cards and skills by what actually passed verification, so promotion and rollback rest on evidence and not on a one-time guess.
 
 ```bash
 brigade work verify run --target . --command "pytest -q" --capture <skill-or-card>
@@ -331,8 +331,8 @@ brigade fleet flush                              # re-send locally spooled event
 
 The pieces:
 
-- **Hub.** One host runs `fleet serve` with an admin bearer token (`--token-file` or `BRIGADE_FLEET_TOKEN`). It binds only the interface you name, never all interfaces by default. Put it on a private network such as a tailnet or loopback behind a proxy, not the open internet.
-- **Nodes.** Each machine gets its own token from `fleet nodes add`, using the node id `brigade node --machine` prints on that machine. The hub stores only a hash, and `nodes revoke` followed by `nodes add` rotates it. Writes need a node token, so the admin token is for enrollment, not for everyday publishing.
+- **Hub.** One host runs `fleet serve` with an admin bearer token (`--token-file` or `BRIGADE_FLEET_TOKEN`). It binds only the interface you name, never all interfaces by default. Put it on a private network such as a tailnet or loopback behind a proxy, and keep it off the open internet.
+- **Nodes.** Each machine gets its own token from `fleet nodes add`, using the node id `brigade node --machine` prints on that machine. The hub stores only a hash, and `nodes revoke` followed by `nodes add` rotates it. Writes need a node token, so the admin token is for enrollment only.
 - **Claims.** `brigade run` takes a repo claim on the hub before it dispatches, so two orchestrators do not edit one checkout. Check `brigade fleet claims` before starting multi-repo work, and treat a live claim as someone else's work. `brigade fleet claims --release <target>` clears a claim left by a crashed run, and only when this node holds it and the run is verifiably dead.
 - **Work and burn queue.** `brigade fleet work` manages Worklore items on the hub: `list`, `show`, `create`, `transition`, and `attempt` for the ledger, and `burn` and `next` to read the burn queue. `next` shows the first eligible item with a dry-run route and never reserves it.
 
@@ -358,7 +358,7 @@ brigade evidence search "<query>"   # search receipts and imported sources
 brigade evidence show <id>          # read one item and its provenance
 ```
 
-Cite the evidence id in whatever you write afterward. If a search returns nothing, say there is no Brigade evidence rather than reconstructing the story. The ledger needs the evidence station (`brigade add evidence`). `brigade evidence doctor` reports its health.
+Cite the evidence id in whatever you write afterward. If a search returns nothing, say there is no Brigade evidence and do not reconstruct the story. The ledger needs the evidence station (`brigade add evidence`). `brigade evidence doctor` reports its health.
 
 ### Claude hooks that enforce the work loop
 
@@ -424,6 +424,27 @@ brigade release candidate audit <id>     # check for stale evidence, missing ref
 
 It never pushes, tags, creates releases, comments remotely, or mutates remotes. Run `brigade guard publish-check` (above) on the same range before you do any of those yourself.
 
+### What changed since 0.28
+
+These shipped in 0.29.0, 0.30.0, or the unreleased 0.31.0 line, and each one is in `--help` on my build:
+
+- **Fleet ownership map.** The fleet policy document can carry an `owners` section of charters. `brigade fleet owners show` lists them beside live claims. A charter describes who is responsible for an area. It does not block anyone from claiming work.
+- **Seat readiness.** `brigade roster ready` reports whether a seat can take the dispatch you are about to make. On my host it returns `unverified` for seats whose subscription entitlement it cannot prove, which is correct for an unproven entitlement.
+- **Run inspection.** `brigade runs inspect` reads a finished run's record without re-running anything.
+- **Fleet export and message counts.** `brigade fleet export` writes a deterministic export of hub state, and `brigade fleet msg count` gives an unread count without reading message bodies.
+- **Orchestrator naming.** New starter rosters name the top seat `orchestrator` instead of `chef`, and `brigade fleet preference set --orchestrator` is the preferred flag. Existing `chef` seats and the `--chef` flag still work.
+- **Cloud lanes.** `brigade run cloud launch` takes `codex-cloud` or `cursor-cloud`. The Jules provider was removed.
+
+### Planned, not shipped yet
+
+Brigade is mid-redesign in a few places. None of the items below is in a release, the shapes can still change, and nothing earlier in this guide depends on them. Each links to its public issue:
+
+- **`chef` fully renamed to `orchestrator`** ([#2191](https://github.com/escoffier-labs/brigade/issues/2191)). The stored policy key, hub column, and `work brief` output still say `chef`. The plan reads `chef` as a deprecated alias for one release and writes only `orchestrator`.
+- **Parallel delegation through T3 child tasks** ([#2046](https://github.com/escoffier-labs/brigade/issues/2046)). A parent that already split the work would submit an explicit batch. T3 Code runs the children, and Brigade keeps routing, claims, budgets, verification, and receipts. Today, T3 child tasks are not Brigade-governed. See [`t3-code.md`](t3-code.md).
+- **`brigade fleet place`** ([#2166](https://github.com/escoffier-labs/brigade/issues/2166)). Before delegating, an orchestrator would ask which machine has headroom, and the hub would answer from node telemetry. The command does not exist yet.
+- **Ranked memory search** ([#2196](https://github.com/escoffier-labs/brigade/issues/2196)). `brigade memory search` would rank cards with a prebuilt BM25 index, and automatic recall would query with the prompt instead of the folder name. The issue's measurements found the current scorer put a relevant card in the top five for about 42% of real prompts, against about 66% to 74% for BM25.
+- **Hub-optional fleet messaging** ([#2005](https://github.com/escoffier-labs/brigade/issues/2005), [#2007](https://github.com/escoffier-labs/brigade/issues/2007), [#2008](https://github.com/escoffier-labs/brigade/issues/2008)). These would add end-to-end encrypted message bodies, a no-hub peer-to-peer mode, and "Hub Lite", a deploy-your-own hub as a Cloudflare Worker on the free plan. Parts of the crypto core are merged. Encrypted messaging is not active in the CLI or MCP tools yet.
+
 ## Verification
 
 ```bash
@@ -441,7 +462,7 @@ git status --short --ignored .brigade .codex .claude
 Then the 0.28 surfaces, all read-only:
 
 ```bash
-brigade --version                          # brigade 0.28.0 (or whatever you installed)
+brigade --version                          # brigade 0.31.0 (or whatever you installed)
 brigade update --dry-run                   # reports the release it would install, writes nothing
 brigade code doctor                        # code graph engine health; verdict: NEEDS-MIGRATION on a fresh repo until the first `brigade code sync`
 brigade care status --target .             # status: missing / units: 0 until you run `care install`
@@ -460,11 +481,11 @@ Expected result for the first block: doctor checks pass, roster doctor either va
 
 **A fleet claim is ownership.** `brigade run` takes a hub claim on the repo, and a second run against it will wait or fail. If a crashed run left a claim behind, release it with `brigade fleet claims --release`. `--no-fleet-claim` skips the claim and leaves only the local lock, so use it knowingly.
 
-**The code graph is static.** `brigade code impact` and `affected` follow call edges the indexer resolved. Dynamic dispatch, reflection, and generated code can hide a caller, and a stale graph misses new files. `sync` before you trust an answer, and treat an error as a skipped check, not an empty result.
+**The code graph is static.** `brigade code impact` and `affected` follow call edges the indexer resolved. Dynamic dispatch, reflection, and generated code can hide a caller, and a stale graph misses new files. `sync` before you trust an answer, and treat an error as a skipped check and never as an empty result.
 
 **User-scope hooks apply everywhere.** `brigade work hooks install --scope user` changes `~/.claude` for every repo on that machine, including ones that are not Brigade-wired. Start with `--scope project` on one repo, read `status`, and widen when it behaves.
 
-**PyPI can trail the build you read about.** The release on PyPI was 0.27.0 when this guide was written, while 0.28.0 was installed. Check `brigade --version` and `brigade update --dry-run` before assuming a flag exists, and read `--help` for your version.
+**PyPI can trail the build you read about.** The release on PyPI was 0.30.0 when this guide was updated, while a 0.31.0 main build was installed. Check `brigade --version` and `brigade update --dry-run` before assuming a flag exists, and read `--help` for your version.
 
 **Use current Brigade names in new docs.** Brigade can still read pre-Brigade installs and deprecated aliases for migration, but cookbook examples should use `brigade`, `.brigade/`, and the `brigade-cli` package.
 

@@ -56,7 +56,7 @@ Discord (or any platform with channels and threads) solves this by giving you **
 #security          → Audits, hardening, incident response
 #portfolio         → Website, content, GitHub repos
 #career            → Job search, interview prep, negotiation
-#media             → Jellyfin, Sonarr, media management
+#media             → Jellyfin and media management
 #cron-output       → All cron jobs deliver here (out of your way)
 ```
 
@@ -142,7 +142,7 @@ Sub-agents run on GPT 6 Luna unless the spawn names something else, and finished
   #general          → Daily driver, quick interactions
   #infrastructure   → Servers, networking, Proxmox, hardware
   #security         → Audits, hardening, incident response
-  #media            → Jellyfin, Sonarr, media management
+  #media            → Jellyfin and media management
 
 📁 DEVELOPMENT
   #portfolio        → Website, GitHub, content

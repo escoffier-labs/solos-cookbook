@@ -6,7 +6,7 @@
 
 A two-disk LVM layout for a single agent host. The OS sits on a fixed partition on the first drive. The data partition spans both drives through one volume group. You can grow the data pool by adding a third drive without touching root, and you can reinstall the OS without nuking data.
 
-This is the layout in production. It is unfashionable. It is also boring, which is the entire point.
+This is the layout in production. It is unfashionable.
 
 ## Why this way
 
@@ -14,12 +14,12 @@ The fashionable alternatives all lose:
 
 | Layout | Why people pick it | Why it loses |
 |--------|--------------------|--------------|
-| Single big root partition | Installer default, one less abstraction | Reinstall destroys data; `apt clean` does not save you when /home fills root |
+| Single big root partition | Installer default, one less abstraction | Reinstall destroys data, and `apt clean` does not save you when /home fills root |
 | Two unrelated partitions | "Simple" | First time `/home` fills up you start moving directories with symlinks |
-| ZFS root | Snapshots, send/recv, looks clever | Out-of-tree DKMS module; one kernel upgrade kills the boot |
-| btrfs everywhere | Built-in snapshots | The agent writes a lot of small files; btrfs metadata cost shows up in latency |
-| LVM with thin pools | Snapshots, overprovisioning | Thin pools that fill up corrupt everything; thick LVs are predictable |
-| RAID 1 across both drives | "Survives a drive failure" | Doubles cost per byte; cold backups already solve the failure mode you care about |
+| ZFS root | Snapshots, send/recv, looks clever | Out-of-tree DKMS module, and one kernel upgrade kills the boot |
+| btrfs everywhere | Built-in snapshots | The agent writes a lot of small files, and btrfs metadata cost shows up in latency |
+| LVM with thin pools | Snapshots, overprovisioning | Thin pools that fill up corrupt everything, and thick LVs are predictable |
+| RAID 1 across both drives | "Survives a drive failure" | Doubles cost per byte, and cold backups already solve the failure mode you care about |
 
 The chosen layout: a fixed ext4 root on partition 2 of drive 1, an EFI partition on partition 1 of drive 1, and an LVM physical volume on the remainder of drive 1 plus all of drive 2. One volume group, one thick logical volume formatted ext4, mounted at `/home`. Cold backups via restic to a NAS and to cloud handle the disk-failure case (see [`infrastructure/backup-recovery.md`](../infrastructure/backup-recovery.md)).
 
@@ -34,19 +34,19 @@ You give up snapshots, send/recv, and any survives-a-drive-failure story. You ge
 
 ## Before / After
 
-**Before:** the installer's default LVM. One 100 GB root logical volume in a 1 TB volume group, 900 GB of free PE that has to be `lvextend`-ed manually. `/home` is inside root. Anything that fills `/home` fills root.
+**Before:** the installer's default LVM. One 100 GB root logical volume in a volume group that covers the whole disk, with the rest left as free PE that has to be `lvextend`-ed manually. `/home` is inside root. Anything that fills `/home` fills root.
 
 **After:** EFI on `nvme0n1p1`, ext4 root on `nvme0n1p2`, LVM on `nvme0n1p3` + `nvme1n1p1`. Volume group spans both drives, one large `home-lv` formatted ext4 mounted at `/home`. Root cannot fill. Data grows by extending the volume group.
 
 ```
-nvme0n1               <disk>                                  disk
+nvme0n1              <disk 1>                                  disk
 ├─nvme0n1p1               1 GiB  vfat        /boot/efi          part
 ├─nvme0n1p2             101 GiB  ext4        /                  part
-└─nvme0n1p3             <rest>  LVM2_member                    part
-  └─home-lv             <sum>  ext4        /home              lvm
-nvme1n1               <disk>                                  disk
-└─nvme1n1p1             <disk>  LVM2_member                    part
-  └─home-lv             <sum>  ext4        /home              lvm
+└─nvme0n1p3              <rest>  LVM2_member                    part
+  └─home-lv          <p3 + d2>   ext4        /home              lvm
+nvme1n1              <disk 2>                                  disk
+└─nvme1n1p1          <disk 2>    LVM2_member                    part
+  └─home-lv          <p3 + d2>   ext4        /home              lvm
 ```
 
 The two PVs merge into one LV. `/home` reads from both drives in parallel for sequential workloads.
@@ -170,7 +170,7 @@ A healthy layout shows two PVs, one VG, one LV at 100 % usage of the VG, `/home`
 
 **ext4 resize is online, xfs grow is online, btrfs shrink is not.** If you picked btrfs for the home LV for snapshots, you cannot shrink it later. ext4 supports online grow and offline shrink. Stick with ext4 unless you have a specific reason not to.
 
-**The installer wipes partition signatures even if you set "do not format."** Run a `sfdisk -d /dev/nvme0n1 > parttable.bak` of the disks before launching the installer if you have data on them. Recovering from a wiped partition table is doable; not having to is better.
+**The installer wipes partition signatures even if you set "do not format."** Run a `sfdisk -d /dev/nvme0n1 > parttable.bak` of the disks before launching the installer if you have data on them. Recovering from a wiped partition table is doable, and not having to is better.
 
 **`pvremove` on a non-empty PV looks like it worked.** It will refuse, but the message scrolls past the install summary. Always check `pvs` after a partition change. If the PV reappears with old metadata after a reboot, you skipped the empty check.
 

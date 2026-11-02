@@ -4,7 +4,7 @@
 
 ## What this is
 
-A list of negative space. The technical guides explain how things are done. This explains what is deliberately absent and why. If your stack does include one of these, that is fine. This is not a value judgment of you. It is a clarification of the design constraints behind the rest of the cookbook so you can decide if the patterns generalize to your case.
+A list of negative space. The technical guides explain how things are done. This explains what is deliberately absent and why. If your stack does include one of these, that is fine. This is a clarification of the design constraints behind the rest of the cookbook so you can decide if the patterns generalize to your case.
 
 ## Why this matters
 
@@ -18,7 +18,7 @@ The list, with a one-line reason and a paragraph of context. Skip to the ones th
 
 ### No Kubernetes
 
-I am not running Kubernetes. Not k3s, not k0s, not microk8s, not "just to learn it." The agent control plane fits on one control host, and the rest of the owned machines have clear roles (see [`why-one-host.md`](why-one-host.md)). Adding k8s to a single-operator bare-metal fleet is not "kubernetes-lite". It is the worst case for k8s, because you are paying the operational cost without getting any of the benefits.
+I am not running Kubernetes. Not k3s, not k0s, not microk8s, not "just to learn it." The agent control plane fits on one control host, and the rest of the owned machines have clear roles (see [`why-one-host.md`](why-one-host.md)). Adding k8s to a single-operator bare-metal fleet is the worst case for k8s, because you pay the operational cost and get none of the benefits.
 
 For the homelab side, where there are a handful of services that benefit from isolation (Adguard, n8n, a small social-automation stack), the answer is LXC containers under Proxmox. They are lighter, they boot in under a second, and they speak SSH like a real machine. When LXC becomes insufficient, I will revisit. It has not become insufficient yet.
 
@@ -71,13 +71,13 @@ I used to say that if two or more machines needed the same repeatable baseline, 
 
 The agent is allowed to read env vars in scripts it shells out to. The agent is not allowed to see the values of those env vars directly in its prompt. The orchestrator's secret resolution is one-way: it provides a reference, the resolver substitutes at execution time, the prompt never contains the value.
 
-This is not a usability complaint about LLMs. It is a defense-in-depth posture. A leaked transcript should not also be a leaked credential. The cookbook's secret-management guide ([`../security/secret-management.md`](../security/secret-management.md)) is the implementation. This is the reason.
+This is a defense-in-depth posture, and has nothing to do with LLM usability. A leaked transcript should not also be a leaked credential. The cookbook's secret-management guide ([`../security/secret-management.md`](../security/secret-management.md)) is the implementation. That is the reason.
 
 ### No always-on remote access
 
 The agent host is not directly exposed to the internet. SSH from outside the LAN comes through a VPN (the homelab runs Twingate inside an LXC). No port 22 on the public IP, no Cloudflare Tunnel terminating at the host. The worker machines reach the fleet hub over a private tailnet, and nothing in the fleet listens on a public address. The dashboard UI binds to `127.0.0.1`, the companion API refuses to start on a non-loopback address without a key, and a reverse proxy with its own authentication is the only way the LAN sees either one.
 
-The cost: a few seconds of overhead when I am traveling. The benefit: the host's attack surface is the VPN's, not the public internet.
+The cost: a few seconds of overhead when I am traveling. The benefit: the host's attack surface is the VPN's, with no public internet exposure.
 
 ### No vibes-based monitoring
 
@@ -86,8 +86,8 @@ A daily report runs at a fixed hour, classifies a known set of services as up/de
 This works because:
 
 1. The system is small enough that a daily summary captures the interesting state.
-2. The failure modes I care about (cron job failed, backup did not run, browser session died) are all enumerable, not statistical.
-3. The latency-sensitive consumer is a person reading a chat channel, not a machine triggering an autoscaler.
+2. The failure modes I care about (cron job failed, backup did not run, browser session died) are all enumerable and none are statistical.
+3. The latency-sensitive consumer is a person reading a chat channel, and no machine triggers an autoscaler.
 
 A bigger or more public-facing system would warrant real metrics. This one does not.
 
@@ -119,10 +119,10 @@ A piece of advice is only as good as its context. Re-read this list any time:
 
 - The audience changes from "you and me" to "many users you do not control"
 - The host count goes above one. (This one has fired. See below.)
-- A workload that you thought you would never have becomes load-bearing
+- A workload that you thought you would never have becomes critical to the stack
 - A tool you skipped because it was "too heavy" now solves a problem you actually have
 
-At that point, the right answer is to revisit each entry. Some will stay no. Some will move to yes with a guide. Either is fine. The cost was in deciding deliberately, not in saying no.
+At that point, the right answer is to revisit each entry. Some will stay no. Some will move to yes with a guide. Either is fine. The cost was in deciding deliberately, and saying no was cheap.
 
 ### The host-count trigger has fired
 
@@ -131,14 +131,14 @@ When I first wrote this list the stack had one control host plus passive homelab
 - **No Kubernetes** stays a no. A handful of machines with named roles is still not a scheduling problem.
 - **No microservices** stays a no. The hub is one service, and each worker runs the same single-process tools.
 - **No infrastructure-as-code framework** is closer to flipping than anything else here, as noted in that entry.
-- **No always-on remote access** needed a clarification (the tailnet), not a reversal.
+- **No always-on remote access** needed a clarification (the tailnet) and no reversal.
 - **Distributed tracing** is still skipped. The hub's claims and run ledger answer "which machine is doing what," which was the only question I had.
 
 The topology guide, [`why-one-host.md`](why-one-host.md), still describes where memory and the canonical state live. Only the "one" in "one host" stopped describing where the work runs.
 
 ## Templates
 
-This piece is about constraints, not artifacts. The technical guides that operationalize each constraint:
+This piece is about constraints. The technical guides that operationalize each constraint:
 
 - [`../infrastructure/openclaw-host-topology.md`](../infrastructure/openclaw-host-topology.md) - what the single-host topology actually looks like
 - [`../automation/cron-patterns.md`](../automation/cron-patterns.md) - the three-layer scheduling story chosen over Airflow / Temporal / k8s CronJobs
@@ -147,5 +147,5 @@ This piece is about constraints, not artifacts. The technical guides that operat
 ## Related
 
 - [`why-one-host.md`](why-one-host.md) - the affirmative case for the topology constraint
-- [`why-dogfood-everything.md`](why-dogfood-everything.md) - the rule that prevents new fashion from entering this list quietly
+- [`why-dogfood-everything.md`](why-dogfood-everything.md) - the rule that prevents new fashion from entering this list unnoticed
 - [`manifesto-vs-framework.md`](manifesto-vs-framework.md) - why this stack is shipped as a cookbook, not as a tool

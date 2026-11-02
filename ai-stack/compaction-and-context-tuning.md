@@ -2,8 +2,8 @@
 
 How to configure OpenClaw's compaction, memory flush, context pruning, and session search so your agent doesn't lose its mind (or personality) during long sessions.
 
-**Tested on:** OpenClaw 2026.10.4 with GPT 6.1 Sol (main, 475k context window). Applies to any main model
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 with GPT 6.1 Sol (main, 475k context window). Applies to any main model
+**Last updated:** 2026-11-02
 
 ---
 
@@ -58,7 +58,7 @@ This is the complete live block, minus the memory flush and the re-injected sect
 
 Two keys that older versions of this guide recommended, `maxHistoryShare: 0.7` and `reserveTokens: 30000`, are not in my live config and are not in the current compaction reference. Compaction now sizes the retained tail from the system prompt, tool schemas, and pending input on its own. Don't add them back from an old note.
 
-**Other knobs worth knowing (not set on my config):** `model` runs the summaries on a different model than the session, `thinkingLevel` sets the summarizer's reasoning level (defaults to low), and `notifyUser: true` posts a short notice when compaction starts and finishes. Manual `/compact` is available in a chat when the runtime supports it. A native Codex session signed in with a subscription login supports automatic compaction but not manual `/compact`.
+**Other knobs (not set on my config):** `model` runs the summaries on a different model than the session, `thinkingLevel` sets the summarizer's reasoning level (defaults to low), and `notifyUser: true` posts a short notice when compaction starts and finishes. Manual `/compact` is available in a chat when the runtime supports it. A native Codex session signed in with a subscription login supports automatic compaction but not manual `/compact`.
 
 **Tuning notes:**
 - If you use a model with a smaller context window (e.g., 32K), reduce `keepRecentTokens` to 8000-10000.

@@ -1,6 +1,6 @@
 # Publish-Time Scrubbing
 
-> Scrub at the moment artifacts leave the private workspace, not after they are already public.
+> Scrub at the moment artifacts leave the private workspace, before they are public.
 
 **Tested on:** deterministic scrubber templates, Brigade guard public-repo policy, git pre-push boundary checks
 **Last updated:** 2026-07-13
@@ -25,7 +25,7 @@ The reliable middle ground is a publish boundary:
 - human reviews the scrubbed diff
 - release proceeds only after the artifact is public-safe
 
-This is a workflow, not a prompt. The model may help write, but deterministic tools decide what crosses the boundary.
+This is a workflow that runs outside the prompt. The model may help write, but deterministic tools decide what crosses the boundary.
 
 ## Prerequisites
 
@@ -57,7 +57,7 @@ After:
 
 ### 1. Define the artifact boundary
 
-Pick one folder or branch where content becomes publishable. The boundary should be boring and visible:
+Pick one folder or branch where content becomes publishable. The boundary should be visible and mechanical:
 
 ```text
 drafts/private/        source notes, transcripts, raw agent output
@@ -145,7 +145,7 @@ For public repos, run the scanner again at push time:
 git config core.hooksPath hooks
 ```
 
-The pre-push hook is not a substitute for staging-time scrubbing. It is the final guardrail for mistakes that slipped through.
+The pre-push hook does not replace staging-time scrubbing. It is the final guardrail for mistakes that slipped through.
 
 ### 7. Scrub screenshots and generated media
 
@@ -161,7 +161,7 @@ Use a manual media checklist before publishing:
 - QR codes, invite links, and tokens are absent
 - image alt text does not reintroduce the private detail
 
-If an image needs real UI structure, redraw the sensitive parts or use a generated public-safe mock. Blurring can be recoverable or visually sloppy; replacement is better.
+If an image needs real UI structure, redraw the sensitive parts or use a generated public-safe mock. Blurring can be recoverable or visually sloppy, so replacement is better.
 
 ### 8. Keep a publish log
 
@@ -220,7 +220,7 @@ Expected result: no blockers, warnings reviewed, and no unreviewed private ident
 
 ## Gotchas
 
-1. **Scrub at the artifact boundary, not every chat reply.** Private operator messages often need exact local details. Scrubbing them makes the agent less useful and still does not prove the exported artifact is safe.
+1. **Scrub at the artifact boundary.** Private operator messages often need exact local details. Scrubbing them makes the agent less useful and still does not prove the exported artifact is safe.
 
 2. **Generated screenshots are artifacts too.** A perfect markdown scrub does nothing for an image that shows a terminal prompt, account dropdown, or real channel name.
 
@@ -230,7 +230,7 @@ Expected result: no blockers, warnings reviewed, and no unreviewed private ident
 
 5. **Do not commit private scrub rules.** Public templates should show generic patterns. Real hostnames, account names, and service labels belong in local config.
 
-6. **Redaction can break examples.** Replace with meaningful placeholders, not blank strings. The public reader still needs to understand what kind of value goes there.
+6. **Redaction can break examples.** Replace with meaningful placeholders instead of blank strings. The public reader still needs to understand what kind of value goes there.
 
 7. **Pre-push is late.** It protects the remote, not the blog editor, chat upload, newsletter draft, or release bundle. Run scrubbers before the artifact reaches any downstream system.
 

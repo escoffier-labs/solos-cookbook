@@ -2,8 +2,8 @@
 
 How to schedule automated tasks in OpenClaw, pin the right model and thinking level on each job, decide between agent turns and command payloads, and avoid the pitfalls that waste tokens and break silently.
 
-**Tested on:** OpenClaw 2026.10.4 with 36 gateway cron jobs, GPT 6 Luna pinned on 15 of them, Brigade 0.28.0 runbooks as command payloads
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 with 44 enabled gateway cron jobs (plus 38 disabled), most agent turns inheriting the GPT 6.1 Sol default, Brigade 0.31.0 runbooks as command payloads
+**Last updated:** 2026-11-02
 
 ---
 
@@ -90,7 +90,7 @@ openclaw cron rm <id>
 { "kind": "cron", "expr": "0 8 * * *", "tz": "America/New_York", "staggerMs": 0 }
 ```
 
-Of my 36 jobs, 35 are `cron` and 1 is `every`. `--exact` sets the stagger window to 0. `--stagger 5m` spreads jobs that would otherwise fire on the same minute.
+Of my 44 enabled jobs, 43 are `cron` and 1 is `every`. `--exact` sets the stagger window to 0. `--stagger 5m` spreads jobs that would otherwise fire on the same minute.
 
 ### Payload Types
 
@@ -120,7 +120,7 @@ The two I use, as they appear in `openclaw cron list --json`:
 }
 ```
 
-Counts on my host: 21 `agentTurn` (15 pin `openai/gpt-6-luna`, the other 6 inherit the agent default) and 15 `command`. Four of the commands run Brigade runbooks. Others call `brigade handoff doctor`, `brigade mcp doctor`, `brigade outcome rank`, `brigade outcome reconcile`, a weekly repo-health script, and short reminder-style commands.
+Counts on my host: 29 `agentTurn` (3 pin `openai/gpt-6.1-sol`, 2 pin `openai/gpt-6-luna`, the other 24 inherit the agent default, which is Sol) and 15 `command`. Several of the commands run Brigade runbooks. Others call `brigade handoff doctor`, `brigade mcp doctor`, `brigade outcome rank`, `brigade outcome reconcile`, a weekly repo-health script, and short reminder-style commands.
 
 `openclaw cron add --help` also lists a `--system-event` payload (injected into the main session), a headless `--script` payload, `--stream-*` options for stream-triggered jobs, and `--trigger-script` for conditional runs. I have not deployed those, so I will not describe their behavior here.
 
@@ -174,13 +174,13 @@ openclaw cron add --name daily-summary \
   --message "Summarize unread email from the last 24h. Keep it under 200 words."
 ```
 
-**Three fields matter most:**
+**Three fields to set deliberately:**
 
 - `payload.model` and `payload.thinking` are per job. There is no `:cron` alias any more (that was `<model>:cron` with `thinking: low`, defined under `agents.defaults.models`). Pin the model on each job and set `thinking` deliberately.
 - `delivery.channel` plus `delivery.to` are explicit. **Always set both.** A bare `"mode": "announce"` with multiple channels enabled guesses wrong and posts to whichever channel the bot isn't in. (Incident: 2026-03-02. I patched every cron config with an explicit target the same day.) Discord targets look like `channel:<id>`. Telegram targets are the bare chat id.
 - `timeoutSeconds` is yours to size. See the table below.
 
-`current` jobs are the exception on delivery: they announce into their own bound session, so my five have no `to`.
+`current` jobs are the exception on delivery: they announce into their own bound session, so they carry no `to`.
 
 ## Model Assignment for Cron Jobs
 
@@ -188,15 +188,13 @@ Not every cron job needs the same thinking budget. Observed settings on my host,
 
 | Task | Payload | Model / thinking | Timeout |
 |------|---------|------------------|---------|
-| Email or inbox digest | agentTurn | Luna, `low` | 300s |
-| Nightly maintenance report | agentTurn | Luna, `low` | 600s |
-| Card or note refresh | agentTurn | Luna, `low` | 900s |
-| Pipeline health check | agentTurn | Luna, `medium` | 240-600s |
-| Handoff inbox review | agentTurn | Luna (default thinking) | 1800s |
-| Architecture audit (twice weekly) | agentTurn | Luna, `high` | 1200s |
-| Fleet triage (twice weekly) | agentTurn | Luna, `high` | 3600s |
-| Restic backup, runbook, doctor check | command | none | 600-28800s |
-| Morning or health brief | agentTurn, `current` | agent default | 180-480s |
+| Morning brief, ops check, update triage | agentTurn, `current` | agent default | 600-1200s |
+| Daily health briefs (backups, sites, media server) | agentTurn, `current` | agent default | 180-900s |
+| Nightly memory pass, handoff review | agentTurn, `current` | Sol pinned | 1800s |
+| Weekly reviews (ops, SOC posture, fleet readiness, site drift) | agentTurn, `current` | agent default | 900-1800s |
+| Weekly roster digest | agentTurn, `current` | Sol, `medium` | 900s |
+| Idea harvest, monthly surfacing check | agentTurn, `isolated` | Luna pinned | 600-900s |
+| Restic backup, runbook, doctor check | command | none | 60-28800s |
 
 Rule of thumb: `low` for anything mechanical, `medium` when the job must read and decide, `high` only for review work that I would also give a long timeout. Deeper judgment than that belongs in an interactive session or an ACP escalation, not a cron.
 
@@ -222,10 +220,10 @@ There is no `cron-prompts/` directory in my setup. The earlier pattern (a prompt
 Cron sessions are restricted by the job, not by a job-level `elevated` flag. There is no `elevated` field in the job schema. What exists:
 
 - `payload.toolsAllow`: an allow-list of tool names for the run. Mine range from none to six named tools. One job allows `*`. Set it with `--tools exec,read`. `--tools ""` disables all tools.
-- `scheduledToolPolicy`: a policy block the gateway attaches to some jobs (mine show `trusted` on six and `account` on one).
+- `scheduledToolPolicy`: a policy block the gateway attaches to some jobs (mine show `trusted` on 13 jobs and `account` on 14).
 - `tools.elevated.enabled: true` globally, in `openclaw.json`. Agent-level `elevated` overrides were unreliable from cron on one release, so I leave the global switch on and restrict per job with `toolsAllow`.
 
-`lightContext: true` (CLI `--light-context`) gives an agent job a lightweight bootstrap instead of the full workspace context. Four of my jobs use it.
+`lightContext: true` (CLI `--light-context`) gives an agent job a lightweight bootstrap instead of the full workspace context. None of my current jobs use it.
 
 ## Example Schedule (Real Production)
 
@@ -233,24 +231,22 @@ Generic labels, times in the host timezone. This is built from `openclaw cron li
 
 | Time | Task | Payload | Model / thinking | Session | Delivery |
 |------|------|---------|------------------|---------|----------|
-| 02:00 daily | Archive crawler ingest | command (runbook) | none | isolated | none |
 | 03:15, 15:15 | NAS backup (restic) | command (runbook) | none | isolated | announce |
-| 04:00 daily | Nightly maintenance | agentTurn | Luna, low | isolated | announce |
-| 04:20 Sun, Wed | Architecture audit | agentTurn | Luna, high | isolated | announce |
+| 04:00 daily | Nightly maintenance | command (runbook) | none | isolated | announce |
 | 04:40 Sun | Cloud-drive backup (restic) | command (runbook) | none | isolated | announce |
-| 05:45 daily | Card refresh | agentTurn | Luna, low | isolated | announce |
-| 06:45 daily | Morning agenda brief | agentTurn | default | current | announce |
+| 07:00 daily | Morning brief | agentTurn | default | current | announce |
 | 07:00 Sun | Repo health check | command (script) | none | isolated | none |
-| 08:00 daily | Email summary | agentTurn | Luna, low | isolated | announce |
-| 08:33 daily | Intel pipeline health | agentTurn | Luna, medium | isolated | announce |
+| 07:30 daily | Morning ops check | agentTurn | default | current | announce |
+| 08:40 daily | Model and inference sweep | agentTurn | default | current | announce |
 | 09:35 daily | Handoff health check | command | none | isolated | none |
 | 09:45 daily | Backup health brief | agentTurn | default | current | announce |
-| 21:07 daily | Handoff draft review | agentTurn | Luna | isolated | announce |
-| 22:00 daily | Memory sweep | agentTurn | Luna, low | isolated | announce |
+| 22:00 daily | Memory pass | agentTurn | Sol | current | announce |
+| 23:00 daily | Handoff review | agentTurn | Sol | current | announce |
 | Mon 09:09, 09:39 | Outcome rank, then reconcile | command (x2) | none | isolated | none |
+| Mon 10:15 | SOC posture review | agentTurn | default | current | announce |
 | 1st of month | Surfacing check | agentTurn | Luna | isolated | announce |
 
-I use off-the-hour minutes (`:07`, `:09`, `:33`, `:45`) so two agent turns rarely start on the same minute.
+I use off-the-hour minutes (`:09`, `:35`, `:39`, `:45`) for the commands so they rarely start on the same minute as an agent turn. The agent turns themselves have drifted back onto round times, which is worth fixing.
 
 ## Error Handling
 

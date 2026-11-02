@@ -12,5 +12,6 @@ Defense in depth across host, agents, network, and outbound boundary. Plus what 
 - [x] `outbound-scrubbing.md` - covered by [`../publishing/publish-time-scrubbing.md`](../publishing/publish-time-scrubbing.md): scrubbers and scanner gates as preflight, not afterthought
 - [x] [`incident-runbook.md`](incident-runbook.md) - agent did a destructive thing, secret leaked, or automation ran away, here's what you do
 - [x] [`secret-management.md`](secret-management.md) - env files, rendering from a vault to tmpfs, TPM-sealed credentials, MCP env inheritance, shell-snapshot leaks, rotation, never in config
+- [x] [`soc-bot-triage.md`](soc-bot-triage.md) - the SOC bot: scheduled Wazuh triage, Hotwash playbooks, what it may write in TheHive, Cortex, and MISP, and what only the operator approves
 
-> 🦞 Per-guide format lives in [`../automation/cron-patterns.md`](../automation/cron-patterns.md).
+> 🦞 Per-guide format lives in [`cron-patterns.md`](../automation/cron-patterns.md).

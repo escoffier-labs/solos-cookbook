@@ -2,8 +2,8 @@
 
 How to write custom OpenClaw skills, structure them for discoverability, and extend your agent's capabilities with reusable task-specific instructions.
 
-**Tested on:** OpenClaw 2026.10.4 with 60+ workspace skills, Claude Code 2.1.302 with the Skillet plugin 0.6.0, Brigade 0.28.0
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.4 with 60+ workspace skills, Claude Code 2.1.302 with the Skillet plugin 0.6.0, Brigade 0.31.0
+**Last updated:** 2026-11-02
 
 ---
 

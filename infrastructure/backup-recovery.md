@@ -2,8 +2,8 @@
 
 How to protect your OpenClaw workspace, configuration, and memory from data loss. Encrypted backups, restore testing, and disaster recovery planning.
 
-**Tested on:** OpenClaw 2026.10.4, brigade 0.28.0, restic with rclone, Ubuntu 24.04. Three encrypted restic repositories (a local SMB NAS, a cloud repo on Google Drive, and an add-only photo archive), a Proxmox Backup Server for the hypervisor guests, and a separate two-minute canonical sync for a KeePass database.
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.4, brigade 0.31.0, restic with rclone, Ubuntu 24.04. Three encrypted restic repositories (a local SMB NAS, a cloud repo on Google Drive, and an add-only photo archive), a Proxmox Backup Server for the hypervisor guests, and a separate two-minute canonical sync for a KeePass database.
+**Last updated:** 2026-11-02
 
 ---
 
@@ -138,11 +138,11 @@ run_backup_phase() {                   # label, repo, tag
 }
 ```
 
-The details that earned their place:
+The details worth copying:
 
 - **Targets.** `nas` and `gdrive` run the config backup into their repo. `both` runs both. `media` is explicit-only and never part of `both`, so the config backup is unaffected by the photo archive.
 - **`--no-prune`.** Skips `restic forget --prune` for add-only verification runs, for example after changing the source set. The Brigade summary records the prune result as `skipped`.
-- **`forget --group-by host,tags`.** restic's default groups by host and paths, so every change to the backup path list starts a new group and old snapshots never expire. Grouping by tags fixed a repo that had quietly kept snapshots for months.
+- **`forget --group-by host,tags`.** restic's default groups by host and paths, so every change to the backup path list starts a new group and old snapshots never expire. Grouping by tags fixed a repo that had kept snapshots for months.
 - **Stale lock clearing.** Plain `restic unlock` only deletes locks whose owning process is gone. One stale exclusive lock once blocked seven consecutive NAS runs because every run failed the access check and fell through to a doomed `init`. Do not use `unlock --remove-all` in a scheduled job: it can break a live run.
 - **TMPDIR off root.** restic and rclone assemble temp packs in `$TMPDIR`, which defaults to `/tmp` on the root volume. A large cloud pass exhausted a small root volume and died with `no space left on device` even though the remote had terabytes free. Pointing `TMPDIR` and `RCLONE_TEMP_DIR` at a directory on the large data volume fixed it.
 - **Timeouts sized to the job.** The cloud runbook gets 8 hours and the photo archive 23, because a first full pass over Drive at 2 transactions per second is slow. Size a runbook timeout to the worst full pass, not the incremental one.
@@ -159,7 +159,7 @@ Every local restic entrypoint (backup, freshness check, verify, rehearsal) sourc
 
 ### Drive Quota and Over-Syncing
 
-The single most important lesson from running this in production: **Google Drive throttles you when too many rclone jobs hit it at once, and over-frequent syncing makes it worse, not better.** Three defenses are in place.
+The main lesson from running this in production: **Google Drive throttles you when too many rclone jobs hit it at once, and over-frequent syncing makes it worse, not better.** Three defenses are in place.
 
 **1. Throttle the rclone backend.** The `RCLONE_*` env vars force one transfer at a time, a transactions-per-second cap, a pacer, and deep retry counts. Restic-over-rclone with default parallelism bursts dozens of API calls and trips Drive's per-user rate limit, after which every job spins in a quota-retry loop and nothing finishes.
 
@@ -193,7 +193,7 @@ The hypervisor guests are covered by Proxmox Backup Server, not restic. A schedu
 Two design points:
 
 - **PBS stays off the NAS.** A consumer NAS cannot do the atomic write-then-rename that PBS chunk commits need. See [NAS and Network Storage Mounts](nas-and-backups.md#pbs-on-a-nas-resilience-and-what-not-to-do).
-- **The NAS mirror runs weekly.** A timer on the hypervisor (weekly, Sunday 08:00, last run 2026-10-11 when I checked) rsyncs the datastore to a share on the NAS over CIFS, so there is one independent off-host copy. The design is in [Homelab Topology](homelab-topology.md) and [NAS and Network Storage Mounts](nas-and-backups.md#pbs-on-a-nas-resilience-and-what-not-to-do).
+- **The NAS mirror runs weekly.** A timer on the hypervisor (weekly, Sunday 08:00, last run 2026-11-01 when I checked) rsyncs the datastore to a share on the NAS over CIFS, so there is one independent off-host copy. The design is in [Homelab Topology](homelab-topology.md) and [NAS and Network Storage Mounts](nas-and-backups.md#pbs-on-a-nas-resilience-and-what-not-to-do).
 - **The cloud mirror is off.** A second weekly job used to sync the datastore to Google Drive. It hit the same shared-rclone-client quota described above and was disabled in August 2026 until it can move to a private OAuth client. Until then there are two copies, the local datastore and the NAS mirror, not three. Check that your own mirrors are on and recent before you rely on them (`systemctl list-timers` on the hypervisor shows the last run).
 
 ### Set Up the Passphrase
@@ -203,7 +203,7 @@ openssl rand -base64 32 > ~/.openclaw/.restic-password
 chmod 600 ~/.openclaw/.restic-password
 ```
 
-Store this passphrase somewhere outside your machine (password manager, printed copy in a safe). If you lose it, every restic repository becomes unreadable. Because the passphrase file lives under `~/.openclaw`, it is also inside the backup, which only helps if you can already read a repo, so the off-machine copy is not optional.
+Store this passphrase somewhere outside your machine (password manager, printed copy in a safe). If you lose it, every restic repository becomes unreadable. Because the passphrase file lives under `~/.openclaw`, it is also inside the backup, which only helps if you can already read a repo, so keep the off-machine copy.
 
 ### Initialize the Repositories (One Time)
 

@@ -1,6 +1,6 @@
 # Manifesto vs Framework
 
-> A cookbook is not a tool. It is a record. The difference matters because tools are owed support and frameworks are owed compatibility; cookbooks are owed only that the recipes still work for the author. Treating one as the other is how bad outcomes happen on both sides.
+> A cookbook is a record. Tools are owed support and frameworks are owed compatibility. Cookbooks are owed only that the recipes still work for the author. Treating one as the other goes badly for both sides.
 
 ## What this is
 
@@ -24,7 +24,7 @@ A tool author owes their users not breaking them. If you publish `left-pad` and 
 
 ### A framework
 
-A framework is a way of thinking that ships with libraries. You import its pieces; you also adopt its conventions. You expect:
+A framework is a way of thinking that ships with libraries. You import its pieces and you also adopt its conventions. You expect:
 
 - Conventions that hold across the codebase
 - A migration story when those conventions change
@@ -46,7 +46,7 @@ A cookbook author owes their readers honesty about what they did and why. They d
 
 ## Which one is this
 
-This is a cookbook. Every guide is a recipe that runs on my actual machine against my actual workload. The structure of the repo (`infrastructure/`, `automation/`, `templates/`) is for *my* navigation, not yours; lift the parts that help, ignore the rest.
+This is a cookbook. Every guide is a recipe that runs on my actual machine against my actual workload. The structure of the repo (`infrastructure/`, `automation/`, `templates/`) is for *my* navigation. Lift the parts that help and ignore the rest.
 
 What this means in practice:
 
@@ -68,13 +68,13 @@ I think it is the wrong move for this body of work. A framework's value is in th
 
 A few specific reasons:
 
-- **The conventions are mine.** The dual-host pattern, the publish-time scrubber, the three-layer cron stack are choices that fit my workload. They might fit yours. A framework would force them on every consumer; a cookbook lets you take what fits.
+- **The conventions are mine.** The dual-host pattern, the publish-time scrubber, the three-layer cron stack are choices that fit my workload. They might fit yours. A framework would force them on every consumer. A cookbook lets you take what fits.
 - **The release surface would be huge.** Bundling all of this into a framework means shipping versions, deprecating patterns, supporting old configs. The cookbook's release surface is "did I git push." That asymmetry is the whole reason this exists.
 - **I am one engineer.** A framework needs at least a small community to outlive the original author's interest. A cookbook lives on disk forever, regardless of who is paying attention.
 
 ## Why not a tool
 
-Same reasoning, sharper. The guides do not compose into a single product. The MCP catalog ships as separate tools because they *are* separate tools (each wrapping one service). The dashboard ships as its own repo because it is one thing. There is no "the cookbook tool" because the cookbook is information, not behavior.
+Same reasoning, sharper. The guides do not compose into a single product. The MCP catalog ships as separate tools because they *are* separate tools (each wrapping one service). The dashboard ships as its own repo because it is one thing. There is no "the cookbook tool" because the cookbook is information and has no behavior to ship.
 
 Where the cookbook does point at single tools (`usage-tracker`, the MCP servers in [`../tools/mcp-catalog.md`](../tools/mcp-catalog.md)), those are independent. Each has its own README, its own versioning, and its own release cadence. The cookbook references them. It does not own them. Shared workspace operations and publish scanning live in Brigade.
 
@@ -92,7 +92,7 @@ This is the most valuable contribution. Open an issue with:
 - What was different
 - What you had to change to make it work
 
-Verification reports get folded into the Gotchas sections. Drift between the guide and reality is a bug; your report is the bug filing.
+Verification reports get folded into the Gotchas sections. Drift between the guide and reality is a bug, and your report is the bug filing.
 
 ### "I have a related pattern that worked for me"
 
@@ -102,7 +102,7 @@ Also valuable. Open a PR with a new guide in the format from [`../CONTRIBUTING.m
 
 - "You should use [other tool]." Maybe. Open a PR that demonstrates the swap with verification, or leave it.
 - "This is bad practice in [enterprise context]." This is not an enterprise context.
-- "You should test this with [more frameworks]." This is a record of what I run; expanding it to frameworks I do not run does not serve the primary reader.
+- "You should test this with [more frameworks]." This is a record of what I run, and expanding it to frameworks I do not run would not serve the primary reader.
 - A guide template with no Gotchas and no verification. The format exists for a reason.
 
 ## What this implies for readers
@@ -113,18 +113,18 @@ A few practical reads:
 
 1. **Skip what does not apply.** Most readers will care about half the cookbook. The agent-stack readers will skip the homelab parts. The homelab readers will skip the publishing parts. That is fine.
 2. **Verify everything against your setup.** Commands that work on Ubuntu 24.04 may not work on Debian 13. Most of them will, but the few that do not are exactly the ones that bite.
-3. **Take the structure, not just the commands.** Each guide has a "Why this way" section. That is the part that generalizes; the specific commands are just one realization of the principle.
-4. **The cookbook is a snapshot, not a stream.** A guide written in March may be slightly stale by November. If a command no longer works, open an issue; if a guide's premise no longer holds, the bigger question is whether the underlying choice changed (and if so, whether yours should too).
+3. **Take the structure along with the commands.** Each guide has a "Why this way" section, and that section generalizes. The specific commands are one realization of the principle.
+4. **The cookbook is a snapshot of the stack at the time of writing.** A guide written in March may be slightly stale by November. If a command no longer works, open an issue. If a guide's premise no longer holds, the bigger question is whether the underlying choice changed (and if so, whether yours should too).
 
 ## Why "Solomon's Guide to Cookin' with Gas"
 
-Not a framework name. Not a product name. A title that telegraphs cookbook before you have read a paragraph. The naming is intentional: a framework called "ClawStack" or a product called "Agently" would have set the wrong expectations. "A guide" is honest about the shape.
+The title avoids a framework name or a product name and says cookbook before you have read a paragraph. The naming is intentional: a framework called "ClawStack" or a product called "Agently" would have set the wrong expectations. "A guide" is honest about the shape.
 
-The 🦞 lobster is a placeholder for "this is a person's project, not a corporation." Use the part of the cookbook that helps; ignore the lobsters if they are not your taste.
+The 🦞 lobster is a placeholder for "this is a person's project, with no corporation behind it." Use the part of the cookbook that helps and ignore the lobsters if they are not your taste.
 
 ## Templates
 
-No template here; this is the position piece. Pair with:
+No template here, since this is the position piece. Pair with:
 
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) - the per-guide format that operationalizes "cookbook, not framework"
 - [`../README.md`](../README.md) - the inventory of recipes

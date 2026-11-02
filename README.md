@@ -20,8 +20,8 @@
 <p align="center">
   <img src="https://shieldcn.dev/badge/code-MIT-green.svg" alt="Code license: MIT">
   <img src="https://shieldcn.dev/badge/content-CC_BY--NC--ND_4.0-lightgrey.svg" alt="Content license: CC BY-NC-ND 4.0">
-  <img src="https://shieldcn.dev/badge/guides-61-red.svg" alt="61 guides">
-  <img src="https://shieldcn.dev/badge/updated-2026--10--18-gold.svg" alt="Updated October 18, 2026">
+  <img src="https://shieldcn.dev/badge/guides-66-red.svg" alt="66 guides">
+  <img src="https://shieldcn.dev/badge/updated-2026--11--02-gold.svg" alt="Updated November 2, 2026">
 </p>
 
 This repository is the source for [Le Répertoire](https://escoffierlabs.dev/cookbook/), a cookbook built from systems that were deployed, broken, repaired, and checked again. It covers OpenClaw and Hermes memory ownership, Codex and Claude Code handoffs, automation, self-hosted infrastructure, security, publishing, and the hardware underneath the stack.
@@ -39,6 +39,8 @@ Pick the path that matches the problem in front of you:
 | Decide where scheduled work belongs | [Cron patterns](automation/cron-patterns.md) |
 | Recover the stack after a bad host failure | [Backup and recovery](infrastructure/backup-recovery.md) |
 | Lock down a host that agents can touch | [Linux hardening](security/linux-hardening.md) |
+| Reach the stack from anywhere without opening ports | [Remote access](infrastructure/remote-access-tailnet-cloudflared.md) |
+| Run Claude Code and Codex threads from one server | [T3 Code](tools/t3-code.md) |
 | Stop private infrastructure details at publication time | [Publish-time scrubbing](publishing/publish-time-scrubbing.md) |
 
 For the memory system, read these in order:
@@ -52,13 +54,13 @@ For the memory system, read these in order:
 
 | Chapter | Recipes | Covers |
 |---|---:|---|
-| [AI agent stack](ai-stack/) | 15 | Model routing, sessions, context, OAuth, local fallbacks |
+| [AI agent stack](ai-stack/) | 16 | Model routing, sessions, context, OAuth, subscriptions, local fallbacks |
 | [Automation](automation/) | 8 | Cron, hooks, n8n, channels, publishing jobs |
-| [Self-hosted infrastructure](infrastructure/) | 9 | Backups, service isolation, host topology, recovery |
-| [Security](security/) | 7 | Host hardening, secrets, incident response, agent controls |
+| [Self-hosted infrastructure](infrastructure/) | 10 | Backups, service isolation, host topology, remote access, recovery |
+| [Security](security/) | 8 | Host hardening, secrets, incident response, SOC triage, agent controls |
 | [Knowledge management](knowledge/) | 7 | Memory ownership, handoffs, evidence, Obsidian, transcripts |
 | [Hardware and host](hardware/) | 3 | Bare metal, disks, kernel tuning |
-| [Tools](tools/) | 6 | Brigade, Skillet, MCP catalogs, redeploys, OpsDeck |
+| [Tools](tools/) | 8 | Brigade, T3 Code, Octopool, Skillet, MCP catalogs, redeploys, OpsDeck |
 | [Publishing](publishing/) | 2 | Scrub gates and review boundaries |
 | [Philosophy](philosophy/) | 4 | Scope, tradeoffs, and operating principles |
 

@@ -9,7 +9,7 @@
 
 PR comment boundary is the outbound check for review comments, issue replies, and PR bodies written from an agent workspace. It catches private hostnames, local paths, internal endpoints, account labels, raw command output, and stack traces before they land in GitHub.
 
-This guide is narrower than full publish-time scrubbing. It is for the comment you are about to post, not the whole repo.
+This guide is narrower than full publish-time scrubbing. It covers only the comment you are about to post.
 
 ## Why this way
 
@@ -194,7 +194,7 @@ Expected result: no blockers, warnings reviewed.
 
 3. **Code fences are not safe zones.** Scanners and humans still need to inspect fenced logs, shell output, stack traces, and JSON snippets.
 
-4. **Allow comments are for files, not PR bodies.** A reviewed allow tag in source does not justify posting a private value in a GitHub comment.
+4. **Allow comments apply to files only.** A reviewed allow tag in source does not justify posting a private value in a GitHub comment.
 
 5. **Browser posting skips shell hooks.** If the final comment is pasted through the GitHub UI, the draft file scan is the guardrail.
 
