@@ -2,14 +2,14 @@
 
 Most homelab writeups treat the desktop as a dumb client that connects *to* the server. I run it the other way too. My always-on Linux agent host SSHes *into* the Windows 11 daily driver, mounts its drives, drops files into an inbox folder on it, and remote-controls the apps running on it. The desktop is a peer in the stack, not just a thing I sit at. 🦞
 
-**Tested on:** Ubuntu 24.04 agent host + Windows 11 Pro daily driver (desktop-class). OpenSSH Server on Windows, CIFS automount, OBS WebSocket v5, OpenClaw 2026.10.4 gateway with a paired Windows node, brigade 0.28.0.
-**Last updated:** 2026-10-17
+**Tested on:** Ubuntu 24.04 agent host + Windows 11 Pro daily driver. OpenSSH Server on Windows, CIFS automount, OBS WebSocket v5, OpenClaw 2026.10.4 gateway with a paired Windows node, brigade 0.31.0.
+**Last updated:** 2026-11-02
 
 ---
 
 ## Why Bother
 
-The desktop has a spare CPU, RAM, and a GPU that sit idle most of the day. The agent host is always on but headless. Treating the two as peers means:
+The desktop has CPU, RAM, and a GPU that sit idle most of the day. The agent host is always on but headless. Treating the two as peers means:
 
 - The agent can push a finished artifact (a note, a render, a report) straight onto the desktop where I'll see it.
 - The agent can read and write the desktop's bulk storage as if it were local.
@@ -39,10 +39,10 @@ New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server' `
 Use key auth, not passwords. Windows OpenSSH reads keys from a per-user file, with a separate file for administrators. For a normal user account, append your public key to:
 
 ```
-C:\Users\you\.ssh\authorized_keys
+%USERPROFILE%\.ssh\authorized_keys
 ```
 
-If the account is in the Administrators group, Windows OpenSSH ignores that file and reads `C:\ProgramData\ssh\administrators_authorized_keys` instead, which must be owned by `Administrators`/`SYSTEM` with no inherited user ACLs. This is the single most common reason "my key works on Linux but not Windows."
+If the account is in the Administrators group, Windows OpenSSH ignores that file and reads `C:\ProgramData\ssh\administrators_authorized_keys` instead, which must be owned by `Administrators`/`SYSTEM` with no inherited user ACLs. This is the most common reason "my key works on Linux but not Windows."
 
 Then add an alias on the agent host so the agent never types an IP:
 

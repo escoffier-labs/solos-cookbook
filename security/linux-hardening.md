@@ -146,7 +146,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart ssh.socket
 ```
 
-> **Note:** The empty `ListenStream=` line is required. It clears the default listen addresses before setting the new ones. Without it, your custom addresses get *added* to the defaults instead of replacing them. The clear also drops every other listener, including a tailnet one that the generated `ssh.socket.d/addresses.conf` would have added, so the override must list every endpoint you want, not only the LAN address. Check the merged result with `systemctl cat ssh.socket`.
+> **Note:** The empty `ListenStream=` line is required. It clears the default listen addresses before setting the new ones. Without it, your custom addresses get *added* to the defaults instead of replacing them. The clear also drops every other listener, including a tailnet one that the generated `ssh.socket.d/addresses.conf` would have added, so the override must list every endpoint you want, including the LAN address and any tailnet one. Check the merged result with `systemctl cat ssh.socket`.
 
 ### Verify
 
@@ -198,7 +198,7 @@ This gives you:
 - **2-hour ban** per offense
 - Covers both password and key auth failures
 
-On Ubuntu 24.04 the `sshd` filter reads the journal. A `backend = systemd` line in a `[DEFAULT]` block of `jail.local` keeps it consistent across jails.
+On Ubuntu 24.04 the `sshd` filter reads the journal. A `backend = systemd` line in a `[DEFAULT]` block of `jail.local` keeps it consistent across jails. <!-- content-guard: allow private-hostname -->
 
 ### Verify
 
@@ -313,7 +313,7 @@ unattended-upgrades, auditd, wazuh-agent: active x3
 
 ## 7. Patching, audit, and detection
 
-Three things the original version of this guide listed as "next steps" are now on the host. Check each one rather than assuming:
+Three things the original version of this guide listed as "next steps" are now on the host. Check each one yourself:
 
 | Control | What I run | Check |
 |---------|-----------|-------|
@@ -321,7 +321,7 @@ Three things the original version of this guide listed as "next steps" are now o
 | Audit logging | `auditd` active, with `-w <path> -p wa -k <key>` watch rules under `/etc/audit/rules.d/` | `sudo auditctl -s` and `sudo auditctl -l` |
 | Intrusion detection | A Wazuh agent reporting to a central manager | `systemctl is-active wazuh-agent` |
 
-The audit rule set is small: a handful of write-watches on files an agent should not touch quietly. Start with the paths that matter to you (your secrets directory, SSH config, systemd user units) and keep the key names greppable. The agent version rules are in [`wazuh-triage.md`](wazuh-triage.md): the agent must never be newer than the manager, so I hold the `wazuh-agent` package with `apt-mark hold`.
+The audit rule set is small: a handful of write-watches on files an agent should not touch. Start with the paths that matter to you (your secrets directory, SSH config, systemd user units) and keep the key names greppable. The agent version rules are in [`wazuh-triage.md`](wazuh-triage.md): the agent must never be newer than the manager, so I hold the `wazuh-agent` package with `apt-mark hold`.
 
 ## What This Doesn't Cover
 
@@ -343,7 +343,7 @@ These are good next steps depending on your threat model. This guide focuses on 
 
 4. **Test from another machine.** After applying SSH changes, keep your current session open and test a new connection from a different machine. If you lock yourself out, the existing session still works.
 
-5. **OpenClaw upgrades regenerate the systemd unit.** Upgrades rewrite `~/.config/systemd/user/openclaw-gateway.service` and drop custom directives, most painfully `EnvironmentFile=`. Without it, secrets do not load and the gateway crash-loops. I now promote releases through a script that manages a version drop-in, and the gateway gets its secrets from a rendered tmpfs file (see [`secret-management.md`](secret-management.md)) with the `EnvironmentFile=` line re-asserted in a drop-in rather than the main unit. After any upgrade, check `systemctl --user cat openclaw-gateway.service | grep EnvironmentFile`. The upgrade procedure is in [`../infrastructure/upgrade-hygiene.md`](../infrastructure/upgrade-hygiene.md).
+5. **OpenClaw upgrades regenerate the systemd unit.** Upgrades rewrite `~/.config/systemd/user/openclaw-gateway.service` and drop custom directives, most painfully `EnvironmentFile=`. Without it, secrets do not load and the gateway crash-loops. I now promote releases through a script that manages a version drop-in, and the gateway gets its secrets from a rendered tmpfs file (see [`secret-management.md`](secret-management.md)) with the `EnvironmentFile=` line re-asserted in a drop-in instead of the main unit. After any upgrade, check `systemctl --user cat openclaw-gateway.service | grep EnvironmentFile`. The upgrade procedure is in [`../infrastructure/upgrade-hygiene.md`](../infrastructure/upgrade-hygiene.md).
 
 6. **The drop-in file is not the effective config.** I found a stale `MaxAuthTries 3` in this guide while the live server enforced 6. Read the effective values with `sshd -T`, and keep dated backups of drop-ins (`hardening.conf.bak-<date>`) so a change is diffable.
 

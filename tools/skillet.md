@@ -33,9 +33,9 @@ Three design calls worth stealing:
 
 **One report contract across the audit roster.** line-check, bug-hunt, security-sweep, latent-premises, and retry-safety share a severity scale, finding schema, and backlog format. Run them weeks apart and the findings still compose into one prioritized list. The contract lives in [`docs/audit-report-format.md`](https://github.com/escoffier-labs/skillet/blob/main/docs/audit-report-format.md) and each skill inlines the short version so it works standalone.
 
-**Backlogs, not findings.** The deliverable of an audit is the ordered list of what to do next. A finding without a concrete fix, an effort estimate, and a checkable location does not make the report. Cheap high-impact items float to the top regardless of severity.
+**Backlogs over findings.** The deliverable of an audit is the ordered list of what to do next. A finding without a concrete fix, an effort estimate, and a checkable location does not make the report. Cheap high-impact items float to the top regardless of severity.
 
-**Verification before reporting.** bug-hunt's verifiers are prompted to refute, not confirm. Findings that survive get a concrete trigger, findings that do not die silently. Plausible-but-wrong findings are the failure mode of agent auditing, and redundant generation does not fix it. Adversarial review does.
+**Verification before reporting.** bug-hunt's verifiers are prompted to refute. Findings that survive get a concrete trigger, and findings that do not survive are dropped. Plausible-but-wrong findings are the failure mode of agent auditing, and redundant generation does not fix it. Adversarial review does.
 
 ## How it pairs with Brigade
 
@@ -69,7 +69,7 @@ A clone tracks main, so it carries the unreleased skills. To get exactly the tag
 
 ## Verification
 
-Confirm that every skill in the checkout you are using is a discoverable `SKILL.md`, and count against the release you meant to install rather than a number from this guide:
+Confirm that every skill in the checkout you are using is a discoverable `SKILL.md`, and count against the release you meant to install and ignore any number from this guide:
 
 ```bash
 git clone https://github.com/escoffier-labs/skillet
@@ -110,7 +110,7 @@ In Claude Code, after the marketplace install, run `/plugin` and confirm `skille
 ## Gotchas
 
 - The first draft of memory-handoff documented a base format that failed `brigade handoff lint`: lint hard-requires the routing sections (`Recommended memory action` and friends) and YAML frontmatter inside suggested card content. The skill now documents the lintable format up front. Lesson: if a skill tells the agent to run a validator, the skill's own template has to pass that validator.
-- A vanilla agent asked to "audit this repo" produced genuinely good findings but no scorecard, no effort estimates, no prioritization, and it never ran the brigade health checks sitting right there in the repo. The skill's value is not making the model smarter. It is making the output composable and the procedure complete.
+- A vanilla agent asked to "audit this repo" produced good findings but no scorecard, no effort estimates, no prioritization, and it never ran the brigade health checks sitting right there in the repo. The skill makes the output composable and the procedure complete, and the model is no smarter for it.
 - Counts drift between the tag and main. This guide's verification block once hard-coded `32`, which passed on the v0.6.0 tag and failed on a fresh clone of main after eight skills landed. A count check is only meaningful against a named ref, so the block above checks out the tag before comparing.
-- Skills that fetch or ingest outside content (grill, plate, publish-readiness, research-brief, review, and others) now carry an `## Untrusted content` section that treats fetched text as data, not instructions. If you write your own skills from `skillify` or the cookbook's skeleton, add the same section. Skillet's lint enforces it for its own.
+- Skills that fetch or ingest outside content (grill, plate, publish-readiness, research-brief, review, and others) now carry an `## Untrusted content` section that treats fetched text as data and never as instructions. If you write your own skills from `skillify` or the cookbook's skeleton, add the same section. Skillet's lint enforces it for its own.
 - Naming collisions matter for public skills: the pressure-test skill was nearly called "expo" until the React Native collision surfaced. Search the name before you ship it.

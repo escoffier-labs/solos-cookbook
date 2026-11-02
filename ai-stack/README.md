@@ -18,13 +18,14 @@ Multi-model orchestration. One orchestrator, many models, escalation lanes, and 
 - [x] [`browser-llm-stack.md`](browser-llm-stack.md) - Chromium with persistent login profiles and flock-locked concurrency for browser-native LLM work
 - [x] [`local-llm-fallback.md`](local-llm-fallback.md) - local Ollama models for embeddings and bounded utility work, and when to reach for them
 - [x] [`oauth-token-lifecycle.md`](oauth-token-lifecycle.md) - subscription OAuth traps: rotating-token reuse, token storage, fallback profiles, the 402 red herring
+- [x] [`multiple-subscriptions.md`](multiple-subscriptions.md) - running the stack on several flat-rate subscriptions at once: what goes to Claude, ChatGPT, Gemini, and Grok Bot, how quota is watched, and what broke
 - [x] [`model-retirement-and-fallbacks.md`](model-retirement-and-fallbacks.md) - where model ids hide, the retirement sweep, fallback chain ordering, and the empty-chain case
 
 ## Browser Chromium lane
 
 Not every useful model path is an API.
 
-This stack also uses a dedicated Chromium lane for browser-native AI workflows where logged-in sessions matter more than clean API abstractions. That includes things like:
+This stack also uses a dedicated Chromium lane for browser-native AI workflows where logged-in sessions count for more than clean API abstractions. That includes things like:
 
 - Perplexity research from a logged-in Pro account
 - Gemini browser workflows
@@ -39,6 +40,6 @@ The pattern is covered in [`browser-llm-stack.md`](browser-llm-stack.md):
 - serialize fragile browser tasks with a lock when needed
 - treat browser automation as a first-class lane, not an embarrassing fallback
 
-This matters because some of the highest-value agent workflows still live behind browser auth, subscription entitlements, or UI-only features. If your stack ignores that reality, you end up designing around an imaginary clean-room API world.
+Some of the highest-value agent workflows still live behind browser auth, subscription entitlements, or UI-only features. If your stack ignores that reality, you end up designing around an imaginary clean-room API world.
 
 > 🦞 Per-guide format lives in [`../automation/cron-patterns.md`](../automation/cron-patterns.md).

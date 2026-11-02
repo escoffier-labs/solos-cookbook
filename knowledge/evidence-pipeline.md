@@ -2,8 +2,8 @@
 
 > Agent sessions are useful until you need to find a decision from six weeks ago. `miseledger` imports local harness logs into one SQLite archive, indexes them with FTS5, and returns citable evidence bundles without sending the archive over the network.
 
-**Tested on:** `miseledger` 0.6.0, Brigade 0.28.0, Linux, 2026-10-17. The live archive (9 sources, about 1.7 million items, FTS healthy) passes `miseledger status` and the MCP doctor (server initializes, 5 tools). The earlier clean-room smoke on 0.5.0 imported the shipped Codex, Claude, OpenClaw, Hermes, and OpenCode fixtures into a fresh archive: 5 sources, 24 items, session search working, and a stable `miseledger://evidence/<id>` bundle returned.
-**Last updated:** 2026-10-17
+**Tested on:** `miseledger` 0.6.0, Brigade 0.31.0, Linux, 2026-10-17. The live archive (9 sources, about 1.7 million items, FTS healthy) passes `miseledger status` and the MCP doctor (server initializes, 5 tools). The earlier clean-room smoke on 0.5.0 imported the shipped Codex, Claude, OpenClaw, Hermes, and OpenCode fixtures into a fresh archive: 5 sources, 24 items, session search working, and a stable `miseledger://evidence/<id>` bundle returned.
+**Last updated:** 2026-11-02
 
 ---
 
@@ -35,7 +35,7 @@ Raw transcript search answers a one-off question. An archive handles repeated qu
 | Hand evidence to another tool | copy transcript text | bundle with a stable resource URI and source context |
 | Check archive health | inspect files and SQLite manually | `doctor`, `status`, and archive checks |
 
-Imported text remains evidence, not instructions. That distinction matters when an agent reads a bundle through the MCP server. A transcript can contain prompt injection, stale commands, secrets, or incorrect conclusions.
+Imported text remains evidence, not instructions. Keep that in mind when an agent reads a bundle through the MCP server. A transcript can contain prompt injection, stale commands, secrets, or incorrect conclusions.
 
 ## Prerequisites
 

@@ -66,7 +66,7 @@ The tmux relay keeps the interaction model honest:
 | Coding smoke tests | Use `--permission-mode acceptEdits` only in contained workspaces |
 | One-shot prompts | Paste a prompt file into the session instead of `claude -p` |
 
-The orchestrator is not pretending Claude is a stateless model. It is delegating to the Claude Code harness and collecting the result.
+The orchestrator delegates to the Claude Code harness and collects the result, instead of treating Claude as a stateless model.
 
 ## Prerequisites
 

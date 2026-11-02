@@ -2,8 +2,8 @@
 
 > Transcript logs are an audit trail and a mining seam. Treat them as search-only source material, not something to shovel raw into every prompt.
 
-**Tested on:** OpenClaw 2026.10.4, Claude Code 2.1.302, codex-cli 0.163.0, sqlite3 3.45, `miseledger` 0.6.0
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8, Claude Code 2.1.302, codex-cli 0.163.0, sqlite3 3.45, `miseledger` 0.6.0
+**Last updated:** 2026-11-02
 
 ## What this is
 
@@ -62,7 +62,7 @@ Mix those up and the system gets dumber as it gets bigger.
 
 ### 1. Treat transcript logs as source material
 
-The JSONL store is not your memory layer. It is the raw evidence layer.
+The JSONL store is the raw evidence layer, not your memory layer.
 
 Typical uses:
 
@@ -124,7 +124,7 @@ Example:
 
 ### 5. Use transcripts to drive memory sweep jobs
 
-This is where JSONL gets genuinely useful.
+This is where JSONL gets useful.
 
 A sweep job can review recent sessions and extract:
 
@@ -156,7 +156,7 @@ Decide upfront what stays forever and what rolls off.
 - **Older transcripts:** keep if you need auditability, prune if you do not
 - **Promoted knowledge:** should outlive the transcript that birthed it
 
-If you retain transcripts forever, index them in a way that favors recency. Otherwise search quality quietly gets worse as the archive grows.
+If you retain transcripts forever, index them in a way that favors recency. Otherwise search quality gets worse as the archive grows.
 
 ## Verification
 
@@ -198,7 +198,7 @@ If you want one query across every harness instead of one command per store, tha
 
 ## Gotchas
 
-**Old grep recipes find nothing on OpenClaw 2026.10.** A `grep -R` over `agents/*/sessions/*.jsonl` still works on old files, but live sessions are not written there any more. If your sweep job greps that path, it quietly reviews stale history and reports "nothing new". Query the SQLite store, or use `openclaw sessions`, and check that the newest result is from today.
+**Old grep recipes find nothing on OpenClaw 2026.10.** A `grep -R` over `agents/*/sessions/*.jsonl` still works on old files, but live sessions are not written there any more. If your sweep job greps that path, it reviews stale history without any error and reports "nothing new". Query the SQLite store, or use `openclaw sessions`, and check that the newest result is from today.
 
 **Open the database read-only.** The store is live, with a write-ahead log and other tables in the same file (sessions, delivery state, auth profiles). Use `sqlite3 -readonly`, never edit rows by hand, and never copy the file somewhere with looser permissions than the original. A transcript store is as sensitive as the credentials that might have appeared in it.
 

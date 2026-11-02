@@ -2,8 +2,8 @@
 
 How OpenClaw's prompt caching works across providers, how to keep your cache hit rate high, and the anti-patterns that silently cost you money every turn.
 
-**Tested on:** OpenClaw 2026.10.4 with GPT 6.1 Sol (Codex runtime) as main, Claude models on the `claude-cli` runtime, cache-ttl context pruning
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 with GPT 6.1 Sol (Codex runtime) as main, Claude models on the `claude-cli` runtime, cache-ttl context pruning
+**Last updated:** 2026-11-02
 
 ---
 
@@ -23,7 +23,7 @@ On my setup the knob is moot for Claude: Opus 5.5 and Sonnet 5.5 run through the
 
 OpenAI caches automatically on repeated prefixes. There is no explicit `cache_control` block. You keep the prefix stable. My main agent is GPT 6.1 Sol on the `codex` runtime, signed in with a subscription, so the cost is flat-rate and caching savings show up as *rate-limit headroom* rather than a dollar reduction. Breaking the cache still costs you: it eats more of the quota faster.
 
-Two OpenAI-specific details from the OpenClaw reference docs are worth knowing. Changing the model always starts a new cache lineage, and changing the thinking or reasoning level can also invalidate reuse even when the prompt is identical. If cache continuity matters, pick the model and thinking level when you create the session and start a new session for a planned change instead of flipping them mid-conversation.
+Two OpenAI-specific details from the OpenClaw reference docs apply here. Changing the model always starts a new cache lineage, and changing the thinking or reasoning level can also invalidate reuse even when the prompt is identical. If cache continuity matters, pick the model and thinking level when you create the session and start a new session for a planned change instead of flipping them mid-conversation.
 
 ### Other Backends
 

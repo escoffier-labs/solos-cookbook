@@ -2,7 +2,7 @@
 
 Practical hardening runbook for a Windows 11 machine that takes part in an OpenClaw setup. Covers Windows Firewall, RDP/SSH/SMB lockdown, the native node and its credentials, sleep prevention, and what changes if you also keep WSL2 around.
 
-**Tested on:** Windows 11 Pro (desktop) running a native OpenClaw node and native Brigade workers, WSL2 Ubuntu 24.04 installed but stopped. Earlier sections were written when the same machine ran the agent inside WSL2.
+**Tested on:** Windows 11 Pro desktop running a native OpenClaw node and native Brigade workers, WSL2 Ubuntu 24.04 installed but stopped. Earlier sections were written when the same machine ran the agent inside WSL2.
 **Last updated:** 2026-10-17
 
 ---
@@ -13,7 +13,7 @@ The first version of this guide assumed the agent lived inside WSL2: two attack 
 
 That changes the hardening list:
 
-- The agent's API keys and workspace are on the **Windows filesystem**, so Windows ACLs and Windows credential storage matter most.
+- The agent's API keys and workspace are on the **Windows filesystem**, so Windows ACLs and Windows credential storage are the controls that apply.
 - The node connects **outbound** to the gateway. It does not need an inbound rule for the gateway port, and it does not need port proxies.
 - Port proxies, WSL file permissions, and WSL service binding only matter if you still run services in WSL. Those sections are now optional (section 6).
 
@@ -176,7 +176,7 @@ Build or stage the exact OpenClaw package on the control host, copy the tarball 
 
 The Linux-side pattern in [`secret-management.md`](secret-management.md) (service account to a rendered env file in tmpfs) has a Windows counterpart with different storage:
 
-- Use a **read-only service account** for the runtime vault, and keep its token sealed with **DPAPI** (user-bound) rather than in a plaintext file or an environment variable in the registry.
+- Use a **read-only service account** for the runtime vault, and keep its token sealed with **DPAPI** (user-bound) instead of in a plaintext file or an environment variable in the registry.
 - DPAPI has two incompatible on-disk forms: the text written by `ConvertFrom-SecureString` and raw `ProtectedData` bytes. Mixing them gives a misleading "input string was not in a correct format" error.
 - Render or inject only the values a task needs. Do not hand the final application the service-account token.
 - Keep the config directory private to your user:
@@ -337,7 +337,7 @@ See the [Linux hardening guide](linux-hardening.md) for patterns that apply to t
 
 ## Gotchas
 
-1. **Two surfaces only if you use both.** A native-node Windows machine has one main surface, Windows. A WSL-based setup has two. Audit the ones you actually run, and stop an unused WSL distro rather than leaving it up.
+1. **Two surfaces only if you use both.** A native-node Windows machine has one main surface, Windows. A WSL-based setup has two. Audit the ones you actually run, and stop an unused WSL distro instead of leaving it up.
 
 2. **Port proxies accumulate.** On my first audit of the WSL-era setup I found 14 stale proxies from archived projects. Run `netsh interface portproxy show all` monthly, even if you think you have none.
 

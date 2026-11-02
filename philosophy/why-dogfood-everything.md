@@ -1,6 +1,6 @@
 # Why Dogfood Everything
 
-> Ship it. Use it. Break it. Fix it. Write it down. The loop is short on purpose. Anything in this cookbook that did not survive that loop is not in this cookbook.
+> Ship it, use it, break it, fix it, write it down. The loop is short on purpose, and anything in this cookbook went through it.
 
 ## What this is
 
@@ -60,9 +60,9 @@ Each became its current shape only after being used. They were never designed in
 
 ### Use
 
-Run the thing in service. Not a synthetic test, not a tutorial run-through. Actually use it for the workload it was built for, every day, for at least a week. Use is the only thing that produces real signal. Reading does not produce signal, planning does not produce signal, design reviews do not produce signal.
+Run the thing in service. Skip the synthetic test and the tutorial run-through, and use it for the workload it was built for, every day, for at least a week. Only use produces real signal. Reading, planning, and design reviews do not.
 
-This step is where most projects stop. People build a tool, mark it "done," and never use it themselves. The tool atrophies because it was never load-bearing.
+This step is where most projects stop. People build a tool, mark it "done," and never use it themselves. The tool atrophies because nothing depended on it.
 
 ### Break
 
@@ -93,7 +93,7 @@ Write it down. Three places, depending on what it is:
 
 A breakage that has happened twice but is not written down anywhere is a guarantee it will happen a third time. The cookbook itself is the long-form version of this rule.
 
-The writing is the cheap part. Most engineers I know are bad at this not because writing is hard, but because they treat it as a chore that happens after the work. Writing *is* the work. You did not understand a fix until you can explain it to someone else.
+The writing is the cheap part. Most engineers I know are bad at this because they treat it as a chore that happens after the work. Writing *is* part of the work. You did not understand a fix until you can explain it to someone else.
 
 ## What dogfooding is not
 
@@ -106,15 +106,15 @@ It is not "use my own product in beta and call that production." Real dogfooding
 
 If the system you are dogfooding has no real stakes, you are not dogfooding. You are running a parallel sandbox. The bugs you find in a sandbox are sandbox bugs. The bugs you find in production are production bugs. Only the second kind matters.
 
-This is also not "ship to users who pay so we can call it dogfooded." Other people running your code is great; it is not a substitute. Your incentive structures are different from your users', and the bugs they will report are filtered by their willingness to file an issue. You will not file an issue against yourself. You will fix the bug.
+This is also not "ship to users who pay so we can call it dogfooded." Other people running your code is great, but it is no substitute. Your incentive structures are different from your users', and the bugs they will report are filtered by their willingness to file an issue. You will not file an issue against yourself. You will fix the bug.
 
 ## When dogfooding stops working
 
 A short list. If you are in one of these, the rule needs a different shape:
 
 - **The workload is something you will never personally do.** A CRM for sales teams cannot be dogfooded by a backend engineer. Find users. Listen to them. Pay attention to the gap between what they say and what they do.
-- **The cost of breakage to you exceeds the cost of learning the lesson.** If breaking your bank account would ruin your week, do not dogfood your bank account. Some systems should be conservative on purpose. The agent stack is not one of them; my bank account is.
-- **You are the only user, and you are also wrong.** Sometimes the system is built around a habit that is itself a bad habit. Dogfooding will not surface that; outside review will. This is the rare case where "best practice" reading is genuinely useful: not to copy the pattern, but to notice the gap.
+- **The cost of breakage to you exceeds the cost of learning the lesson.** If breaking your bank account would ruin your week, do not dogfood your bank account. Some systems should be conservative on purpose. The agent stack is not one of them, and my bank account is.
+- **You are the only user, and you are also wrong.** Sometimes the system is built around a habit that is itself a bad habit. Dogfooding will not surface that, and outside review will. This is the rare case where reading "best practice" is useful, to notice the gap and not to copy the pattern.
 
 ## How this rule shows up in the cookbook
 
@@ -130,7 +130,7 @@ When you read a guide here, the implicit promise is: this ran. It broke. I fixed
 
 ## Templates
 
-This piece is about the writing discipline, not a runnable artifact. Pair with:
+This piece is about the writing discipline and has no runnable artifact. Pair with:
 
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) - the per-guide format that enforces this rule
 - [`../automation/cron-patterns.md`](../automation/cron-patterns.md) - reference guide showing what "wrote down what broke" looks like in practice

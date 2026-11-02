@@ -2,8 +2,8 @@
 
 > Every MCP repo in the catalog ships with the same five-block README. If a setup block is missing, half your potential users walk away. Five clients, one shape, copy-paste tested against each.
 
-**Tested on:** Claude Code 2.1.302, codex-cli 0.163.0, OpenClaw 2026.10.4, Brigade 0.28.0
-**Last updated:** 2026-10-17
+**Tested on:** Claude Code 2.1.302, codex-cli 0.163.0, OpenClaw 2026.10.4, Brigade 0.31.0
+**Last updated:** 2026-11-02
 
 ## What this is
 
@@ -40,7 +40,7 @@ Skipping any of these blocks means users from that client open an issue asking f
 
 **Before:** the README has one setup block (usually Claude Desktop) and a paragraph saying "should also work with other MCP clients." Issues land asking "how do I set this up in [their client]?"
 
-**After:** all five blocks present, each copy-pasted into a fresh test environment, each verified to register the MCP and list its tools. Issues land asking about features, not setup.
+**After:** all five blocks present, each copy-pasted into a fresh test environment, each verified to register the MCP and list its tools. Issues land asking about features and no longer about setup.
 
 ## Implementation
 
@@ -278,7 +278,7 @@ brigade mcp sync --write --verify
 
 **`claude mcp add` without `--` parses everything after the env block as more flags.** This is the number one setup mistake. Always show the `--` before the binary name.
 
-**OpenClaw `mcp set` is JSON-as-a-string, single-quoted, no trailing comma.** The shell quoting is fiddly. Show the full single-quoted JSON in the README rather than relying on the user to escape it themselves.
+**OpenClaw `mcp set` is JSON-as-a-string, single-quoted, no trailing comma.** The shell quoting is fiddly. Show the full single-quoted JSON in the README so the user does not have to escape it themselves.
 
 **Client config key names differ, so a block copied between clients needs its top-level key changed.** Claude uses `mcpServers`, VS Code uses `servers`, opencode uses `mcp`, Codex and Hermes use `mcp_servers`, and OpenClaw nests under `mcp.servers`. `brigade mcp doctor` validates the canonical catalog and reports gaps.
 
@@ -290,7 +290,7 @@ brigade mcp sync --write --verify
 
 **Source-checkout paths need to be absolute.** A relative path works in a shell but not when the MCP is launched by a daemon. Always show `/absolute/path/to/<repo>/dist/index.js`, never `./dist/index.js`.
 
-**Confirmation-gated tools should be noted in the capabilities summary, not buried in the tool list.** Users who see the tools table for the first time should know upfront that `delete_*`, `restart`, and `shutdown` need `confirm: true`.
+**Confirmation-gated tools should be noted in the capabilities summary as well as in the tool list.** Users who see the tools table for the first time should know upfront that `delete_*`, `restart`, and `shutdown` need `confirm: true`.
 
 ## Templates
 

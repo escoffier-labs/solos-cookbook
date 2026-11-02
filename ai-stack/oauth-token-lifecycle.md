@@ -1,6 +1,6 @@
 # OAuth and Token Lifecycle for a Multi-Provider Agent Stack
 
-> A long-lived agent stack runs on subscription OAuth, not API keys, and the recurring pain is not auth setup. It is token lifecycle: rotation, per-agent state, fallback, and the silent failures that look like billing problems but are not.
+> A long-lived agent stack runs on subscription OAuth, not API keys, and the recurring pain is token lifecycle rather than auth setup: rotation, per-agent state, fallback, and the silent failures that look like billing problems but are not.
 
 **Tested on:** OpenClaw 2026.10.4 gateway, OpenAI OAuth (via the Codex runtime) as the main agent, Claude Code first-party login for the Claude lanes, systemd user services, `jq`
 **Last updated:** 2026-10-17
@@ -64,7 +64,7 @@ openclaw models auth list --agent <agent-id>   # another agent's store
 openclaw models auth order get --agent <agent-id> --provider openai
 ```
 
-A typical `list` output shows the store path, then one line per profile with its provider and type (`oauth` or `api_key`), an expiry, and a cooldown note if a profile recently failed auth. Several stale profiles for the same provider are normal after repeated re-logins. What matters is which one each agent's order override points at.
+A typical `list` output shows the store path, then one line per profile with its provider and type (`oauth` or `api_key`), an expiry, and a cooldown note if a profile recently failed auth. Several stale profiles for the same provider are normal after repeated re-logins. Check which one each agent's order override points at.
 
 Enumerate the agents that use the provider so none are missed:
 
@@ -155,11 +155,11 @@ openclaw models auth list | grep -E 'api_key|oauth'
 openclaw models auth logout <api-key-profile-id>
 ```
 
-If you genuinely need an API-key escape hatch, gate it deliberately rather than leaving it as a silent peer profile.
+If you need an API-key escape hatch, gate it deliberately rather than leaving it as a silent peer profile.
 
 ### Legacy `auth-profiles.json` installs (silent empty parse)
 
-If you are still on a version that reads `auth-profiles.json`, the container shape is load-bearing: `profiles` must be an object keyed by provider, not an array. A wrong shape parses as zero profiles with no error, which looks identical to bad credentials.
+If you are still on a version that reads `auth-profiles.json`, the container shape is strict: `profiles` must be an object keyed by provider, not an array. A wrong shape parses as zero profiles with no error, which looks identical to bad credentials.
 
 ```bash
 # Should print "object". "array" or "null" means the shape is wrong.
@@ -185,7 +185,7 @@ If the chain dead-ends at `next=none`, you are exhausted, not unpaid. Wait for t
 
 ### Fallback chain ordering (and an empty chain)
 
-**Symptom:** When the primary hiccups, the agent silently lands on a less-preferred model and quality quietly degrades, with no obvious error. Or, with no fallbacks configured, the turn simply fails.
+**Symptom:** When the primary hiccups, the agent silently lands on a less-preferred model and quality degrades with no obvious error. Or, with no fallbacks configured, the turn simply fails.
 
 **Cause:** Fallbacks are tried in list order. A less-preferred model listed first takes over after one primary failure. An empty list has the opposite property: nothing takes over, so a rate limit or an auth failure surfaces directly as the user-visible error.
 
@@ -265,7 +265,7 @@ Expected result: `clean`.
 
 6. **402 is usually a lie about billing.** It maps to rate-limit exhaustion after the fallback chain empties far more often than to a payment failure. Check the chain before the invoice.
 
-7. **A cross-provider fallback hides auth failures.** The flip side of a populated chain: an expired OpenAI token now degrades quietly to the fallback. Check the model a turn actually used (`openclaw sessions --active 60 --json`) after any auth change, not just whether it answered.
+7. **A cross-provider fallback hides auth failures.** The flip side of a populated chain: an expired OpenAI token now degrades to the fallback without notice. Check the model a turn actually used (`openclaw sessions --active 60 --json`) after any auth change, not just whether it answered.
 
 8. **A stale `CLAUDE_CODE_OAUTH_TOKEN` in the environment beats a fresh Claude login.** If the Claude lane returns 401 after a clean `/login`, check the environment of the process that spawns it. See [the auth boundary](acp-claude-code.md#the-auth-boundary).
 

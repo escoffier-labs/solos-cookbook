@@ -63,7 +63,7 @@ No personal infrastructure names, IPs, or domains in committed text. Use generic
 |-------|-----|
 | `solo@my-desktop` | `user@desktop` |
 | A real LAN IP like `192.168.x.x` | `192.0.2.10` (RFC 5737 reserved) |
-| `mybox.local` | `your-host.local` or `the host` |
+| `mybox.local` | `your-host.local` or `the host` <!-- content-guard: allow private-hostname --> |
 | Real container names | `the LXC container`, `ct-100` |
 
 Run `git grep` for your hostnames before opening a PR.
@@ -78,7 +78,7 @@ To activate after cloning:
 git config core.hooksPath hooks
 ```
 
-If the hook blocks a push, rewrite the offending content or add a narrow allow comment only for a genuinely public example value. Do not bypass the hook.
+If the hook blocks a push, rewrite the offending content or add a narrow allow comment only for a public example value. Do not bypass the hook.
 
 The hook requires `brigade-cli`, which includes the scanner and public-repo policy:
 

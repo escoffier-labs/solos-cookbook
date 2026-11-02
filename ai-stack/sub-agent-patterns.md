@@ -2,8 +2,8 @@
 
 How to use OpenClaw sub-agents effectively. Spawn patterns, model assignment, error handling, and the lessons we learned from breaking things.
 
-**Tested on:** OpenClaw 2026.10.4 (main on GPT 6.1 Sol, `browser-operator` on GPT 6 Luna), brigade 0.28.0 worker seats, Claude Code 2.1.302 via tmux relay, ACPX 0.19.x, T3 Code delegated tasks
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 (main on GPT 6.1 Sol, `browser-operator` on GPT 6 Luna), brigade 0.31.0 worker seats, Claude Code 2.1.302 via tmux relay, ACPX 0.19.x, T3 Code delegated tasks
+**Last updated:** 2026-11-02
 
 ---
 
@@ -152,7 +152,7 @@ Claude review is not modeled as a fake gateway agent. Launch it through a Brigad
 | Browser flows against a logged-in session | `browser-operator` sub-agent | Minimal tool profile, credential fill brokered, Luna is enough |
 | Routine implementation, triage | Brigade `luna6` seat | Cheap, isolated worktree |
 | Harder implementation slices | Brigade `sol61` seat | Same family as the orchestrator, higher reasoning |
-| Fast read-only scouting and research | Gemini Flash seat via Antigravity, or a read-only Luna seat | Keeps orchestrator quota for judgment |
+| Fast read-only scouting and research | Gemini 4 Argon seat via Antigravity, or a read-only Luna seat | Keeps orchestrator quota for judgment |
 | Building, drafting, QA with Claude | Sonnet 5.5 seat | Default Claude worker |
 | Architecture, final review, disputed calls | Opus 5.5 seat or tmux relay | Stronger judgment on tradeoffs |
 | Security review | Dedicated security-review seat | Separate route, independent of the builder |

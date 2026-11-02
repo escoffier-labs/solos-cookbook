@@ -1,13 +1,13 @@
 # Repo Redeploy
 
-> One cron job, every ten minutes, watches your own MCP servers and CLI tools for new commits on `main` and quietly redeploys them in place. Push from anywhere, the change is live within ten minutes.
+> One cron job, every ten minutes, watches your own MCP servers and CLI tools for new commits on `main` and redeploys them in place. Push from anywhere, the change is live within ten minutes.
 
-**Tested on:** Ubuntu 24.04, bash 5, Python 3.12, Node 22 or newer, Brigade 0.28.0
-**Last updated:** 2026-10-17
+**Tested on:** Ubuntu 24.04, bash 5, Python 3.12, Node 22 or newer, Brigade 0.31.0
+**Last updated:** 2026-11-02
 
 ## What this is
 
-A single bash script (`~/bin/repo-redeploy.sh`) driven by a TOML manifest. For each enabled entry it decides whether the installed build is behind its repo, rebuilds or reinstalls if so, and optionally mirrors the result to a second host. The first version had a hard-coded function per repo. It now reads a manifest with 28 entries (20 Node MCP servers and CLIs, 4 Python tools installed with pipx, 2 Rust crates, 1 global npm package, 1 shell installer), so adding a tool is a manifest edit, not a code change.
+A single bash script (`~/bin/repo-redeploy.sh`) driven by a TOML manifest. For each enabled entry it decides whether the installed build is behind its repo, rebuilds or reinstalls if so, and optionally mirrors the result to a second host. The first version had a hard-coded function per repo. It now reads a manifest with 28 entries (20 Node MCP servers and CLIs, 4 Python tools installed with pipx, 2 Rust crates, 1 global npm package, 1 shell installer), so adding a tool is a manifest edit.
 
 A tool is redeployed when any of these is true:
 
@@ -16,7 +16,7 @@ A tool is redeployed when any of these is true:
 3. The installed version differs from the repo version (pipx, cargo, and npm drift).
 4. `REPO_REDEPLOY_FORCE=1` is set.
 
-When none of them is true, the run logs `current` for that tool and moves on. That is what makes it safe from cron on a tight interval.
+When none of them is true, the run logs `current` for that tool and moves on. That keeps it safe to run from cron on a tight interval.
 
 This is the deployment surface for the parts of the stack I publish to GitHub and npm. The agent stack itself does not get touched here. See [`../infrastructure/upgrade-hygiene.md`](../infrastructure/upgrade-hygiene.md) for how OpenClaw itself is promoted.
 
@@ -139,7 +139,7 @@ Three environment variables change one run without touching the manifest:
 
 ### Queued restarts
 
-A tool can name a `restart` command, for example the gateway restart for an MCP the gateway has loaded. The script does not restart in the middle of the loop. It queues the command, deduplicates it, and runs each unique restart once after every tool has been processed, so five tool updates in one tick cost one restart, not five.
+A tool can name a `restart` command, for example the gateway restart for an MCP the gateway has loaded. The script does not restart in the middle of the loop. It queues the command, deduplicates it, and runs each unique restart once after every tool has been processed, so five tool updates in one tick cost one restart.
 
 ### Mirroring to a second host
 
@@ -162,7 +162,7 @@ mirror_example() {
 Key choices:
 
 - **`BatchMode=yes`** ensures cron-context SSH never hangs waiting for a password.
-- **A reachability probe first.** An offline secondary host is a skipped step with a log line, not a failed run.
+- **A reachability probe first.** An offline secondary host is a skipped step with a log line and the run still succeeds.
 - **Tarball over a directory `rsync`** is faster for small repos and avoids `rsync`'s `--exclude` quoting traps.
 - **`--omit=dev` on the remote install** keeps the production tree slim. The dev dependencies were only needed to build.
 - **A failed mirror is non-fatal, and it is not retried automatically.** The local build is already marked deployed, so the next tick sees `current`. Resync with `REPO_REDEPLOY_FORCE=1 REPO_REDEPLOY_ONLY=<id>`.
@@ -218,7 +218,7 @@ A healthy run logs `current (<sha>)` for almost every tool. If the same tool red
 
 **The script will happily redeploy a repo that builds but does not work.** There is no post-build smoke test. If it matters, add one to that entry's `build` command so a failing smoke test fails the build.
 
-**Restarts run once at the end, and a failed restart is only logged.** A queued gateway restart that fails leaves the old process serving the old build while the log shows the new SHA. After a run that updated anything the gateway loads, check the service, not just the log.
+**Restarts run once at the end, and a failed restart is only logged.** A queued gateway restart that fails leaves the old process serving the old build while the log shows the new SHA. After a run that updated anything the gateway loads, check the service as well as the log.
 
 **The stale-build check compares file mtimes.** A `git checkout` of an older branch sets mtimes to now, which can make an old artifact look newer than the last commit and hide a needed rebuild. A forced run for that one entry clears it.
 

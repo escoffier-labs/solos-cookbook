@@ -6,7 +6,7 @@
 
 A position piece on why the agent stack in this cookbook keeps one primary control host, even though the real deployment spans multiple owned machines: an always-on agent host, OpenClaw nodes on other machines, a homelab, desktops and laptops, storage, and family machines that need safe maintenance.
 
-This is opinion. The technical guides in the rest of the cookbook are recipes; this one is the argument behind the recipe.
+This is opinion. The technical guides in the rest of the cookbook are recipes, and this one is the argument behind the recipe.
 
 ## The default we are arguing against
 
@@ -36,11 +36,11 @@ The fleet itself is not the problem. The problem is letting every machine become
 
 The agent can read from many places and act across many machines. Durable memory should still have one owner. If two machines both ingest handoffs, update cards, rewrite rules, or run publish gates, they will eventually disagree. One ingests handoff A first, another ingests handoff B first, both touch the same card, and now the next session depends on which box you happened to ask.
 
-One control host keeps the rule boring: the fleet produces handoffs and evidence, the control host routes them, and the memory owner writes canonical state.
+One control host keeps the rule simple: the fleet produces handoffs and evidence, the control host routes them, and the memory owner writes canonical state.
 
 ### 2. A fleet still needs a map you can hold in your head
 
-The cost of running a stack is not CPU cycles. It is the amount of system-level state you have to keep straight: which service runs where, which file is the source of truth, which path is mounted from where, what happens when machines talk to each other.
+The cost of running a stack is the amount of system-level state you have to keep straight: which service runs where, which file is the source of truth, which path is mounted from where, what happens when machines talk to each other.
 
 A small bare-metal fleet is manageable when the roles are crisp:
 
@@ -52,7 +52,7 @@ A small bare-metal fleet is manageable when the roles are crisp:
 
 That is very different from a cluster where every host can mutate the agent's durable state.
 
-### 3. Latency is unavoidable; do not add it to the hot path
+### 3. Latency is unavoidable, so keep it off the hot path
 
 The agent's main wait is the model call. That is the round trip you cannot remove. Everything else - file reads, SQLite queries, handoff linting, tool dispatch, policy scans - is fast on the control host and slower once it has to cross the LAN for no good reason.
 
@@ -76,9 +76,9 @@ Multiple machines are not a failure of the pattern. They are the pattern, once t
 
 1. **Service isolation.** DNS, SIEM, photo services, automation, and sandboxes often belong in containers or VMs on the homelab.
 2. **Different operating systems.** Windows-only tools and desktop apps belong on Windows machines. The agent reaches them through SSH, SMB, an MCP adapter, or another narrow bridge.
-3. **Bulk storage and backups.** NAS and off-host restic targets are part of the safety story, not a violation of it.
+3. **Bulk storage and backups.** NAS and off-host restic targets are part of the safety story.
 4. **OpenClaw nodes near the work.** A machine can run its own OpenClaw node for local tools, browser state, or endpoint maintenance. It still sends durable facts back to the control host.
-5. **Family machine maintenance.** Real households have laptops and desktops that need updates, backups, and triage. Manage them as endpoints, not as memory owners.
+5. **Family machine maintenance.** Real households have laptops and desktops that need updates, backups, and triage. Manage them as endpoints. They do not own memory.
 6. **Heavy or special workloads.** A GPU box, lab VM, or browser host can be a worker when the control host should not carry that work.
 
 The line is not "never add a machine." The line is "do not fork the control plane."
@@ -92,7 +92,7 @@ A few things that do not look like benefits until you have them:
 - **Remote OpenClaw nodes have a lane home.** They can act locally without creating a second durable-memory universe.
 - **Recovery has a first step.** Restore the control host, then reattach services and endpoints.
 - **Remote work stays intentional.** When the agent touches another machine, that path is visible in a guide, a tool config, or a receipt.
-- **The topology can grow without losing the plot.** More machines add capabilities, not competing memory systems.
+- **The topology can grow while keeping one memory owner.** More machines add capabilities and no competing memory systems.
 
 ## The honest counter
 
@@ -100,13 +100,13 @@ A few things you give up:
 
 - **No automatic failover for the agent brain.** If the control host dies, the agent is down until you restore or replace it.
 - **The control host matters a lot.** Bad local cron, disk pressure, or a broken auth profile can block the whole workflow until fixed.
-- **Remote endpoints still need care.** A family laptop can drift, a desktop can sleep, and a homelab service can fail. The control host gives you one place to see that, not magic immunity.
+- **Remote endpoints still need care.** A family laptop can drift, a desktop can sleep, and a homelab service can fail. The control host gives you one place to see that. It does not make them immune.
 
 For this stack, those tradeoffs are acceptable. The goal is not cloud-style availability. The goal is a fleet of owned machines that can be operated by one person without the agent forgetting where truth lives.
 
 ## Templates
 
-There is no template for this; the whole cookbook is the implementation. Starting points:
+There is no template for this, since the whole cookbook is the implementation. Starting points:
 
 - [`../hardware/bare-metal-setup.md`](../hardware/bare-metal-setup.md) - the primary host spec and baseline install
 - [`../infrastructure/desktop-integration.md`](../infrastructure/desktop-integration.md) - treating a daily-driver desktop as a peer

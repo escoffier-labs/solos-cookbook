@@ -2,8 +2,8 @@
 
 How to build an agent memory system that does not eat your context window alive. From a slim bootstrap index to semantic search with local embeddings, plus the scheduled jobs that keep the card set honest.
 
-**Tested on:** OpenClaw 2026.10.4, Ollama with `qwen3-embedding:8b`, Brigade 0.28.0, a ample RAM host
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8, Ollama with `qwen3-embedding:8b`, Brigade 0.31.0
+**Last updated:** 2026-11-02
 
 ---
 
@@ -50,7 +50,7 @@ memory/cards/
 └── ... (1,600+ cards)
 ```
 
-Each card has YAML frontmatter. At this size the frontmatter is what makes the set maintainable, not just searchable. Fields I actually use, with a current example:
+Each card has YAML frontmatter. At this size the frontmatter makes the set maintainable, not just searchable. Fields I actually use, with a current example:
 
 ```yaml
 ---

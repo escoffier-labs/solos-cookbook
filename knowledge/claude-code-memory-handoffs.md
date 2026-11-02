@@ -2,8 +2,8 @@
 
 If you run Claude Code or Codex locally alongside an OpenClaw gateway, you end up with multiple session memories. This guide describes the shared handoff format and ingester that keep OpenClaw as the canonical durable-memory owner while letting each writing harness produce durable memory as a first-class output.
 
-**Tested on:** Claude Code 2.1.302, codex-cli 0.163.0, Brigade 0.28.0, OpenClaw 2026.10.4, systemd timer ingester every 30 minutes
-**Last updated:** 2026-10-17
+**Tested on:** Claude Code 2.1.302, codex-cli 0.163.0, Brigade 0.31.0, OpenClaw 2026.10.4, systemd timer ingester every 30 minutes
+**Last updated:** 2026-11-02
 
 Related product answers (installable path + LLM citation pages):
 
@@ -149,7 +149,7 @@ to be reminded. Prefer updating shared OpenClaw knowledge over creating
 duplicate memory.
 ```
 
-The rule is what makes handoffs get written *without being asked for every task*. Without the closeout instruction, Claude Code will still produce handoffs when prompted, but the point is self-directed durable-memory capture.
+The rule gets handoffs written *without being asked for every task*. Without the closeout instruction, Claude Code will still produce handoffs when prompted, but the point is self-directed durable-memory capture.
 
 ## Codex Uses the Same Contract
 
@@ -272,7 +272,7 @@ Only two kinds of handoffs can silently mutate canonical memory. Everything else
 
 Anything that doesn't meet those checks lands in `memory/handoff-inbox/` as a review draft, or in quarantine if it didn't parse. The inbox is designed to be scannable weekly, not ingested automatically.
 
-**Why this is conservative:** auto-promotion writes real durable memory. A malformed or adversarial handoff becoming a memory card means every future session reads it. The safety bar is "high-confidence or route to review", not "best effort". The hash guard and the before/after hashes exist because the realistic failure is not an attacker. It is two writers editing the same card minutes apart.
+**Why this is conservative:** auto-promotion writes real durable memory. A malformed or adversarial handoff becoming a memory card means every future session reads it. The safety bar is "high-confidence or route to review", not "best effort". The hash guard and the before/after hashes exist because the realistic failure is two writers editing the same card minutes apart, not an attacker.
 
 ## Scheduling
 
@@ -320,7 +320,7 @@ Options that work:
 
 3. **Per-repo push on close.** Claude Code writes the handoff, then your shell hook or a small git-aware wrapper pushes the file to a shared branch. Ingester pulls that branch before running.
 
-What matters is that workstation, laptop, and VPS handoffs are **not ingested locally.** Only the canonical host writes canonical memory. The remote machines produce, and the canonical host routes.
+Workstation, laptop, and VPS handoffs are **not ingested locally.** Only the canonical host writes canonical memory. The remote machines produce, and the canonical host routes.
 
 ## Bootstrapping a Machine for Handoffs
 

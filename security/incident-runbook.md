@@ -2,8 +2,8 @@
 
 > When an agent breaks something, stop the bleeding first, preserve evidence second, and only then fix the root cause.
 
-**Tested on:** Ubuntu 24.04, systemd user services, OpenClaw 2026.10.4, Brigade 0.28.0. Drawn from agent API exposure incidents, secret-leak drills, publish-boundary checks, backup restore workflows, and a SIEM disk-full incident.
-**Last updated:** 2026-10-17
+**Tested on:** Ubuntu 24.04, systemd user services, OpenClaw 2026.10.4, Brigade 0.31.0. Drawn from agent API exposure incidents, secret-leak drills, publish-boundary checks, backup restore workflows, and a SIEM disk-full incident.
+**Last updated:** 2026-11-02
 
 ## What this is
 
@@ -306,11 +306,11 @@ Expected result: affected automation is either still paused intentionally or has
 
 5. **Public leaks have downstream copies.** Check releases, package registries, mirrored repos, screenshots, search caches, and chat attachments.
 
-6. **Runaway retries hide behind locks.** A queue may look quiet because jobs are waiting on `flock`. Check pending jobs and timers, not only CPU usage.
+6. **Runaway retries hide behind locks.** A queue may look quiet because jobs are waiting on `flock`. Check pending jobs and timers as well as CPU usage.
 
 7. **A prompt reminder is not closure.** Closure means the destructive path is gone, gated, scoped, or monitored.
 
-8. **A green process is not a working system.** A manager that is running while its index is read-only, or a gateway that is up while its env file is stale, passes a status check and still loses data. Verify the output, not only the unit state.
+8. **A green process is not a working system.** A manager that is running while its index is read-only, or a gateway that is up while its env file is stale, passes a status check and still loses data. Verify the output as well as the unit state.
 
 9. **Rotation has to reach the rendered copy.** If your env files are generated from a vault, rotating the vault entry fixes nothing until the render runs again and the consuming service restarts.
 

@@ -2,8 +2,8 @@
 
 > The scheduling stack I actually run: systemd timers for OS plumbing, crontab lines that fire reviewed Brigade runbooks, OpenClaw cron for agent tasks, and a small n8n for watchdogs. Pick the wrong layer and you'll spend 30 minutes a week chasing ghosts.
 
-**Tested on:** OpenClaw 2026.10.4, Brigade 0.28.0, Ubuntu 24.04, n8n 2.x (small instance)
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8, Brigade 0.31.0, Ubuntu 24.04, n8n 2.x (small instance)
+**Last updated:** 2026-11-02
 
 ## What this is
 
@@ -16,8 +16,8 @@ What is running today (counted 2026-10-17):
 | Layer | Count | What lives there |
 |-------|-------|------------------|
 | systemd user timers | 61 | Backups, freshness checks, watchdogs, syncs, nightly gateway restart, dependency and plugin smoke checks |
-| crontab | 21 active lines | 11 call `brigade runbook run --approved <runbook>.json`. The rest are small scripts and file syncs |
-| OpenClaw gateway cron | 36 jobs | 21 agent turns and 15 `command` payloads (several of the commands also run runbooks) |
+| crontab | 20 active lines | 10 call `brigade runbook run --approved <runbook>.json`. The rest are small scripts and file syncs |
+| OpenClaw gateway cron | 44 enabled jobs | 29 agent turns and 15 `command` payloads (several of the commands also run runbooks) |
 | n8n schedule triggers | 11 across 14 workflows | Watchdogs and digests that post to chat |
 
 ## Why this way
@@ -129,7 +129,7 @@ The same runbooks can also be fired from OpenClaw cron as a `command` payload (b
 
 Use for: scheduled research, daily summaries, posting to chat channels, any task that's "agent does X, returns text, send it somewhere."
 
-OpenClaw skeleton lives in [`../templates/cron/openclaw-cron-job.json`](../templates/cron/openclaw-cron-job.json). Add jobs with `openclaw cron add`. The gateway owns job storage (a SQLite store on 2026.10.x), so do not hand-edit the legacy `~/.openclaw/cron/jobs.json`. Current Doctor only preserves old file-store jobs: to import them, run `openclaw doctor --fix` on 2026.9.7 before upgrading to 2026.10 (see the [cron deep dive](openclaw-cron-deep-dive.md)). Hermes and other orchestrators have their own cron-config surface: the three rules below are general. The file format isn't.
+OpenClaw skeleton lives in [`../templates/cron/openclaw-cron-job.json`](../templates/cron/openclaw-cron-job.json). Add jobs with `openclaw cron add`. The gateway owns job storage (a SQLite store on 2026.10.x), so do not hand-edit the legacy `~/.openclaw/cron/jobs.json`. Current Doctor only preserves old file-store jobs: to import them, run `openclaw doctor --fix` on 2026.9.7 before upgrading to 2026.10 (see the [OpenClaw cron guide](openclaw-cron-deep-dive.md)). Hermes and other orchestrators have their own cron-config surface: the three rules below are general. The file format isn't.
 
 Three things to get right (orchestrator-agnostic):
 
@@ -142,10 +142,10 @@ Three things to get right (orchestrator-agnostic):
 #### OpenClaw specifics
 
 - Manage jobs with `openclaw cron add | edit | get | list | show | rm | enable | disable | run | runs | status` (patches go through the gateway, no restart needed).
-- There is no `:cron` model alias any more. Each job carries its own `payload.model` (for example `openai/gpt-6-luna`) and `payload.thinking` (`low`, `medium`, `high`), set with `--model` and `--thinking` on `openclaw cron add` or `edit`. Of my 36 jobs, 15 pin Luna explicitly. The rest are `command` payloads (no model) or inherit the agent default.
+- There is no `:cron` model alias any more. Each job carries its own `payload.model` (for example `openai/gpt-6-luna`) and `payload.thinking` (`low`, `medium`, `high`), set with `--model` and `--thinking` on `openclaw cron add` or `edit`. Of my 44 enabled jobs, 3 pin Sol and 2 pin Luna. The rest are `command` payloads (no model) or inherit the agent default (Sol). Most of the old Luna pins went with jobs I disabled.
 - Two payload kinds matter. `agentTurn` runs an agent with a prompt, optional `model`, `thinking`, `toolsAllow`, `lightContext`, and `timeoutSeconds`. `command` runs `argv` on the gateway with optional `cwd`, `env`, `timeoutSeconds`, `noOutputTimeoutSeconds`, and `outputMaxBytes`, with no model at all. Use `command` for anything that is already a script or a runbook.
-- `sessionTarget` is `isolated` (fresh session per run, 31 of my jobs) or `current` (the job is bound to an existing session and keeps its context, 5 of my jobs). The CLI also accepts `main` and `session:<id>`. `current` jobs are the morning and health briefs that should know what the day already looked like. A `current` job stores the session key it was created in, so create it from the conversation it should live in, and re-create it if that session is retired.
-- `wakeMode` is `now` or `next-heartbeat` (the `--wake` flag). 33 of my jobs use `now`. Three use `next-heartbeat` and still ran on schedule with last status `ok` on a host where heartbeats are disabled, so I treat `now` as the safe default and do not rely on `next-heartbeat` for timing.
+- `sessionTarget` is `isolated` (fresh session per run, 17 of my jobs) or `current` (the job is bound to an existing session and keeps its context, 27 of my jobs). The CLI also accepts `main` and `session:<id>`. `current` jobs are now most of my agent turns: the briefs, health checks, and weekly reviews that should know what the day or week already looked like. A `current` job stores the session key it was created in, so create it from the conversation it should live in, and re-create it if that session is retired.
+- `wakeMode` is `now` or `next-heartbeat` (the `--wake` flag). 43 of my jobs use `now`. One uses `next-heartbeat` and still runs on schedule with last status `ok` on a host where heartbeats are disabled, so I treat `now` as the safe default and do not rely on `next-heartbeat` for timing.
 - Set `tools.elevated.enabled: true` globally. There is no job-level `elevated` field. Per-job restriction is `toolsAllow` plus a `scheduledToolPolicy` that the gateway attaches (mine show `trusted` or `account`).
 - A job can carry a `failureAlert` block (`after`, `cooldownMs`, optional `channel` and `to`). Mine use `after: 1` with cooldowns of one hour to one day, so a failing job pages once instead of every run.
 
@@ -163,7 +163,7 @@ Skeleton at [`../templates/cron/n8n-schedule-trigger.json`](../templates/cron/n8
 
 **Use the `errorWorkflow` setting to route failures.** A failure-classifier workflow can bucket errors (`code-error`, `auth-failed`, `rate-limited`, `transient`) and decide whether to escalate. The classifier itself is a single shared workflow that all production workflows reference.
 
-**Idempotent fan-out is your friend.** If your workflow posts to four sinks, run them in parallel branches with their own retry logic, not in a chain. One slow sink won't block the others.
+**Make fan-out idempotent.** If your workflow posts to four sinks, run them in parallel branches with their own retry logic instead of in a chain. One slow sink won't block the others.
 
 ## Verification
 
@@ -207,7 +207,7 @@ If a scheduled task doesn't show up in exactly one of these, it's in the wrong p
 
 **n8n CLI execute does not trigger `errorWorkflow`.** When you run `n8n execute --id <wf-id>` from a script (e.g., for testing), failures do not route to your error workflow. Only auto-runs do. **Fix:** trust the auto-run path for production. For ad-hoc CLI runs, expect to inspect failures manually.
 
-**Orchestrator upgrades regenerate systemd unit files and drop custom directives.** An in-place upgrade can silently rewrite `~/.config/systemd/user/<orchestrator>.service`, dropping `EnvironmentFile=` and other custom directives. The gateway then crash-loops on missing env vars. **Fix:** keep custom directives in drop-ins under `<unit>.d/` instead of editing the unit, and promote releases through a script that snapshots first. See [Upgrade hygiene](../infrastructure/upgrade-hygiene.md).
+**Orchestrator upgrades regenerate systemd unit files and drop custom directives.** An in-place upgrade can silently rewrite `~/.config/systemd/user/<orchestrator>.service`, dropping `EnvironmentFile=` and other custom directives. The gateway then crash-loops on missing env vars. **Fix:** keep custom directives in drop-ins under `<unit>.d/` instead of editing the unit, and promote releases through a script that takes a snapshot before it changes anything (see [Upgrade hygiene](../infrastructure/upgrade-hygiene.md)).
 
 ## Templates
 

@@ -10,5 +10,7 @@ Index of tools shipped from this stack - MCPs, dashboards, helpers - and how the
 - [`opsdeck.md`](opsdeck.md) - personal ops control plane: a 43-route React dashboard over a default-deny Express API, what's on it, and why
 - [`repo-redeploy.md`](repo-redeploy.md) - manifest-driven cron job that keeps installed builds in step with their repos: stale-build and version-drift checks, locking, dry runs, and optional mirroring to a second host
 - [`mcp-readme-five-clients.md`](mcp-readme-five-clients.md) - every MCP repo documents Claude Desktop, Claude Code, OpenClaw, Hermes Agent, Codex CLI, plus how other clients and `brigade mcp sync` fit
+- [`t3-code.md`](t3-code.md) - T3 Code as a headless server for Claude Code and Codex threads, and where Brigade hooks, verification, fleet claims, and handoffs sit between the layers
+- [`octopool.md`](octopool.md) - pooled, cached GitHub reads through a Cloudflare Worker, the agent policy for using it, and where it refuses on purpose
 
-> Per-guide format: [`../automation/cron-patterns.md`](../automation/cron-patterns.md).
+> Per-guide format: [`cron-patterns.md`](../automation/cron-patterns.md).

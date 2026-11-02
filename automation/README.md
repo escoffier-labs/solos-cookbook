@@ -5,7 +5,7 @@ Anything scheduled, hooked, or sandbox-wrapped. The decision tree for "where doe
 ## Guides
 
 - [x] [`cron-patterns.md`](cron-patterns.md) - three-layer cron stack: systemd vs agent cron vs n8n schedule triggers
-- [x] [`openclaw-cron-deep-dive.md`](openclaw-cron-deep-dive.md) - OpenClaw-specific deep dive: heartbeat batching, thinking-budget aliases, delivery routing
+- [x] [`openclaw-cron-deep-dive.md`](openclaw-cron-deep-dive.md) - OpenClaw-specific cron guide: heartbeat batching, thinking-budget aliases, delivery routing
 - [x] [`multi-channel-setup.md`](multi-channel-setup.md) - Discord, Telegram, Signal routing, session isolation, ACP threads
 - [x] [`hooks.md`](hooks.md) - three-layer hook model: boundary (git pre-push, outbound-scrub CLIs), tool-call (PreToolUse/PostToolUse, OpenClaw before_tool_call/tool_result_persist), lifecycle (SessionStart, before_prompt_build, message_sending)
 - [x] [`n8n-patterns.md`](n8n-patterns.md) - three interfaces (n8nctrl, REST API, direct sqlite), Code node sandbox + constant-folding trap, failure classifier
