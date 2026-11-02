@@ -16,7 +16,7 @@ Sanitize before publishing:
 - **Service account names:** Replace real accounts with descriptive placeholders.
 - **Hostnames:** Replace real hostnames with generic ones.
 - **Credentials:** Remove entirely or use `<password>` placeholder.
-- **Combined identifiers:** Room numbers + IPs + domain + account name paint a full network map. Sanitize all of them together, not piecemeal.
+- **Combined identifiers:** Room numbers + IPs + domain + account name paint a full network map. Sanitize all of them together.
 
 The pre-push hook runs Brigade guard with the `public-repo` policy. For publish-ready artifacts (blog posts, social drafts, docs), use the stricter `public-content` policy: `brigade scrub --policy public-content`.
 
@@ -155,4 +155,4 @@ If the workspace shares a network with the user's personal daily driver (differe
 
 ---
 
-*Add new rules here as the user corrects you. The point is to stop repeating the same mistakes, not to write a manifesto.*
+*Add new rules here as the user corrects you. The point is to stop repeating the same mistakes.*

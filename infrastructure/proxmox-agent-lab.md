@@ -2,8 +2,8 @@
 
 > One consumer-grade hypervisor runs the always-on agent stack's supporting services, an AI agent inspects and safely operates it through a token-gated MCP, and a separate auditor grades the host against CIS benchmarks. 🦞
 
-**Tested on:** Proxmox VE 9.2, Intel consumer hardware, 32GB RAM single node (no cluster), 15 LXC containers plus 2 QEMU VMs. proxmox-mcp 0.11.0 from the repository (96 tools). The npm registry still serves 0.5.1 as `latest`, so see the install note below. ProxGuard 16-rule CIS engine.
-**Last updated:** 2026-10-17
+**Tested on:** Proxmox VE 9.2 on a single consumer node (no cluster), long-lived LXC service containers plus 2 QEMU VMs. proxmox-mcp 0.11.0 from the repository (96 tools). The npm registry still serves 0.5.1 as `latest`, so see the install note below. ProxGuard 16-rule CIS engine.
+**Last updated:** 2026-11-02
 
 ---
 
@@ -11,7 +11,7 @@
 
 This is the substrate guide for a home agent lab: the physical box that hosts everything the always-on agent stack leans on, and how an AI agent is allowed to look at and operate that box without being handed root.
 
-The shape is one consumer hypervisor running a pile of small LXC containers and a couple of VMs. The services are the lab's plumbing: a DNS sinkhole, a SIEM, a network monitor, a photo service, an n8n automation stack, a fleet coordination hub, a self-hosted CI runner, a few media libraries, and a Proxmox Backup Server living on the same box it protects. Everything is always on. The stopped build and smoke-test container tier this guide used to describe was destroyed in a September 2026 cleanup. A separate hypervisor (a Windows desktop running Hyper-V) carries the heavier SOC VMs, so it stays out of the RAM budget here.
+The shape is one consumer hypervisor running a pile of small LXC containers and a couple of VMs. The services are the lab's plumbing: a DNS sinkhole, a SIEM, a network monitor, a photo service, an n8n automation stack, a fleet coordination hub, a self-hosted CI runner, and a Proxmox Backup Server living on the same box it protects. Everything except an on-demand worker VM is always on. The stopped build and smoke-test container tier this guide used to describe was destroyed in a September 2026 cleanup. A separate hypervisor (a Windows desktop running Hyper-V) carries the heavier SOC VMs, so it stays out of the RAM budget here.
 
 The distinctive part is the operator layer. The agent never gets an SSH root shell on the host. It reaches Proxmox through the operator's own [`proxmox-mcp`](https://github.com/lidless-labs/proxmox-mcp), a Model Context Protocol server that exposes the host through tiered, token-authenticated tools: reads are open, writes need an explicit confirm flag, and destructive operations need a confirm flag plus a destructive flag plus a process-level env gate. Security posture is graded out-of-band by [ProxGuard](https://github.com/solomonneas/proxguard), which parses the host's real config files against CIS Debian benchmarks and emits copy-paste remediation.
 
@@ -21,16 +21,16 @@ If you want the raw inventory of what runs in which container, that map is [`hom
 
 A few properties make Proxmox a good fit for a lab an agent partly operates:
 
-- **Cheap, fast isolation.** LXC containers share the host kernel, so a DNS blocker idles at 512MB and boots in under a second. On a 32GB box that frugality is the whole game: you can run fifteen small containers and two VMs on one node. When an agent does something it shouldn't, the blast radius is one container, and `proxmox_rollback_snapshot` puts it back.
+- **Cheap, fast isolation.** LXC containers share the host kernel, so a DNS blocker idles at 512MB and boots in under a second. On a small single node that frugality decides how many services fit. When an agent does something it shouldn't, the blast radius is one container, and `proxmox_rollback_snapshot` puts it back.
 - **A real API to gate.** Proxmox VE has a first-class REST API with token auth and per-token ACLs. That means an agent's access can be a *scoped token*, not a shell. You can hand out a read-only token first, confirm the model honors the read tier, then grade up to power-management and snapshot rights. Tokens are revocable instantly from the Datacenter > Permissions > API Tokens UI.
 - **Snapshots and backups are primitives, not add-ons.** `pct snapshot` before a risky change and `vzdump` to a backup datastore are built in. The agent can snapshot before it touches a service and the operator can restore without thinking about it.
 - **Numbered, inspectable guests.** Every guest is an LXC or VM with a config you can read with one tool call. An agent can answer "what is running, how much RAM does it want, is it privileged" entirely through read-tier tools before it proposes any change.
 
-The point is not that the agent runs the lab. It is that the lab is built so the agent can *see* it fully and *change* it narrowly, with every write behind a flag and every destructive op behind three.
+The lab is built so the agent can *see* it fully and *change* it narrowly, with every write behind a flag and every destructive op behind three. The agent does not run the lab.
 
 ## Prerequisites
 
-- A Proxmox VE 9.x host you control. A single node is fine, and consumer hardware is fine. This lab runs on a 32GB box.
+- A Proxmox VE 9.x host you control. A single node is fine, and consumer hardware is fine.
 - SSH access to the host for the operator (the MCP uses host SSH for in-guest `pct exec`, file reads, and writes).
 - A Proxmox API token. Start read-only: a role with `Datastore.Audit + VM.Audit + Sys.Audit`. Grade up to `VM.PowerMgmt + VM.Snapshot + VM.Backup` only after the read tier is verified.
 - [`proxmox-mcp`](https://github.com/lidless-labs/proxmox-mcp) installed in whatever agent harness you run (Claude Desktop, Claude Code, OpenClaw, and Codex CLI are documented upstream). The tool counts below match the repository at 0.11.0. `npm view @solomonneas/proxmox-mcp version` reports 0.5.1, which is the older, smaller tool surface. To get all 96 tools, run the server from a checkout of the repository.
@@ -39,7 +39,7 @@ The point is not that the agent runs the lab. It is that the lab is built so the
 
 ## CT and VM Layout and the RAM Budget
 
-The layout is one tier now: long-lived service containers, each one service per unprivileged LXC, sized to the actual job rather than a uniform "2GB to be safe". The full inventory with IDs is in [`homelab-topology.md`](homelab-topology.md). The roles that matter for agent work:
+The layout is one tier now: long-lived service containers, each one service per unprivileged LXC, sized to the actual job rather than a uniform "2GB to be safe". The full inventory is in [`homelab-topology.md`](homelab-topology.md). The roles that matter for agent work:
 
 | Role | RAM (configured) | Priv | Why |
 |------|------------------|------|-----|
@@ -51,18 +51,17 @@ The layout is one tier now: long-lived service containers, each one service per 
 | n8n automation | 3GB (+2GB swap) | unpriv | n8n plus publishing stack, Docker inside |
 | Fleet hub | 512MB | unpriv | Coordination hub for the agent fleet, overlay network only |
 | CI runner | 4GB | unpriv | Self-hosted GitHub Actions runner |
-| Media libraries (4 containers) | 1 to 2GB each | unpriv | Read-only or single-share bind-mounts |
 | Proxmox Backup Server | 4GB | **priv** | Needs UID-remapped `chown` on chunk files |
 
-Two VMs sit beside them: a full desktop OS managed by someone else (8GB), and a worker VM for agent jobs that want a whole machine (6GB).
+Two VMs sit beside them: a full desktop OS managed by someone else (8GB), and a worker VM for agent jobs that want a whole machine (6GB), stopped between jobs.
 
 **The ephemeral tier is retired.** Earlier versions of this guide described a set of stopped-by-default build and smoke-test containers that an agent started, used, and stopped again, reset by a `pristine` snapshot. They are gone. The pattern, what it cost, and why I don't run it now are in [`service-isolation.md`](service-isolation.md). The MCP workflow for it (clone or create, start, `proxmox_exec`, stop) still works for any short-lived guest you decide to create.
 
 ### The RAM Budget Reality
 
-On a 32GB box you get about **31GiB usable** after the hypervisor takes its cut. The configured RAM across the containers and VMs adds up to roughly 52GB, so the lab is overcommitted on paper by design. On 2026-10-17 the node reported about 23GiB in use. That leaves enough for the always-on tier but not much else. The SIEM, the photo service, and the 8GB desktop VM carry most of it.
+The configured RAM across the containers and VMs adds up to roughly 1.7 times what the node can hand out, so the lab is overcommitted on paper by design. On 2026-11-02 the node had about two-thirds of its usable RAM in use. That leaves enough for the always-on tier but not much else. The SIEM, the photo service, and the 8GB desktop VM carry most of it.
 
-The lesson worth internalizing before you let an agent provision anything: **on a single 32GB node, RAM is the binding constraint, not CPU.** The CPU has threads to spare. The disk was a third full in June and is now 69% used on the thin pool, so disk is the second thing to watch. Every time the agent proposes a new guest, the first question is "what does this push us to at peak," answered with `proxmox_resource_usage` before anything is created. The SOC-heavy VMs deliberately live on a separate hypervisor for exactly this reason: they would blow the budget here.
+The lesson worth internalizing before you let an agent provision anything: **on a single node, RAM is the binding constraint, not CPU.** The CPU has threads to spare. The disk was a third full in June and is now 77% used on the thin pool, so disk is the second thing to watch. Every time the agent proposes a new guest, the first question is "what does this push us to at peak," answered with `proxmox_resource_usage` before anything is created. The SOC-heavy VMs deliberately live on a separate hypervisor for exactly this reason: they would blow the budget here.
 
 ## Backups with PBS
 
@@ -100,9 +99,9 @@ The read tier (open, no flags) is where the agent lives most of the time. A typi
 proxmox_status {}                                  # cluster + node health
 proxmox_list_containers {}                          # LXC inventory
 proxmox_list_vms {}                                 # QEMU inventory
-proxmox_get_container_config { "vmid": 105 }        # RAM, cores, priv flag, net
-proxmox_resource_usage { "vmid": 105 }              # CPU/mem/disk RRD
-proxmox_list_snapshots { "vmid": 105 }              # what's safe to roll back to
+proxmox_get_container_config { "vmid": <siem-ctid> } # RAM, cores, priv flag, net
+proxmox_resource_usage { "vmid": <siem-ctid> }      # CPU/mem/disk RRD
+proxmox_list_snapshots { "vmid": <siem-ctid> }      # what's safe to roll back to
 proxmox_list_storage {}                             # pool headroom
 proxmox_list_backup_jobs {}                         # scheduled vzdump jobs and their selection
 proxmox_list_backups { "storage": "<pbs-storage>" } # backup inventory
@@ -111,9 +110,9 @@ proxmox_list_backups { "storage": "<pbs-storage>" } # backup inventory
 The safe-write tier needs `confirm: true` on every call. A `WriteGateError` fires *before any HTTP traffic* if the flag is missing, so a hallucinated tool call can't accidentally mutate the host. A representative safe-write workflow, snapshot then act then verify:
 
 ```
-proxmox_snapshot_resource { "vmid": 105, "snapname": "pre-maint", "confirm": true }
-proxmox_service_restart  { "vmid": 105, "service": "wazuh-manager", "confirm": true }
-proxmox_service_status   { "vmid": 105, "service": "wazuh-manager", "confirm": true }
+proxmox_snapshot_resource { "vmid": <siem-ctid>, "snapname": "pre-maint", "confirm": true }
+proxmox_service_restart  { "vmid": <siem-ctid>, "service": "wazuh-manager", "confirm": true }
+proxmox_service_status   { "vmid": <siem-ctid>, "service": "wazuh-manager", "confirm": true }
 ```
 
 Provisioning a short-lived sandbox and tearing it down stays inside the safe-write tier for everything except the final delete:
@@ -170,7 +169,7 @@ ProxGuard parses the host's actual config files against CIS Debian benchmarks an
 Two ProxGuard findings map directly onto this lab's own design decisions, which is a useful sanity check that the rules are real:
 
 - **Privileged LXC Containers Detected** (High, PVE-CT-001) will flag the PBS container. That is the one justified privileged exception, so it is an *accepted* finding, not a regression. Documenting why a flagged container is privileged is the right response, not silencing the rule.
-- **Container Nesting Enabled** (Medium, PVE-CT-002) will flag most of the containers, since 14 of 15 set `nesting=1`. The Docker-in-LXC stacks need it. For those, the finding is acknowledged. Turning it off on a container that runs no Docker is the fix worth making, and the fleet hub already does.
+- **Container Nesting Enabled** (Medium, PVE-CT-002) will flag most of the containers, since nearly all of them set `nesting=1`. The Docker-in-LXC stacks need it. For those, the finding is acknowledged. Turning it off on a container that runs no Docker is the fix worth making.
 
 ProxGuard also visualizes firewall rules with conflict detection (shadowing, contradictions, unreachable rules, port overlap, protocol mismatch), which is worth a pass after you add any firewall rule for a new service.
 
@@ -181,9 +180,9 @@ A full read-only sanity sweep, half through the MCP read tier and half from the 
 ```
 # Through the MCP (read tier, no flags):
 proxmox_status {}                            # node up, cluster healthy
-proxmox_list_containers {}                    # expected service CTs present (15 running)
+proxmox_list_containers {}                    # expected service CTs present and running
 proxmox_resource_usage {}                     # RAM headroom at peak
-proxmox_list_snapshots { "vmid": 105 }        # a recent snapshot exists
+proxmox_list_snapshots { "vmid": <siem-ctid> } # a recent snapshot exists
 proxmox_list_backup_jobs {}                    # the daily job exists and is enabled
 proxmox_list_backups { "storage": "<pbs-storage>" }  # last backup landed
 ```
@@ -200,19 +199,19 @@ Confirm the agent is gated, not just trusted: with `PROXMOX_ENABLE_DESTRUCTIVE` 
 
 ## Gotchas
 
-1. **RAM is the ceiling, plan every addition against peak.** On a 32GB node you get ~31GiB usable and real usage sits near 23GiB with everything warm. Before the agent provisions anything, run `proxmox_resource_usage` and ask what it pushes you to at peak. The CPU is not what runs out, and the thin pool is the second thing to watch (69% used). This is why the SOC VMs live on a separate hypervisor.
+1. **RAM is the ceiling, plan every addition against peak.** Real usage sits near two-thirds of usable RAM with everything warm. Before the agent provisions anything, run `proxmox_resource_usage` and ask what it pushes you to at peak. The CPU is not what runs out, and the thin pool is the second thing to watch (77% used). This is why the SOC VMs live on a separate hypervisor.
 
 2. **Privileged is an exception you justify, not a default.** Only the backup server runs privileged, because it needs UID-remapped `chown` on chunk files. ProxGuard will flag it (PVE-CT-001). That finding is accepted and documented, not silenced. If you find yourself making a *second* container privileged "to make it work," figure out the actual capability first, and consider whether you really wanted a VM.
 
 3. **`unprivileged` can't be flipped after create.** UID mapping changes how rootfs files are owned, so privileged-vs-unprivileged is a create-time decision, not a `pct set`. For services the answer is always unprivileged.
 
-4. **`PROXMOX_TLS_INSECURE=true` is for self-signed lab certs only.** The toggle exists because homelab Proxmox hosts usually run a self-signed cert. Set it only when that is genuinely the case, and leave it `false` in any environment with a real CA-signed cert. It is not a "make the connection work" convenience, it is an explicit "I trust this self-signed cert" statement.
+4. **`PROXMOX_TLS_INSECURE=true` is for self-signed lab certs only.** The toggle exists because homelab Proxmox hosts usually run a self-signed cert. Set it only when that is the case, and leave it `false` in any environment with a real CA-signed cert. Treat it as an explicit "I trust this self-signed cert" statement, and do not use it just to make a connection work.
 
-5. **The destructive env gate is the seatbelt that matters.** The per-tool `confirm` and `destructive` flags are necessary but not sufficient. Leave `PROXMOX_ENABLE_DESTRUCTIVE` unset day to day so the agent structurally cannot delete or force-stop, no matter how a tool call is phrased. Flip it only for the minutes you are actively running destructive cycles, then unset it.
+5. **The destructive env gate is the last line of defense.** The per-tool `confirm` and `destructive` flags are necessary but not sufficient. Leave `PROXMOX_ENABLE_DESTRUCTIVE` unset day to day so the agent structurally cannot delete or force-stop, no matter how a tool call is phrased. Flip it only for the minutes you are actively running destructive cycles, then unset it.
 
 6. **Retired is not the same as gone from the config.** If you reuse the pattern, stopped build containers are templates, and templates rot. A `pristine` snapshot from six months ago builds against six-month-old toolchains, and the idle volume still holds thin-pool space. Refresh on a schedule or don't keep the tier.
 
-7. **CTID and VMID share one number pool.** `pct list` shows only LXC, `qm list` shows only VMs, and they draw from the same ID space. Check both before assuming an ID is free. The MCP's `proxmox_next_vmid` handles this for you when provisioning, and the manual shell path does not. Also remember that freed IDs get reused, so an agent's notes about "VM 130" can point at a different guest after a cleanup.
+7. **CTID and VMID share one number pool.** `pct list` shows only LXC, `qm list` shows only VMs, and they draw from the same ID space. Check both before assuming an ID is free. The MCP's `proxmox_next_vmid` handles this for you when provisioning, and the manual shell path does not. Also remember that freed IDs get reused, so an agent's notes about a guest by number can point at a different guest after a cleanup.
 
 8. **Start the token read-only, grade up after.** Hand the MCP a `*.Audit`-only token first, verify the read tools work end-to-end and the redactor masks your secret in transcripts, *then* grade up to power-management and snapshot rights. Tokens are revocable instantly from the Proxmox UI, so the cost of being conservative is near zero.
 

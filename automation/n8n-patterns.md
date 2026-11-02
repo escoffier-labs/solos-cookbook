@@ -1,6 +1,6 @@
 # n8n Patterns
 
-> The interface surfaces, sandbox traps, and failure-routing patterns that actually matter for running n8n as the multi-step workflow layer underneath an agent stack. Pick the wrong API surface and your error-workflow setting silently disappears; pick the wrong Code node pattern and the whole task runner heartbeats out and dies.
+> The interface surfaces, sandbox traps, and failure-routing patterns that actually matter for running n8n as the multi-step workflow layer underneath an agent stack. Pick the wrong API surface and your error-workflow setting silently disappears. Pick the wrong Code node pattern and the whole task runner heartbeats out and dies.
 
 ## What this is
 
@@ -20,7 +20,7 @@ Three interfaces to n8n exist. Each has a different job and a different failure 
 
 Beyond interfaces, two cross-cutting traps catch every n8n stack eventually: the Code node sandbox is more limited than the docs imply, and the JS task runner does parse-time substitution over user code that produces cryptic SyntaxErrors when JS-meaningful characters end up in named consts.
 
-The cost of getting these right once is low. The cost of getting them wrong is silent failures that present as "the workflow worked yesterday" while error workflows quietly stop firing.
+The cost of getting these right once is low. The cost of getting them wrong is silent failures that present as "the workflow worked yesterday" while error workflows stop firing.
 
 ## Prerequisites
 
@@ -90,7 +90,7 @@ The same `command` + `env` shape works for OpenClaw (`plugins.entries.<id>.confi
 - **Execution lifecycle:** list/get/retry/delete (single + batch with proper abort under concurrency)
 - **Scanners:** webhooks, schedules, find-workflows-by-node-type, browser-bridge audit, check-disabled-nodes
 - **Tags:** list/get/create/delete/set-on-workflow (delete cascades server-side, confirm-gated)
-- **Audit:** `n8n_run_audit` returns counts by default; pass `includeDetails: true` to drill into a specific finding (default omits per-section `location` arrays to avoid surfacing credential ids and node ids in agent context)
+- **Audit:** `n8n_run_audit` returns counts by default. Pass `includeDetails: true` to get a specific finding (the default omits per-section `location` arrays to avoid surfacing credential ids and node ids in agent context)
 
 **Why this is the recommended interface even if you only use it occasionally:**
 
@@ -126,7 +126,7 @@ Or, in a script, the MCP's `n8n_trigger`. **Note:** error workflows fire only on
 n8n's data model is two-table for an unobvious reason:
 
 - `workflow_entity` - the editable "draft" view the UI renders and POSTs against
-- `workflow_history` - versioned snapshots; each save creates a new row
+- `workflow_history` - versioned snapshots, one new row per save
 - `workflow_entity.activeVersionId` - foreign key into `workflow_history`. **This is the runtime source of truth.** When n8n activates a workflow on startup, it reads `nodes` and `connections` from the history row, then re-syncs `workflow_entity` to match.
 
 So an UPDATE against `workflow_entity.nodes` looks like it worked (SELECT confirms the new value), survives until n8n restarts, then gets clobbered when n8n re-syncs from history. Silent revert. The fix is to update both rows in one transaction:
@@ -272,13 +272,13 @@ If a workflow is active but its `errorWorkflow` is null, a recent `PUT /workflow
 
 ## Templates
 
-- `n8nctrl` install + wire snippet - see Layer 1 above; full schema documentation at the [`n8nctrl`](https://github.com/lidless-labs/n8nctrl) README
-- Direct-sqlite dual-table UPDATE pattern - see Layer 3 above; lift the Python snippet directly
-- Classifier + dedup node - exhaustive recipe in Layer 5 above; standalone deep-dive at [`automation/failure-classifier.md`](failure-classifier.md)
+- `n8nctrl` install + wire snippet - see Layer 1 above, with full schema documentation at the [`n8nctrl`](https://github.com/lidless-labs/n8nctrl) README
+- Direct-sqlite dual-table UPDATE pattern - see Layer 3 above, and lift the Python snippet directly
+- Classifier + dedup node - exhaustive recipe in Layer 5 above, standalone write-up at [`automation/failure-classifier.md`](failure-classifier.md)
 
 ## Related
 
-- [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model; n8n is layer 3
-- [`automation/hooks.md`](hooks.md) - three-layer hook model; the failure classifier is the pattern that pairs with `errorWorkflow` wiring
+- [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model, where n8n is layer 3
+- [`automation/hooks.md`](hooks.md) - three-layer hook model, and the failure classifier is the pattern that pairs with `errorWorkflow` wiring
 - [`automation/failure-classifier.md`](failure-classifier.md) - full deep-dive on the classifier topology, taxonomy tuning, and escalation rules
 - [n8nctrl](https://github.com/lidless-labs/n8nctrl) - the CLI and MCP adapter this guide recommends

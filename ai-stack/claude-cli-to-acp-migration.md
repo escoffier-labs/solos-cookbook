@@ -2,8 +2,8 @@
 
 How to move Claude off the main-agent slot and onto an ACP escalation path after Anthropic blocked subscription OAuth from third-party harnesses in April 2026, and what the `claude-cli` runtime looks like on a current OpenClaw.
 
-**Tested on:** OpenClaw 2026.10.4, Claude Code 2.1.302, ACPX plugin 2026.10.4 (embedded runtime), Claude Max subscription. The original migration was done on OpenClaw 2026.4.x with Claude Code 2.1.92+. Steps below are rewritten for the 2026.10 config shape.
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8, Claude Code 2.1.302, ACPX plugin 2026.10.8 (embedded runtime), Claude Max subscription. The original migration was done on OpenClaw 2026.4.x with Claude Code 2.1.92+. Steps below are rewritten for the 2026.10 config shape.
+**Last updated:** 2026-11-02
 
 > **Where this fits now:** This is the ACPX compatibility runbook. For normal second-opinion code review I use the [Claude Code tmux relay](claude-code-tmux-relay.md), which keeps Claude in its first-party interactive harness and gives recoverable sessions. The wrapper-script and permissions details for the ACP lane itself are in [Running Claude Code in OpenClaw via ACP](acp-claude-code.md).
 
@@ -314,7 +314,7 @@ If `claude` itself stopped working (Anthropic rolled out a new block), rollback 
 - **Response latency is higher.** ACP adds a subprocess hop and an `npx` adapter start. Expect seconds of overhead on top of normal model latency.
 - **Tool use is mediated twice.** Claude Code has its own tool layer and OpenClaw wraps the ACP session. Keep escalation tasks narrow.
 
-For most setups the trade is worth it: you keep Claude for the tasks where it helps and stop fighting Anthropic's subscription policy.
+For most setups the trade pays off: you keep Claude for the tasks where it helps and stop fighting Anthropic's subscription policy.
 
 ---
 

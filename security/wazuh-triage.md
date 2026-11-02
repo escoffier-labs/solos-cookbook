@@ -54,7 +54,7 @@ The worst triage failure I have had was not a noisy rule I suppressed wrongly. I
 - Added a rate cap on the flooding rule, a local early-warning rule that fires at 90% partition usage (level 10, with a 2-hour ignore window so it does not repeat), and a self-health check that compares indexer daily document counts to archive counts.
 - Applied the same retention thinking to the other disk eaters on the fleet: Suricata log rotation (eve logs 14 days, fast logs 90 days, stats 7 days) and a larger disk on the NIDS VM.
 
-The retention policy is an ISM policy applied through the indexer's `_plugins/_ism/policies/<name>` endpoint, using the indexer admin client certificate rather than a password. Mine is named for its 90-day window, so `ISM` plus the number is easy to find in the policy list. Make sure the policy's index template pattern actually matches `wazuh-alerts-*`, and check a day-old index to confirm it picked up the policy.
+The retention policy is an ISM policy applied through the indexer's `_plugins/_ism/policies/<name>` endpoint, using the indexer admin client certificate and no password. Mine is named for its 90-day window, so `ISM` plus the number is easy to find in the policy list. Make sure the policy's index template pattern actually matches `wazuh-alerts-*`, and check a day-old index to confirm it picked up the policy.
 
 **Triage rule that came out of it:** check the indexer's daily document counts, not only the archives, and count a missing day as an incident. A green manager does not prove the index is writable.
 
@@ -116,7 +116,7 @@ Things worth keeping unsuppressed even though they are frequent on an agent host
 
 | Rule | Level | Why keep it |
 |------|-------|-------------|
-| 2902 | 7 | dpkg new install. Real signal during change windows. |
+| 2902 | 7 | A dpkg new install is real signal during change windows. |
 | 550 | 7 | FIM checksum changed. Useful audit trail, scope the dirs instead of muting the rule. |
 | systemd L5 service-exit | 5 | A service crash-looping is a real outage (see the worked example below). |
 
@@ -158,7 +158,7 @@ CDB lists scale where individual rules do not. When the allowlist grows, you edi
 
 **The alert.** Rule 510 (rootcheck), level 7, fired repeatedly against `/bin/passwd`, `/bin/chsh`, `/bin/chfn`, and the rest of the SUID shadow-utils. Description: "Trojaned version of file detected."
 
-**RCA.** Rootcheck's trojan signature is a generic string match (`bash`, `file.h`, `proc.h`, `/dev/ttyo`, and similar tokens) against the binary contents. The SUID shadow-utils legitimately contain some of those byte sequences. This is a signature misfire, not a compromise. Confirmed clean with the package manager's own verifier:
+**RCA.** Rootcheck's trojan signature is a generic string match (`bash`, `file.h`, `proc.h`, `/dev/ttyo`, and similar tokens) against the binary contents. The SUID shadow-utils legitimately contain some of those byte sequences. This is a signature misfire and not a compromise. Confirmed clean with the package manager's own verifier:
 
 ```bash
 dpkg --verify passwd
@@ -199,7 +199,7 @@ systemctl restart <service>
 
 The underlying problem was real. This is the opposite of a false positive: it is a true positive that got buried. You do not suppress this. You fix the service.
 
-**The tuning that matters here is not a suppression, it is an escalation.** Continuous L5 service-exit from the same agent and service is a real outage signature. Add a custom rule that correlates frequency and bumps the level so it crosses into chat:
+**This case needs an escalation instead of a suppression.** Continuous L5 service-exit from the same agent and service is a real outage signature. Add a custom rule that correlates frequency and bumps the level so it crosses into chat:
 
 ```xml
 <!-- 100120: Escalate repeated systemd service-exit (L5) from one agent.
@@ -212,7 +212,7 @@ The underlying problem was real. This is the opposite of a false positive: it is
 </rule>
 ```
 
-This is the inverse of suppression and it belongs in the same triage discipline. Sometimes the right answer to a noisy low-level alert is to make it louder when it clusters, not quieter. The single events stay at level 5, the cluster escalates to level 10 and pages you.
+This is the inverse of suppression and it belongs in the same triage discipline. Sometimes the right answer to a noisy low-level alert is to make it louder when it clusters. The single events stay at level 5, the cluster escalates to level 10 and pages you.
 
 ## Wiring Alerts to Chat with Dedup
 
@@ -221,10 +221,10 @@ An alert nobody reads is not an alert. Route level 7 and up to a chat channel, b
 Approaches that work:
 
 - **Threshold at the source.** Only forward level 7+. Everything below stays in the dashboard for when you go looking.
-- **Dedup by rule ID plus agent in a time window.** If rule 2902 fires 40 times on one agent in five minutes, send one message that says "rule 2902 x40 on <agent>", not 40 messages. A small forwarding script keyed on `(rule_id, agent_id)` with a short cooldown does this. The Wazuh integration (`<integration>` block in `ossec.conf`) is the hook point. The dedup logic lives in the receiving script or your automation layer.
+- **Dedup by rule ID plus agent in a time window.** If rule 2902 fires 40 times on one agent in five minutes, send one message that says "rule 2902 x40 on <agent>" instead of 40 messages. A small forwarding script keyed on `(rule_id, agent_id)` with a short cooldown does this. The Wazuh integration (`<integration>` block in `ossec.conf`) is the hook point. The dedup logic lives in the receiving script or your automation layer.
 - **Escalate the cluster, mute the singletons.** As in example 2, use a frequency rule so a burst pages you once at high level while the individual events stay quiet.
 
-Either way, the goal is one message per distinct problem, not one per event. The fleet is small enough that any real cluster is a real thing worth one ping.
+Either way, the goal is one message per distinct problem. The fleet is small enough that any real cluster is a real thing worth one ping.
 
 ## Keep Agents From Outrunning the Manager
 
@@ -246,7 +246,7 @@ A held `wazuh-agent` showing up forever in `apt list --upgradable` means the gua
 
 Agent IDs are space-separated. Commas fail with error 1701.
 
-The hold stops `apt upgrade`. It does not stop a manual `dpkg -i` or a package pulled in another way. I have seen an agent end up a patch release ahead of the manager despite the hold, so check versions after every upgrade. Use the agent list (version column), not an assumption that the hold worked.
+The hold stops `apt upgrade`. It does not stop a manual `dpkg -i` or a package pulled in another way. I have seen an agent end up a patch release ahead of the manager despite the hold, so check versions after every upgrade. Use the agent list (version column) and do not assume the hold worked.
 
 ## Verification
 
@@ -297,23 +297,23 @@ To confirm a suppression is narrow and not blanket, query the parent rule and ma
 
 5. **Lag is not a false positive.** Right after a patch, the vuln-detector may still alert until its next scan reconciles installed versions. Check installed-vs-candidate before suppressing. If they match, it is lag, give it a cycle before writing any rule.
 
-6. **The agent host's noise overlaps with compromise.** An attacker on an AI agent host looks like the agent: lots of shell commands, lots of file edits, privileged operations. Tune narrowly, never mute whole categories. The exception you write should match the agent's specific benign pattern, not the category it lives in.
+6. **The agent host's noise overlaps with compromise.** An attacker on an AI agent host looks like the agent: lots of shell commands, lots of file edits, privileged operations. Tune narrowly, never mute whole categories. The exception you write should match the agent's specific benign pattern and stay out of the wider category.
 
 7. **A true positive can hide below your chat threshold.** A crash-loop at level 5 ran for 32 days unseen because nothing escalated the cluster. Triage is not only about quieting noise, it is also about making sure real clustered signal gets loud.
 
 8. **Scope FIM, do not mute it.** FIM is high-value on an agent host because the agent edits files constantly and so would an attacker. Narrow the monitored directories and use a CDB allowlist for known-good paths. Do not disable rule 550.
 
-9. **A SIEM needs its own retention and its own disk alarm.** Retention on the indexer and logs is part of the install, not later cleanup. The 2026-09 flood happened because the thing collecting disk-full alerts had no protection against its own disk filling.
+9. **A SIEM needs its own retention and its own disk alarm.** Retention on the indexer and logs is part of the install. The 2026-09 flood happened because the thing collecting disk-full alerts had no protection against its own disk filling.
 
-10. **A true-positive flood is still a flood.** Rule 1007 was telling the truth about a full disk and still took out the SIEM. Cap the rate of any rule a single sick host can trigger in a loop (`frequency`/`timeframe`, or `<ignore>` for repeats), and alert on the first instance, not the millionth.
+10. **A true-positive flood is still a flood.** Rule 1007 was telling the truth about a full disk and still took out the SIEM. Cap the rate of any rule a single sick host can trigger in a loop (`frequency`/`timeframe`, or `<ignore>` for repeats), and alert on the first instance.
 
-11. **Check the index, not the archive.** Manager archives can be complete while the indexer is read-only. A daily indexer-count check catches the gap in a day instead of two weeks.
+11. **Check the index as well as the archive.** Manager archives can be complete while the indexer is read-only. A daily indexer-count check catches the gap in a day instead of two weeks.
 
 12. **Do not let agents outrun the manager.** Hold the agent package, and confirm versions from the agent list.
 
 ## Related
 
-- [`incident-runbook.md`](incident-runbook.md) - when an alert turns out to be a real incident, this is the response sequence
+- [`incident-runbook.md`](incident-runbook.md) - when an alert is a real incident, this is the response sequence
 - [`agent-security-hardening.md`](agent-security-hardening.md) - reduce the agent's attack surface so there is less to alert on
 - [`linux-hardening.md`](linux-hardening.md) - host hardening that cuts down baseline noise (SSH lockdown, service binding)
 - [`mcp-incident-response.md`](mcp-incident-response.md) - the agent-driven loop that reads these alerts, and the read-only credentials to give it

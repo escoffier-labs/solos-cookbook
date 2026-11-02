@@ -2,14 +2,14 @@
 
 How to treat your AI agent as an untrusted actor and build guardrails that actually work. Includes a real post-mortem from when a sub-agent nuked a production database.
 
-**Tested on:** OpenClaw 2026.10.4 (GPT 6.1 Sol primary, Claude via ACPX for escalation, a locked-down browser agent), Brigade 0.28.0. The incident below dates from the 2026.3 to 2026.4 stack.
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 (GPT 6.1 Sol primary, Claude via ACPX for escalation, a locked-down browser agent), Brigade 0.31.0. The incident below dates from the 2026.3 to 2026.4 stack.
+**Last updated:** 2026-11-02
 
 ---
 
 ## Core Rule
 
-**Treat LLMs as hostile, probabilistic actors.** Prompt-level guardrails are NOT a security boundary. A model that's told "never call DELETE" will eventually call DELETE if the endpoint exists and the context is right. Your security must exist at the infrastructure layer, not the instruction layer.
+**Treat LLMs as hostile, probabilistic actors.** Prompt-level guardrails are NOT a security boundary. A model that's told "never call DELETE" will eventually call DELETE if the endpoint exists and the context is right. Your security must exist at the infrastructure layer, outside the instructions.
 
 ## The Incident: How Haiku Nuked 71,000 Chunks
 
@@ -61,7 +61,7 @@ def health():
 
 The code search API from the incident has had its destructive endpoint removed since March, and I confirmed on 2026-10-17 that its OpenAPI spec lists no `DELETE`. The cleanup is not complete across everything on the host, though. A re-check found a write route still live on a second local API. It is on my fix list: remove or auth-gate the write routes, and bind to loopback.
 
-Check your own host the same way. The loop in the Verification section lists every `PUT` and `DELETE` route on the local ports you name. Treat any hit as a decision you have to make, not a pass.
+Check your own host the same way. The loop in the Verification section lists every `PUT` and `DELETE` route on the local ports you name. Treat any hit as a decision you have to make.
 
 ### Use Short-Lived Tokens
 
@@ -122,7 +122,7 @@ Key settings:
 - **`elevated.enabled: false`** blocks the sudo-like path for that agent
 - **`deny`** removes individual tools even if a profile would grant them
 
-Be honest about what is not fenced. My main agent runs with broad exec and no approval prompts, behind the gateway token. I made that trade for a single-operator host where the agent does real work, and I compensate at other layers: firewall rules, scoped credentials, no destructive endpoints, audit watches, and Brigade hooks on the repos where the agent writes code. The earlier version of this guide recommended an `exec.security: "allowlist"` block. I ran that on 2026.4 and have not re-verified the equivalent on 2026.10.4, so I no longer show it as a recommendation. If you need a tighter exec posture, start from `openclaw exec-policy show --verbose` and the presets (`cautious`, `deny-all`) rather than copying a config block from an older release.
+Be honest about what is not fenced. My main agent runs with broad exec and no approval prompts, behind the gateway token. I made that trade for a single-operator host where the agent does real work, and I compensate at other layers: firewall rules, scoped credentials, no destructive endpoints, audit watches, and Brigade hooks on the repos where the agent writes code. The earlier version of this guide recommended an `exec.security: "allowlist"` block. I ran that on 2026.4 and have not re-verified the equivalent on 2026.10.4, so I no longer show it as a recommendation. If you need a tighter exec posture, start from `openclaw exec-policy show --verbose` and the presets (`cautious`, `deny-all`), and do not copy a config block from an older release.
 
 ## 3. Sandboxing exec Access
 
@@ -206,7 +206,7 @@ Your agent should not be able to modify its own audit trail. The version of this
 - `auditd` write-watches (`-w <path> -p wa -k <key>`) on a few paths an agent should not change silently
 - A Wazuh agent on the host, shipping to a central manager
 
-The first two are owned by the same user the agent runs as, so they are evidence, not tamper-proof evidence. The `auditd` rules and the Wazuh stream are the parts the agent cannot rewrite without root. If you want the stricter separation, a root-owned directory is still the right shape:
+The first two are owned by the same user the agent runs as, so they are evidence but can be altered by the agent. The `auditd` rules and the Wazuh stream are the parts the agent cannot rewrite without root. If you want the stricter separation, a root-owned directory is still the right shape:
 
 ```bash
 sudo mkdir -p /var/log/agent-audit
@@ -252,7 +252,7 @@ If your agent reads email, scrapes websites, processes documents, or participate
 
 ### Defenses
 
-1. **Use your strongest model for orchestration and review.** Frontier models have significantly better injection resistance than budget models. This is the single most impactful defense.
+1. **Use your strongest model for orchestration and review.** Frontier models have significantly better injection resistance than budget models. This is the most impactful defense.
 
 2. **Restrict autonomous actions.** The more your agent can do without approval, the more damage a successful injection can cause.
 
@@ -267,9 +267,9 @@ Hardening is not only runtime fences. I also run changes through a separate revi
 - **Read-only capable.** It reads a diff or a repo and reports. It does not edit.
 - **Bounded scans.** Each run gets one scope (a PR, a directory, a dependency change) and a timeout of 25 minutes. It is not an open-ended crawl.
 - **No implementation work.** The seat's role text forbids routine implementation, so it cannot grade its own homework.
-- **Complementary to other reviewers.** It runs alongside the ordinary code review and the repo's CI scanners. It is a different model family from the one that wrote the change, which is the point.
+- **Complementary to other reviewers.** It runs alongside the ordinary code review and the repo's CI scanners. It is a different model family from the one that wrote the change.
 
-I dispatch it through the same tool I use for other workers (`brigade run`), not by hand-prompting a chat window. Findings still need a human or a second reviewer to confirm before anything is changed, since a security reviewer can be confidently wrong in both directions. Treat a clean pass as one signal, not clearance.
+I dispatch it through the same tool I use for other workers (`brigade run`) and do not hand-prompt a chat window. Findings still need a human or a second reviewer to confirm before anything is changed, since a security reviewer can be confidently wrong in both directions. Treat a clean pass as one signal and never as clearance.
 
 ## Verification
 
@@ -326,8 +326,8 @@ Expected result: the first block shows your fenced agents. `exec-policy show` pr
 
 5. **Any model will find creative ways to be destructive.** Haiku didn't set out to delete our data. It was trying to be helpful. It read the API spec, saw a cleanup endpoint, and called it. This is not a small-model problem. Frontier models will do the same given tool access. The lesson: if the destructive path exists, an agent will eventually find it. Remove the path.
 
-6. **Main-agent model changes don't change the attack surface.** I have moved the orchestrator from Opus to the GPT-5 generation and then to GPT 6.1 Sol. None of the security rules in this guide changed. Prompt-level guards are still not a boundary. Fences still need to be tight. API design still matters more than model choice.
+6. **Main-agent model changes don't change the attack surface.** I have moved the orchestrator from Opus to the GPT-5 generation and then to GPT 6.1 Sol. None of the security rules in this guide changed. Prompt-level guards are still not a boundary. Fences still need to be tight. API design limits damage more than model choice does.
 
-7. **A cleanup you have not re-verified is a claim, not a fact.** An earlier version of this guide implied the destructive-endpoint cleanup was finished. A re-check found a write route still live on a second local API. Re-run the endpoint loop after every new local service.
+7. **A cleanup you have not re-verified is an unverified claim.** An earlier version of this guide implied the destructive-endpoint cleanup was finished. A re-check found a write route still live on a second local API. Re-run the endpoint loop after every new local service.
 
 8. **A directory in a guide is not a log on disk.** The audit log path I once recommended was never created. Check that your audit sources exist and that something reads them, not only that a guide mentions them.

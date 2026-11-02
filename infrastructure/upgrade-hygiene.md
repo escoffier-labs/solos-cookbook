@@ -2,8 +2,8 @@
 
 Every OpenClaw minor release has, at least once, silently regenerated my systemd unit or broken on old config. I stopped upgrading in place. A promote script now builds a tagged release in its own worktree, rehearses it, snapshots state, migrates config, and switches the gateway over, with an automatic rollback if the new build is not healthy.
 
-**Tested on:** OpenClaw 2026.10.4 (promoted 2026-10-17), earlier history from 2026.1.29 through 2026.9.x, Ubuntu 24.04, Node 24.x
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 (promoted 2026-10-27, after 2026.10.5 on 2026-10-19), earlier history from 2026.1.29 through 2026.10.4, Ubuntu 24.04, Node 24.22.1
+**Last updated:** 2026-11-02
 
 ---
 
@@ -25,15 +25,15 @@ The old build stays on disk in its own worktree, untouched. That alone removes m
 Command shape:
 
 ```bash
-~/bin/openclaw-promote.sh v2026.10.4        # stable tag
-~/bin/openclaw-promote.sh v2026.10.5-beta.1 # beta tag (only stable or beta tags are accepted)
+~/bin/openclaw-promote.sh v2026.10.8        # stable tag
+~/bin/openclaw-promote.sh v<version>-beta.<n> # beta tag (only stable or beta tags are accepted)
 ```
 
 What the script does, in order (read from the script, not paraphrased from memory):
 
 1. **Validate the tag.** Only `vN.N...` (stable) or `vN.N...-beta.N` (beta) tags are accepted. The tag must also be the newest remote release tag on its channel. For stable, "newest" follows the npm `dist-tags.latest` value, because upstream can push a stable-looking tag before it is published. A stale or hand-made local tag is refused.
 2. **Take a lock.** A `flock` on a lock file means a second promotion exits instead of racing the first.
-3. **Resolve one absolute Node runtime.** OpenClaw needs Node 24.16 or newer on the 24 line, or 26.1 and up. The system `node` may be older and the PATH one may be a version-manager shim, so the script resolves an absolute path once (override with `OPENCLAW_PROMOTE_NODE`) and uses it for preflight, build, doctor, and the final `ExecStart`.
+3. **Resolve one absolute Node runtime.** OpenClaw 2026.10.6 and later need Node 24.22.1 or newer on the 24 line, or 26.12.1 and up, and `openclaw update` refuses older runtimes. My script's own gate still checks the older 24.16/26.1 floor, so it passes runtimes the release will reject. Raise the gate when the release notes raise the floor. The system `node` may be older and the PATH one may be a version-manager shim, so the script resolves an absolute path once (override with `OPENCLAW_PROMOTE_NODE`) and uses it for preflight, build, doctor, and the final `ExecStart`.
 4. **Rehearse.** It reruns the full-state preflight for the channel right now. If the candidate cannot boot against a disposable copy of state, it stops before any downtime.
 5. **Check out and build.** `git fetch` the tag into a private ref, then `git worktree add --detach ~/worktrees/openclaw-<tag>` (or move an existing worktree to it). It refuses to continue if the worktree has tracked modifications. It then runs `pnpm install --frozen-lockfile` and `pnpm build`, and records the built commit in a marker file so a rerun reuses the build.
 6. **Snapshot, with the gateway stopped.** It copies the drop-in directory and the base unit file, stops the gateway, then takes a consistent snapshot of `~/.openclaw` to `~/.local/state/openclaw-promote-snapshots/<timestamp>/state`. The destination must live outside `~/.openclaw`. The snapshot tool refuses a destination inside its source. Stopping first means sidecar files, config, and SQLite backup points describe one state.
@@ -64,7 +64,7 @@ The point is that bare-PATH callers always get the promoted build and the Node i
 Automatic rollback covers a failed promotion. If a promotion succeeded and you want to go back later, the script has no flag for it and I have not needed to. The manual equivalent is what the script's own rollback function does: stop the gateway, restore the state snapshot with the snapshot tool (`restore <snapshot>/state ~/.openclaw`), clear the drop-in directory and copy the snapshot's `dropins/` back, restore the saved base unit, `daemon-reload`, start. Two cautions:
 
 - The snapshot is from just before the migration, so anything the new build wrote since is lost.
-- I only keep the newest snapshot (about 11 GB here), so older state comes from the nightly restic backup.
+- The script is meant to keep only the newest snapshot (13 to 16 GB each here), so older state comes from the nightly restic backup.
 
 ### Preflight (the daily rehearsal)
 
@@ -149,7 +149,7 @@ The promote script's snapshot is a full, consistent copy of `~/.openclaw` (inclu
 - Agent and cron state (the cron store is SQLite, not a JSON file)
 - Auth profiles
 
-Keep at least one rollback point plus an independent backup. Upgrades that go wrong often fail hours later, at the first scheduled job, not at upgrade time. A full snapshot is large (about 11 GB here), which is why I keep one and rely on restic for history.
+Keep at least one rollback point plus an independent backup. Upgrades that go wrong often fail hours later, at the first scheduled job, not at upgrade time. A full snapshot is large (13 to 16 GB here), which is why I keep one and rely on restic for history.
 
 ## Verification
 
@@ -164,11 +164,11 @@ curl -sf http://127.0.0.1:18789/healthz
 
 # Version matches expectation
 openclaw --version
-# Expected: OpenClaw 2026.10.4 (383c124)
+# Expected: OpenClaw 2026.10.8 (dc2523e)
 
 # The unit runs the promoted worktree, not the source clone
 systemctl --user show openclaw-gateway -p ExecStart --value | grep -o 'worktrees/openclaw-[^/]*'
-# Expected: worktrees/openclaw-v2026.10.4
+# Expected: worktrees/openclaw-v2026.10.8
 
 # The drop-ins survived (names, not contents)
 ls ~/.config/systemd/user/openclaw-gateway.service.d/
@@ -216,6 +216,6 @@ If the gateway is up but an agent silently landed on the wrong fallback model (O
 
 7. **Do not `npm install -g openclaw` and do not run the source clone directly.** Either one bypasses the promoted build and Node runtime, and a stray run of an older checkout can recreate state files that the current doctor will not migrate.
 
-8. **Snapshots eat disk.** Each one is a full state copy (about 11 GB for the current one here). The script keeps only the newest by default (`OPENCLAW_PROMOTE_KEEP_SNAPSHOTS`). An earlier version without pruning accumulated 151 GB of stale snapshots before I noticed.
+8. **Snapshots eat disk, and pruning can silently skip.** Each one is a full state copy (13 to 16 GB here). The script is supposed to keep only the newest (`OPENCLAW_PROMOTE_KEEP_SNAPSHOTS`, default 1). After the 2026-10-27 promotion two snapshots were still on disk and the log had no `pruned old rollback snapshot` line, so the prune step did not run. Check `du -sh ~/.local/state/openclaw-promote-snapshots/*` after every promotion. An earlier version without pruning accumulated 151 GB of stale snapshots before I noticed.
 
 9. **Read the logs before blaming the tag.** The health gate needs `/healthz` ok and `NRestarts` at 0 within about three minutes. When it fails, the automatic rollback has already put the old build back, so read the promote log and the snapshot's `doctor.log` for the real cause before deciding the release is bad.

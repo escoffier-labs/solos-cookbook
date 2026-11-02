@@ -3,15 +3,15 @@
 How to wire network storage into a Linux host so a powered-off peer never hangs your boot, an agent never deletes irreplaceable data, and a consumer NAS never silently corrupts a backup chunkstore. This is the **mount layer**, not the backup pipeline. The restic schedule, encryption, and disaster recovery live in [`backup-recovery.md`](backup-recovery.md) and I link to it below instead of repeating it.
 
 **Tested on:** Ubuntu 24.04 agent host, a consumer SMB/CIFS NAS, a Windows daily-driver desktop sharing two SMB drives, and Proxmox LXC containers bind-mounting the NAS. SMB 3.1.1, `cifs-utils`, systemd automount.
-**Last updated:** 2026-10-17
+**Last updated:** 2026-11-02
 
 ---
 
 ## The Core Problem
 
-A homelab has machines that come and go. The NAS reboots for firmware. The desktop gets shut down at night. If you put a naive `cifs` line in `/etc/fstab`, a peer being offline at boot turns into a hung mount unit, a 90-second systemd timeout, and sometimes a shell that freezes the moment something `ls`-es the dead mountpoint. The whole design goal here is: **an offline peer should be a no-op, not an incident.**
+A homelab has machines that come and go. The NAS reboots for firmware. The desktop gets shut down at night. If you put a naive `cifs` line in `/etc/fstab`, a peer being offline at boot turns into a hung mount unit, a 90-second systemd timeout, and sometimes a shell that freezes the moment something `ls`-es the dead mountpoint. The whole design goal here is: **an offline peer should be a no-op.**
 
-The option strings below are the actual value of this guide. Copy them exactly. Every flag earns its place.
+The option strings below are the useful part of this guide. Copy them exactly, since each flag covers a specific failure.
 
 ## The fstab Pattern
 
@@ -76,7 +76,7 @@ The NAS holds irreplaceable personal data: family photos and phone backups that 
 Be clear about what kind of rule that is. **It is a convention, not a mount option.** The live mount is `rw`, because the restic jobs write their repository to the same share. A kernel-level guard would break them. So the guard is layered:
 
 - **Agent policy.** Any `mv`, `rm`, or rename under the NAS mount is a confirmation-required action. A small model with a writable mount and a vague cleanup instruction will eventually `rm` something it should not. I have watched an agent find a destructive endpoint and call it three times unprompted, and I assume the same energy applied to a filesystem.
-- **An independent copy.** The photo archive is also backed up to an add-only encrypted repo off-site (see [`backup-recovery.md`](backup-recovery.md#the-encrypted-photo-archive)). A deletion on the NAS is recoverable, which matters more than any flag.
+- **An independent copy.** The photo archive is also backed up to an add-only encrypted repo off-site (see [`backup-recovery.md`](backup-recovery.md#the-encrypted-photo-archive)). A deletion on the NAS is recoverable, which a mount flag cannot give you.
 - **Evidence before cleanup.** Before deleting anything on the NAS, confirm a recent backup or restore result. Never delete the restic repository directory as generic cleanup.
 
 The stronger design, which I have not built, is to split access: a read-only general mount for everything, plus a separate authenticated writable mount that only the backup service uses. If you want the read-only half of that today, there are two options. Mount a second read-only view with its own fstab line (`ro` in the options). Or, optionally, bind-mount the existing mount read-only for one tool:
@@ -121,14 +121,14 @@ The working design (**Path B**) keeps PBS off the NAS entirely:
 
 - **PBS datastore lives on local fast storage** (LVM-thin), where chunk dedup and rename work correctly and a backup costs only changed chunks.
 - **The NAS is at most a mirror tier, not the live datastore.** A weekly `rsync` of the local datastore to the NAS over the existing **CIFS** mount (not NFS) ships only changed chunks. Because PBS chunk filenames are content hashes, unchanged chunks keep their names and mtimes and rsync skips them, so dedup carries through the mirror for free.
-- **Current state.** The daily job writes to the local datastore. The weekly mirror of that datastore to Google Drive has been off since August 2026 because it exceeded the shared rclone client's API quota. Re-enabling it needs a private OAuth client ID and one full manual sync that finishes cleanly. Until then the datastore is a single local copy. See [`backup-recovery.md`](backup-recovery.md#proxmox-backup-server).
+- **Current state.** The daily job writes to the local datastore, and the weekly rsync mirror to the NAS runs Sundays at 08:00 (last run 2026-11-01 when I checked). A separate cloud mirror of the datastore to Google Drive has been off since August 2026 because it exceeded the shared rclone client's API quota. Re-enabling it needs a private OAuth client ID and one full manual sync that finishes cleanly. Until then the NAS mirror is the only off-host copy of the datastore. See [`backup-recovery.md`](backup-recovery.md#proxmox-backup-server).
 - **Guest permission gotcha:** on the NAS, "Guest Permission: Forced" maps all writes to `nobody` (65534), so PBS's `chown 34:34` on chunk files fails with `EPERM`. Set guest permission to **Ignored** so the real UID survives the export. This bites CIFS writes too, not just NFS.
 
 The general principle: a consumer NAS is excellent dumb bulk storage and a fine `rsync`/restic *target*. It is a poor *live datastore* for anything that depends on atomic metadata semantics. Keep the smart storage local, mirror the dumb copy to the NAS.
 
 ## Capacity Monitoring When Shares Run Hot
 
-Homelab storage lives at the edge of full. Rough numbers from this fleet: the NAS around two thirds full, and the two desktop drives both above 90%. At those levels two things go wrong: writes start failing unpredictably, and `rsync`/restic runs that normally fit suddenly do not.
+Homelab storage lives at the edge of full. Rough numbers from this fleet: the NAS around 80% full, and the two desktop drives at 94% and 95%. At those levels two things go wrong: writes start failing unpredictably, and `rsync`/restic runs that normally fit suddenly do not.
 
 Monitor across the mounts, not just local disk:
 
@@ -196,7 +196,7 @@ grep cifs /etc/fstab | grep -q nofail && echo "OK: nofail set" || echo "WARN: a 
 
 8. **"Guest Permission: Forced" breaks ownership-sensitive writes.** It maps everything to `nobody`, so any `chown` (PBS chunk files, anything UID-sensitive) fails with `EPERM`. Set it to **Ignored** on the NAS.
 
-9. **"Read-only by default" is a convention here, not a mount flag.** The mount is `rw` because the backup jobs write to it. Check with `findmnt -no OPTIONS /mnt/nas` rather than trusting the policy text. The irreplaceable personal data on that share is why the policy exists, and why the off-site add-only photo repo matters more than any flag.
+9. **"Read-only by default" is a convention here, not a mount flag.** The mount is `rw` because the backup jobs write to it. Check with `findmnt -no OPTIONS /mnt/nas` rather than trusting the policy text. The irreplaceable personal data on that share is why the policy exists, and why the off-site add-only photo repo exists.
 
 10. **Hot shares fail writes unpredictably.** At 90% or more full, plan the move before the write. Monitor `df` across all mounts on a schedule and alert, do not wait to discover a 92%-full share when an import fails halfway.
 

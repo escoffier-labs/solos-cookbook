@@ -1,9 +1,11 @@
 # n8n Failure Classifier
 
-> One Error Trigger workflow, wired as `errorWorkflow` on everything active, that turns raw stack traces into buckets and routes each bucket to the action it actually deserves. Without it a multi-workflow stack drowns the error channel in 80 messages a day, most of them the same SyntaxError from one broken Code node. With it, the channel is quiet until something genuinely needs a human. 🦞
+> One Error Trigger workflow, wired as `errorWorkflow` on everything active, that turns raw stack traces into buckets and routes each bucket to the action it actually deserves. Without it a multi-workflow stack drowns the error channel in 80 messages a day, most of them the same SyntaxError from one broken Code node. With it, the channel is quiet until something needs a human. 🦞
 
-**Tested on:** n8n 2.16.x on Docker (Alpine), 30+ active workflows, ~2,250 executions over a rolling 14-day window with a ~1% error rate, classifier wired as the single `errorWorkflow` on every active workflow, Signal + Discord as the two delivery lanes
-**Last updated:** 2026-06-04
+**Tested on:** n8n 2.16.x on Docker (Alpine), originally 30+ active workflows and ~2,250 executions over a rolling 14-day window with a ~1% error rate. Rechecked 2026-11-02 against 14 active workflows: 927 executions in 7 days, 0 errors.
+**Last updated:** 2026-11-02
+
+> **Current state (2026-11-02).** The classifier still runs, inside the workflow named "Error Notifier (Telegram)", with the same buckets, fingerprints, and escalation thresholds described below. Two things changed since this guide was first written. Delivery is no longer Signal plus Discord: one "Send Fleet Alert" node hands each event over SSH to a forced-command alert helper on the control host, which owns the chat credentials and routes to Telegram, with severity (`warning` or `critical`), a stable per-workflow incident key, and recovery events. And the agent-system report no longer dispatches work: it opens a blocked review flow in OpenClaw with `reviewRequired: true`, deduplicated per workflow and bucket, and a human decides what happens next. The Signal and Discord tables below describe the original two-lane design.
 
 ---
 
@@ -13,7 +15,7 @@ This is the exhaustive recipe that [`n8n-patterns.md`](n8n-patterns.md) Layer 5 
 
 If you only run two or three workflows you do not need this. The moment you cross roughly ten active workflows with their own triggers, schedules, and external dependencies, an unclassified error channel becomes write-only noise and you stop reading it. That is the failure mode this prevents.
 
-Everything below is from a real stack. The bucket counts in the taxonomy section come from an actual two-week audit, not a hypothetical.
+Everything below is from a real stack. The bucket counts in the taxonomy section come from an actual two-week audit.
 
 ## Why this way
 
@@ -23,9 +25,9 @@ The classifier fixes three separate problems that the naive setup conflates:
 
 | Problem | What the classifier does |
 |---------|--------------------------|
-| **Not all errors are the same** | Buckets them. A `SyntaxError` will never succeed on retry; a 429 will. They deserve opposite actions. |
+| **Not all errors are the same** | Buckets them. A `SyntaxError` will never succeed on retry, and a 429 will. They deserve opposite actions. |
 | **The same error repeats** | Fingerprints and dedups. The 200th identical failure is not 200 notifications, it is one notification with a count and an escalation. |
-| **Not all buckets are equally urgent** | Routes by severity. Transient network blips batch into a daily digest; auth expiry and persistent code errors page immediately. |
+| **Not all buckets are equally urgent** | Routes by severity. Transient network blips batch into a daily digest. Auth expiry and persistent code errors page immediately. |
 
 The cost of building this once is an afternoon. The cost of not building it is that you stop reading your own error channel, which is strictly worse than having no error channel, because now you believe you have monitoring and you do not.
 
@@ -51,7 +53,18 @@ The cost of building this once is an afternoon. The cost of not building it is t
 
 ### Topology
 
-The classifier is the existing Error Notifier with a classify-and-dedup Code node inserted between the trigger and the delivery nodes:
+The live workflow today is three Code nodes in a line:
+
+```
+Error Trigger
+   -> Classify + Dedup (Code node)
+   -> Report to OpenClaw (creates a blocked review flow; best-effort, cannot stop the alert)
+   -> Send Fleet Alert (SSH forced command on the control host -> Telegram)
+```
+
+The alert transport sanitizes the body before it leaves n8n: URLs collapse to their host, bearer tokens, `key=value` secrets, and long hex or token-shaped strings are redacted, and control characters are stripped. Secrets and chat routing stay on the control host, so n8n holds only an SSH key that can run one command.
+
+The original design, which the rest of this guide documents, was the existing Error Notifier with a classify-and-dedup Code node inserted between the trigger and two delivery lanes:
 
 ```
 Error Trigger
@@ -62,11 +75,11 @@ Error Trigger
         -> Always: report to agent system (separate lane, never suppressed)
 ```
 
-The two output lanes matter. The chat post is suppressible (that is the whole point of dedup). The agent-system report is not: it goes to your structured monitoring every time, so trend data is complete even when the chat channel is quiet. Suppression is a human-attention optimization, not a data-retention one.
+The two output lanes behave differently. The chat post is suppressible (dedup exists to suppress it). The agent-system report is not: it goes to your structured monitoring every time, so trend data is complete even when the chat channel is quiet. Suppression is a human-attention optimization, not a data-retention one.
 
 ### The classifier Code node
 
-This is the load-bearing node. It does three things: classify the error into a bucket, compute a fingerprint, and update the dedup state in `staticData`. Mind the constant-folding trap throughout: no JS-meaningful character (`\n`, backtick, `${`) gets assigned to a `const` that later lands in a template literal. Where I need one I inline it or wrap it in a function call.
+Every error passes through this node. It does three things: classify the error into a bucket, compute a fingerprint, and update the dedup state in `staticData`. Mind the constant-folding trap throughout: no JS-meaningful character (`\n`, backtick, `${`) gets assigned to a `const` that later lands in a template literal. Where I need one I inline it or wrap it in a function call.
 
 ```javascript
 // Classify + Dedup - n8n Code node
@@ -224,9 +237,9 @@ That distribution is the case for fingerprinting. Without dedup, eight identical
 
 ## Fingerprint-based dedup
 
-The fingerprint is `sha1(workflowId + lastNode + bucket + normalized_first_line)`, truncated to 12 hex chars. The normalization is what makes similar-but-not-identical errors collapse:
+The fingerprint is `sha1(workflowId + lastNode + bucket + normalized_first_line)`, truncated to 12 hex chars. Normalization makes similar-but-not-identical errors collapse:
 
-- First line only. A 40-line stack trace varies in the tail; the first line is the stable signature.
+- First line only. A 40-line stack trace varies in the tail, and the first line is the stable signature.
 - Strip hex IDs, long hex strings, bare numbers, paths, and URLs. A timeout on `https://api.example.com/v1/users/8821` and one on `.../users/9930` are the same failure. Without normalization they fingerprint apart and defeat the whole point.
 
 State lives in `$getWorkflowStaticData("global").failures[fingerprint]`:
@@ -278,7 +291,7 @@ The principle, lifted from the notification-routing policy on this stack: `info`
 | `count24h == 50` | "50 identical failures in 24h" |
 | any multiple of 100 | "DISABLE THIS WORKFLOW" |
 
-A self-healing `network` blip that recovers never crosses 10 and stays in the digest. One that does not recover climbs to 10, breaks suppression, and pages, because at that point it is not a blip, it is an outage.
+A self-healing `network` blip that recovers never crosses 10 and stays in the digest. One that does not recover climbs to 10, breaks suppression, and pages, because at that point it is an outage.
 
 ## Taxonomy tuning over time
 
@@ -296,11 +309,11 @@ Tune from real data, not imagination. Query the live fingerprint table, look at 
 The classifier's `failure` block is structured for a human or an agent to triage without re-parsing the raw error:
 
 - `action` tells you the first move without reading the message. `disable-and-fix` means stop the bleeding before debugging. `safe-retry-backoff` means do nothing, it will likely clear.
-- `count24h` and `isEscalation` tell you urgency. `count24h: 1` is noise; `count24h: 80, isEscalation: true` is an outage.
+- `count24h` and `isEscalation` tell you urgency. `count24h: 1` is noise, and `count24h: 80, isEscalation: true` is an outage.
 - `recent` gives the last five execution ids so you can pull full run data for any of them without searching.
 - `fingerprint` is the stable key. Grep your chat history or agent log for it to see the whole history of this exact failure across time.
 
-This is the structured input a downstream agent triage step reads. Routine self-healing buckets it can ack and move on. `disable-and-fix` at escalation it can act on (deactivate the workflow via the n8n MCP, then open a fix task). The classifier turns a stack trace into a decision, which is the entire point.
+This is the structured input a downstream agent triage step reads. Routine self-healing buckets it can ack and move on. `disable-and-fix` at escalation it can act on (deactivate the workflow via the n8n MCP, then open a fix task). The classifier turns a stack trace into a decision.
 
 ## Verification
 
@@ -325,7 +338,7 @@ To smoke-test the cascade end to end, remember the rule from [`n8n-patterns.md`]
 
 **`require('crypto')` needs `NODE_FUNCTION_ALLOW_BUILTIN: "*"`.** The fingerprint hash depends on it. If that compose env var goes missing, the classifier breaks at the same time as every other Code node, and now your error workflow is the thing throwing errors. Use `var crypto = require('crypto')`, not `const`, to match the lenient-fold pattern.
 
-**`errorWorkflow` gets stripped by `PUT /workflows/:id`.** This is the single most common way the whole classifier silently stops working. You script a routine workflow update through the API, the API drops `settings.errorWorkflow`, and that workflow's errors now go nowhere. Run the verification query #1 periodically. Prefer `n8nctrl` or direct sqlite for any settings change. Full detail in [`n8n-patterns.md`](n8n-patterns.md) Layer 2.
+**`errorWorkflow` gets stripped by `PUT /workflows/:id`.** This is the most common way the whole classifier silently stops working. You script a routine workflow update through the API, the API drops `settings.errorWorkflow`, and that workflow's errors now go nowhere. Run the verification query #1 periodically. Prefer `n8nctrl` or direct sqlite for any settings change. Full detail in [`n8n-patterns.md`](n8n-patterns.md) Layer 2.
 
 **Suppression is per-fingerprint, not per-workflow.** Two different errors in the same workflow fingerprint apart and notify independently. This is correct: a workflow can have one self-healing timeout and one real auth failure at the same time, and you want the auth failure even while the timeout is suppressed. Do not "fix" this by keying suppression on workflow id.
 
@@ -336,12 +349,12 @@ To smoke-test the cascade end to end, remember the rule from [`n8n-patterns.md`]
 ## Templates
 
 - [`../templates/n8n/failure-classifier-node.js`](../templates/n8n/failure-classifier-node.js) - the minimal classifier Code node skeleton (bucket + severity only). Start here, then layer on the fingerprint and dedup logic from the Implementation section above.
-- [`../templates/n8n/workflow-skeleton.json`](../templates/n8n/workflow-skeleton.json) - importable placeholder workflow shape; swap the Code node for the classifier and add an Error Trigger as the entry node.
+- [`../templates/n8n/workflow-skeleton.json`](../templates/n8n/workflow-skeleton.json) - importable placeholder workflow shape. Swap the Code node for the classifier and add an Error Trigger as the entry node.
 - [`../templates/n8n/`](../templates/n8n/) - the full n8n template folder. Do not export real credentials, webhook URLs, or production workflow ids into it.
 
 ## Related
 
 - [`automation/n8n-patterns.md`](n8n-patterns.md) - the three interfaces, the Code node sandbox, the constant-folding trap, and the Layer 5 overview this guide expands on
-- [`automation/hooks.md`](hooks.md) - three-layer hook model; the classifier is the n8n-side analogue of a tool-call hook, and the same outbound-scrub discipline applies to its delivery step
-- [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model; n8n is layer 3, and the classifier is what keeps a fleet of layer-3 schedule triggers from going dark silently
+- [`automation/hooks.md`](hooks.md) - three-layer hook model. The classifier is the n8n-side analogue of a tool-call hook, and the same outbound-scrub rules apply to its delivery step
+- [`automation/cron-patterns.md`](cron-patterns.md) - three-layer scheduling model. n8n is layer 3, and the classifier keeps a fleet of layer-3 schedule triggers from going dark silently
 - [n8nctrl](https://github.com/lidless-labs/n8nctrl) - the CLI and MCP adapter that wrap the `errorWorkflow`-preserving update path so a routine edit does not strip your classifier wiring

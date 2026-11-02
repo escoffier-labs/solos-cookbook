@@ -1,6 +1,6 @@
 # Bare-Metal Agent Host
 
-Last updated: 2026-10-17. Tested on Ubuntu 24.04.5 LTS, OEM kernel 6.17.0-1033-oem, Intel Core Ultra 9 285, 62 GiB RAM, a 16 GB workstation GPU.
+Last updated: 2026-11-02. Tested on Ubuntu 24.04.5 LTS, OEM kernel 6.17.0-1033-oem, a current desktop-class x86-64 build with two NVMe drives.
 
 > The primary Linux box in the fleet, picked once, lives for years. Spec it for the workload that already gives you grief, not the workload you imagine you'll have someday.
 
@@ -14,7 +14,7 @@ If you are deciding whether to host the control plane on a VPS, a NAS, or a Rasp
 
 Three things drive the spec:
 
-1. **An agent stack is a latency game, not a throughput game.** Most of the wall-clock time the agent burns is waiting on a model. The model is usually remote. Your local machine's job is to be fast at the boring stuff: filesystem walks, JSON parsing, sqlite reads, sub-process spawn. A modern desktop CPU is more than enough. The bottleneck is single-thread responsiveness, not core count.
+1. **An agent stack is a latency game, not a throughput game.** Most of the wall-clock time the agent burns is waiting on a model. The model is usually remote. Your local machine's job is to be fast at the plumbing: filesystem walks, JSON parsing, sqlite reads, sub-process spawn. A modern desktop CPU is more than enough. The bottleneck is single-thread responsiveness.
 
 2. **Browser automation and local LLMs both want RAM.** A persistent Chromium with a few logged-in profiles, plus an Ollama model held in cache, plus the agent's working memory, plus the rest of the desktop will sit at 25-30 GB resident comfortably. 64 GB is the floor. 32 GB will work but you'll feel it the first time the agent tries to keep three browser sessions warm.
 
@@ -52,9 +52,9 @@ The temptation is to put this on a server in a closet. Resist it. A desktop with
 
 Notes on real choices:
 
-- The current build is an Intel Core Ultra 9 285 (24 cores, no SMT) with 64 GB DDR5 (62 GiB usable) and two 1 TB NVMe drives. A Ryzen 7/9 of the same generation works identically. Pick the platform with the better Linux firmware support in your region.
-- The host also carries a discrete 16 GB workstation-class NVIDIA GPU (RTX 2000 Ada) next to the CPU's integrated graphics. It runs the NVIDIA open kernel modules (driver 595 series) from the OEM kernel's driver package. Nothing in the agent stack requires it, and no GPU process was running when I checked.
-- **Do not over-spec the GPU.** Local LLMs through Ollama work on CPU for the tasks listed in [`ai-stack/local-llm-fallback.md`](../ai-stack/local-llm-fallback.md) (embeddings, commit drafts, triage). A discrete card adds heat, power draw, and driver upkeep. If you add one, a 16 GB workstation card is plenty for this workload. 70 B-class models do not fit and do not belong on the same host as your main agent.
+- Intel and AMD desktop platforms of the same generation work the same for this workload. Pick the one with the better Linux firmware support in your region.
+- A discrete GPU is optional. If you add an NVIDIA card, the open kernel modules from the OEM kernel's driver package work. Nothing in the agent stack requires a GPU.
+- **Do not over-spec the GPU.** Local LLMs through Ollama work on CPU for the tasks listed in [`ai-stack/local-llm-fallback.md`](../ai-stack/local-llm-fallback.md) (embeddings, commit drafts, triage). A discrete card adds heat, power draw, and driver upkeep. If you add one, a mid-range card with 16 GB of VRAM is plenty for this workload. 70 B-class models do not fit and do not belong on the same host as your main agent.
 - **Skip the consumer NAS appliance.** The home network already needs a separate NAS for cold backups (see [`infrastructure/backup-recovery.md`](../infrastructure/backup-recovery.md)). The agent host should not also try to be the NAS.
 
 ### Host OS

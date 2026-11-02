@@ -2,8 +2,8 @@
 
 How to run multiple AI models in one OpenClaw setup, assign each to the right task tier, and stop burning expensive tokens on work that doesn't need them.
 
-**Tested on:** OpenClaw 2026.10.4, Claude Code 2.1.302, codex-cli 0.163.0, brigade 0.28.0, ACPX 0.19.x, Ollama 0.18 (local embeddings plus cloud models), OpenAI and Claude subscription lanes, browser lanes as systemd services (Chrome over CDP, noVNC for login)
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8, Claude Code 2.1.302, codex-cli 0.163.0, brigade 0.31.0, ACPX 0.19.x, Ollama 0.18 (local embeddings plus cloud models), OpenAI and Claude subscription lanes, browser lanes as systemd services (Chrome over CDP, noVNC for login)
+**Last updated:** 2026-11-02
 
 ---
 
@@ -11,7 +11,7 @@ How to run multiple AI models in one OpenClaw setup, assign each to the right ta
 
 Running one model for everything is like hiring a senior architect to answer phones. Your orchestrator needs to be strong enough to handle ambiguity and adversarial input. Everything else can run cheaper or free.
 
-This isn't about saving money. It's about using the right tool for each job. A local embedding model handles memory and code retrieval better than a frontier chat model wasting quota on vector work. Browser-driven LLMs handle research and UI-only workflows, while OpenClaw's built-in image generation call handles `gpt-image-2` image jobs without browser automation. Your orchestrator handles judgment and security decisions in the main loop.
+The goal is using the right tool for each job, which also saves money. A local embedding model handles memory and code retrieval better than a frontier chat model wasting quota on vector work. Browser-driven LLMs handle research and UI-only workflows, while OpenClaw's built-in image generation call handles `gpt-image-2` image jobs without browser automation. Your orchestrator handles judgment and security decisions in the main loop.
 
 ## What Changed Since the April 2026 Version of This Guide
 
@@ -35,7 +35,7 @@ The incident that taught me this: a Haiku-class sub-agent on a routine cron job 
 
 But there's a model-selection lesson too. Match the tier to the *judgment* the lane requires, then to the blast radius the lane permits:
 
-- **Cheap model, read-only lane: the sweet spot.** Triage, summaries, classification, embeddings. A wrong answer costs you a re-run. This is where Tier 1 earns its keep.
+- **Cheap model, read-only lane: the sweet spot.** Triage, summaries, classification, embeddings. A wrong answer costs you a re-run. This is where Tier 1 pays for itself.
 - **Cheap model, writable lane: the trap.** The savings on inference are dwarfed by one bad tool call. If a lane can mutate state, either fence the lane until a wrong action is survivable, or pay for the model that can tell a cleanup endpoint from a self-destruct button.
 - **Expensive model, trivial lane: the slow leak.** Spawning the escalation model for work a small model handles is the same mistake in reverse. It burns quota you'll want later and shows up as a correction in every token audit I run (see [self-improving agents](self-improving-agents.md)).
 
@@ -43,13 +43,13 @@ The rule I actually operate by: **cheapest model that can handle the task, in th
 
 ### Tier 1: Local Models via Ollama (Free)
 
-Zero API costs. Zero latency. Zero data leaving your machine.
+Zero API costs, zero latency, and zero data leaving your machine.
 
 **Handles:**
 - Semantic memory search embeddings
 - Code search embeddings
 
-Commit messages and cron triage used to run on a local 7B and 14B model. I retired that: the only model resident on the box now is the embedding model (`ollama list` shows `qwen3-embedding:8b` plus cloud-tagged entries). Scheduled triage jobs pin GPT 6 Luna (15 of my 36 cron jobs name it explicitly, the rest inherit the default), which is cheap enough on the subscription that a second local model was not worth the VRAM and the upkeep.
+Commit messages and cron triage used to run on a local 7B and 14B model. I retired that: the only local models on the box now are embedding models (`ollama list` shows `qwen3-embedding:8b`, which memory search uses, plus `qwen3-embedding:0.6b` and `nomic-embed-text` pulled for comparison). Scheduled jobs run on the hosted subscription lanes instead: most inherit the GPT 6.1 Sol default and a few pin Luna. That is cheap enough on the subscriptions that a local chat model was not worth the VRAM and the upkeep.
 
 **Embedding system:**
 
@@ -200,7 +200,7 @@ OpenClaw is the conversation and scheduling layer. Substantial or parallel imple
 | `brigade run` | Plans a task, dispatches it to roster seats, synthesizes the result. `--worker <seat>` skips planning and sends the whole task to one seat. `--worktree` isolates edits in a detached git worktree, `--read-only` forbids edits, `--wait` queues behind an active run lock. | Multi-step or parallel implementation, reviews, anything that should leave an artifact trail |
 | T3 Code delegated tasks | A T3 Code session exposes `delegate_task` and a fleet client for launching, monitoring, and recovering child sessions on any connected host. | Claude and Codex work that benefits from its own session and worktree |
 | Antigravity (`agy`) | Gemini seat on a Gemini subscription. | Fast read-only scouting and research |
-| `brigade run cloud launch` | Launches a Jules or Cursor Cloud session from a prompt file. | Self-contained repository issues that can run unattended |
+| `brigade run cloud launch` | Launches a Codex Cloud or Cursor Cloud session from a prompt file. | Self-contained repository issues that can run unattended |
 
 **Seat shapes.** A roster seat names a CLI, a model, a timeout, whether it can run read-only, and a one-line role:
 
@@ -238,7 +238,7 @@ The roster also carries a Gemini scout seat on Antigravity, a Sonnet seat for co
 | Final review, architecture, disputed judgment | Claude Opus 5.5 |
 | Routine implementation, triage, research | GPT 6 Luna |
 | Harder implementation slices | GPT 6.1 Sol |
-| Fast read-only scouting | Gemini 3.8 Flash through Antigravity |
+| Fast read-only scouting | Gemini 4 Argon through Antigravity |
 | Security review | A dedicated security-review seat |
 | Second and third opinions on consequential decisions | Fable 5.1 and GPT 6 Astra |
 
@@ -295,7 +295,7 @@ This swaps a CLI backend for a tool surface. Your orchestrator calls the browser
 
 Current OpenClaw has a first-class image generation call. Use it before browser automation for normal image jobs.
 
-The OpenAI image provider defaults to `gpt-image-2` when configured. It supports generation, edits with up to five reference images, PNG/JPEG/WebP output, and common square, portrait, landscape, and 4K sizes.
+The OpenAI image provider defaults to `gpt-image-2` when configured. It supports generation, edits with up to five reference images, PNG/JPEG/WebP output, and common square, portrait, wide, and 4K sizes.
 
 Example call shape:
 
@@ -314,7 +314,7 @@ Use the browser path when the job needs a web-only product feature, a logged-in 
 
 ### Tier 4: Escalation: Opus 5.5 for review and architecture
 
-Opus is not the main agent. It is the escalation target for review, architecture, and disputed judgment, where the quality difference pays for the quota.
+Opus is the escalation target, not the main agent, for review, architecture, and disputed judgment, where the quality difference pays for the quota.
 
 **Handles:**
 - Architecture review
@@ -348,7 +348,7 @@ The relay helper lives in [`../templates/ai-stack/claude-tmux-relay.sh`](../temp
    → Orchestrator reviews the output and runs the verification gate
 
 4. "Deep research this topic before I make a decision"
-   → Sol 6.1 sends a read-only scouting task to a Gemini Flash seat, or calls the browser research skill
+   → Sol 6.1 sends a read-only scouting task to a Gemini Argon seat, or calls the browser research skill
    → Findings come back as text, orchestrator synthesizes
 
 5. "Review this PR for architectural soundness"
@@ -438,7 +438,7 @@ If you run a heartbeat, batch email, calendar, and notification checks into it i
 | Browser-LLM stack | Existing web subscriptions | Research, web-only workflows, second opinions |
 | Codex subscription | Flat | Orchestration plus Sol and Luna worker seats |
 | Claude subscription | Flat | Opus and Sonnet seats, tmux review lane |
-| Gemini subscription | Flat | Flash scouting through Antigravity |
+| Gemini subscription | Flat | Argon scouting through Antigravity |
 
 Every lane rides a subscription or a local box. The point of the roster is to spend each subscription's quota on the work it is best at and to keep one exhausted pool from stopping the others: when a quota runs out, remove that CLI from `allow_models` and the run routes around it.
 

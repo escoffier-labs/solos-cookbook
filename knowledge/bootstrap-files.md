@@ -2,8 +2,8 @@
 
 > Your agent's personality, safety rails, memory index, and local runbook should not all live in one giant prompt. Split them by job so compaction, cache invalidation, and handoffs stay sane.
 
-**Tested on:** OpenClaw 2026.10.4, Brigade 0.28.0, `bootstrap-doctor` (OpenClaw bootstrap auditor), Claude Code 2.1.302, codex-cli 0.163.0
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.4, Brigade 0.31.0, `bootstrap-doctor` (OpenClaw bootstrap auditor), Claude Code 2.1.302, codex-cli 0.163.0
+**Last updated:** 2026-11-02
 
 ## What this is
 

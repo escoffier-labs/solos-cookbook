@@ -2,8 +2,8 @@
 
 How OpenClaw handles multiple messaging platforms simultaneously, session isolation between channels, and practical patterns for Discord, Telegram, and Signal.
 
-**Tested on:** OpenClaw 2026.10.4 with Discord and Telegram live (Signal configured but disabled). Earlier notes come from 2026.4.x with all three running concurrently
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.10.8 with Discord and Telegram live (Signal configured but disabled). Earlier notes come from 2026.4.x with all three running concurrently
+**Last updated:** 2026-11-02
 
 ---
 
@@ -488,4 +488,4 @@ jq -c '.acp | {enabled, backend, defaultAgent, allowedAgents}' ~/.openclaw/openc
 
 8. **`message_sending` hooks scrub ALL outgoing messages.** Including DMs to the owner. No clean way to distinguish DM vs group in the event context. For artifact scrubbing (PII redaction, etc.), a CLI script at the outbound boundary is a cleaner seam than a message hook.
 
-9. **Old key names are a silent trap.** `token` on Telegram, `allowedUsers`, `allowedGuilds`, `allowedChannels`, `agents.defaults.reset`, and `channels.discord.routing.threads` are the names earlier versions of this guide used. The live 2026.10.4 config uses `botToken`, `allowFrom`, `guilds`, `session.reset`, and `bindings` instead. After editing channel config, run `openclaw doctor --lint` (read-only health checks) rather than assuming a channel works because the gateway started.
+9. **Old key names are a silent trap.** `token` on Telegram, `allowedUsers`, `allowedGuilds`, `allowedChannels`, `agents.defaults.reset`, and `channels.discord.routing.threads` are the names earlier versions of this guide used. The live 2026.10.8 config uses `botToken`, `allowFrom`, `guilds`, `session.reset`, and `bindings` instead. After editing channel config, run `openclaw doctor --lint` (read-only health checks) rather than assuming a channel works because the gateway started.

@@ -1,8 +1,8 @@
 # Kernel Tuning for an Always-On AI Host
 
-> Two sysctl files, a 16 GB swap file, and a handful of defaults left alone on purpose. This guide documents what the production host actually runs, not a tuning wishlist. A short optional section at the end covers knobs I looked at and did not apply.
+> Two sysctl files, a 16 GB swap file, and a handful of defaults left alone on purpose. This guide documents what the production host actually runs. A short optional section at the end covers knobs I looked at and did not apply.
 
-Last updated: 2026-10-17. Tested on Ubuntu 24.04.5 LTS, OEM kernel 6.17.0-1033-oem, 24-core Intel Core Ultra 9 285, 62 GiB RAM, two 1 TB NVMe drives.
+Last updated: 2026-11-02. Tested on Ubuntu 24.04.5 LTS, OEM kernel 6.17.0-1033-oem, a desktop-class Intel build with plenty of RAM and two NVMe drives.
 
 ## What this is
 
@@ -10,7 +10,7 @@ The kernel settings on one box that runs an agent stack, browser automation, loc
 
 ## Why this way
 
-The Ubuntu defaults are already sensible for a 64 GB desktop-class machine on a current kernel. The host overrides only what caused a real failure or a measurable annoyance:
+The Ubuntu defaults are already sensible for a well-provisioned desktop-class machine on a current kernel. The host overrides only what caused a real failure or a measurable annoyance:
 
 1. **Swap eagerness.** With tens of GB free, the default `vm.swappiness=60` still pushed process pages out. Dropping it to 10 stopped that.
 2. **Inotify exhaustion.** Electron apps, editors, file watchers, and local services share one per-user pool. The stock limits ran out on large repos.

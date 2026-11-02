@@ -7,7 +7,7 @@
 
 ## What this is
 
-A React dashboard called `opsdeck` that reads live operator state through a companion API and renders 42 routes over the daily stack (41 explicit routes plus a catch-all that keeps the sidebar visible on an unknown URL). The source is not published, so this guide describes the shape and the decisions rather than a clone command. It started as 20 routes and grew a page every time a manual check became a habit.
+A React dashboard called `opsdeck` that reads live operator state through a companion API and renders 42 routes over the daily stack (41 explicit routes plus a catch-all that keeps the sidebar visible on an unknown URL). The source is not published, so this guide describes the shape and the decisions and has no clone command. It started as 20 routes and grew a page every time a manual check became a habit.
 
 The table groups the pages by purpose. The router has more entries than rows here, because related pages share a row:
 
@@ -175,7 +175,7 @@ A healthy install: the UI loads, `/api/health` returns `ok`, a direct call to an
 
 ## Gotchas
 
-**`WORKSPACE` must be the directory containing `memory/`, not the parent.** A common mistake is pointing at `~/.openclaw` (which contains `agents/`, `cron/`, and `workspace/` as siblings). The API expects to read `<workspace>/memory/` directly.
+**`WORKSPACE` must be the directory containing `memory/`.** A common mistake is pointing at `~/.openclaw` (which contains `agents/`, `cron/`, and `workspace/` as siblings). The API expects to read `<workspace>/memory/` directly.
 
 **Health checks need the right path and the right expectation.** `GET /api/health` is the only unauthenticated route. A probe aimed at `/healthz` or any other path gets a 401 from the default-deny layer, which looks like an outage and is not one. Point uptime monitors at `/api/health`.
 
@@ -193,7 +193,7 @@ A healthy install: the UI loads, `/api/health` returns `ok`, a direct call to an
 
 **Treat the Memory page as a reader.** The API has keyed write routes for memory files and cards, but I do not use them from the UI, and new contributors look for a "save my edit" button that is not there. Durable memory changes happen through the agent or the [memory handoff path](../knowledge/claude-code-memory-handoffs.md), so there is one owner of the files. Other pages, such as the media board, do write, and those writes go through the keyed proxy.
 
-**The dashboard is a window, not the source of truth.** If the underlying file changes while you are looking at it, the dashboard does not auto-refresh. Reload the page. This is a deliberate cost-saving for a single-user dashboard - server-sent events for one viewer is not worth the code.
+**The dashboard is a read-only view of the files underneath.** If the underlying file changes while you are looking at it, the dashboard does not auto-refresh. Reload the page. This is a deliberate cost-saving for a single-user dashboard - server-sent events for one viewer is not worth the code.
 
 ## Templates
 

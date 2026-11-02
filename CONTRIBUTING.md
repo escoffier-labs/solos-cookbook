@@ -78,7 +78,7 @@ To activate after cloning:
 git config core.hooksPath hooks
 ```
 
-If the hook blocks a push, rewrite the offending content or add a narrow allow comment only for a genuinely public example value. Do not bypass the hook.
+If the hook blocks a push, rewrite the offending content or add a narrow allow comment only for a public example value. Do not bypass the hook.
 
 The hook requires `brigade-cli`, which includes the scanner and public-repo policy:
 

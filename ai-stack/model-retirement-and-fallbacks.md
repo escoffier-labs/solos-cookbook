@@ -2,8 +2,8 @@
 
 > When a model id is retired or an alias changes, a long-lived agent stack with dozens of cron jobs and several agents can break silently. This is the playbook for finding every place a model id hides, sweeping them all on a retirement, and ordering fallback chains so a failure lands somewhere sane.
 
-**Tested on:** OpenClaw 2026.4.x through 2026.10.4, a stack with two named agents plus 36 cron jobs, gateway-managed cron store, GPT 6.1 Sol orchestrator on the Codex runtime, Claude seats and a Brigade worker roster
-**Last updated:** 2026-10-17
+**Tested on:** OpenClaw 2026.4.x through 2026.10.8, a stack with two named agents plus 44 enabled cron jobs, gateway-managed cron store, GPT 6.1 Sol orchestrator on the Codex runtime, Claude seats and a Brigade worker roster
+**Last updated:** 2026-11-02
 
 ---
 
@@ -11,7 +11,7 @@
 
 Frontier providers retire model ids on their own schedule. An alias gets repointed, a coding model is deprecated, a provider sunsets last quarter's flagship. In a one-shot setup you notice immediately because the next prompt errors in your face. In a long-lived multi-agent stack you do not, because most of the model references are buried in config and scheduled jobs that run unattended at 3am.
 
-This guide is the maintenance routine for that world. It covers where model ids hide, why retirement breaks things quietly, the sweep to run on every model change, and how to order fallback chains so a primary failure degrades to something you actually chose.
+This guide is the maintenance routine for that world. It covers where model ids hide, why retirement breaks things without an error, the sweep to run on every model change, and how to order fallback chains so a primary failure degrades to something you actually chose.
 
 ## Why Retirement Breaks Silently
 
@@ -21,7 +21,7 @@ Three things conspire to make a retired model id a quiet failure instead of a lo
 
 2. **The failures land off-screen.** A retired id pinned in a cron payload fails inside an isolated session that nobody is watching. On some orchestrators that screams into a delivery channel. On others it is one line in a boot log you were not tailing. Either way the interactive path keeps working, so you assume the stack is healthy.
 
-3. **A fallback chain hides the wound.** If the primary model is retired but a fallback still resolves, requests quietly hop to the fallback and keep succeeding. The stack looks fine while running on a model you did not intend, at a quality or cost you did not choose. The classic version of this: a single provider 503 pins a channel to its fallback, and it stays pinned long after the provider recovers.
+3. **A fallback chain hides the wound.** If the primary model is retired but a fallback still resolves, requests hop to the fallback without notice and keep succeeding. The stack looks fine while running on a model you did not intend, at a quality or cost you did not choose. The classic version of this: a single provider 503 pins a channel to its fallback, and it stays pinned long after the provider recovers.
 
 The fix for all three is the same discipline: treat a model id like a hardcoded constant that lives in many files, and sweep every one of them on every retirement.
 
@@ -108,7 +108,7 @@ openclaw cron list --json \
   | jq -r '.jobs[] | select((.payload.model // "") == "openai/gpt-6-sol") | "\(.id)\t\(.name)"'
 ```
 
-The output is an object with a `jobs` array, plus `total` and `hasMore`. Check `hasMore` is `false` before trusting a count. On my box the first command prints 21 jobs with a null model (they inherit the default) and 15 pinned to Luna.
+The output is an object with a `jobs` array, plus `total` and `hasMore`. Check `hasMore` is `false` before trusting a count. On my box the first command prints 39 jobs with a null model (24 agent turns that inherit the default, plus 15 `command` jobs that never use a model), and only 2 are pinned to Luna.
 
 Then edit each job through the cron CLI: `openclaw cron get <id>` to inspect, `openclaw cron edit <id> --model <alias>` to repoint, or `--clear-model` to drop the override and inherit the default. Do not try to patch the store on disk. The gateway owns it and will overwrite or ignore your edit.
 
@@ -202,7 +202,7 @@ openclaw sessions --active 1440 --json | jq -r '.sessions[] | "\(.key) \(.modelP
 brigade fleet models list
 ```
 
-The boot line is the load-bearing check. A stack can pass the grep checks and still be running on a fallback if a primary auth or quota problem is masking the retirement. Reading the actual loaded-model line is the only way to confirm you are where you think you are.
+The boot line is the check that decides it. A stack can pass the grep checks and still be running on a fallback if a primary auth or quota problem is masking the retirement. Reading the actual loaded-model line confirms which model is running.
 
 ## Gotchas
 

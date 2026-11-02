@@ -19,7 +19,7 @@ Three reasons there are this many of them:
 
 1. **Most third-party tools do not ship MCPs yet, or ship thin ones.** The 2026-era MCP ecosystem is still mostly experiments. If you want an agent to manage a service that already has a clean HTTP API, the gap between "no MCP" and "good MCP" is a weekend.
 2. **A purpose-built MCP beats a generic HTTP MCP.** A generic `http_request` MCP forces the agent to remember endpoints, auth schemes, and response shapes. A typed MCP turns the same workflow into named tools with input validation, confirmation gates, and uniform error surfacing.
-3. **The catalog grows along the workload, not ahead of it.** Each MCP in the list below was written because the orchestrator already needed to do that work weekly and was doing it through shell scripts or browser automation.
+3. **The catalog follows the workload.** Each MCP in the list below was written because the orchestrator already needed to do that work weekly and was doing it through shell scripts or browser automation.
 
 The cost is maintenance: every MCP is a small TypeScript repo with its own release cadence, README, and schema-drift exposure. That cost is bounded by [`repo-redeploy.md`](repo-redeploy.md) and the MCP release publish checklist.
 

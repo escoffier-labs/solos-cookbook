@@ -5,7 +5,7 @@
 **Tested on:** Wazuh manager 4.14.8 in an LXC container on a home Proxmox host watching a ~21-agent fleet. TheHive, Cortex 3.x, and MISP run as Hyper-V VMs on a Windows desktop. Five first-party MCP servers (wazuh-mcp, thehive-mcp, cortex-mcp, misp-mcp, mitre-mcp, all in the public `lidless-labs` GitHub org) wired into one agent. Claude Code 2.1.302.
 **Last updated:** 2026-10-17
 
-> The tool calls below are representative. The stack is real and running, but specific alert IDs, case numbers, and job IDs in the walkthrough are illustrative placeholders, not transcripts of a single incident.
+> The tool calls below are representative. The stack is real and running, but specific alert IDs, case numbers, and job IDs in the walkthrough are illustrative placeholders and do not come from a single incident.
 
 ---
 
@@ -17,7 +17,7 @@ The classic problem with a one-person SOC is that the tooling is built for teams
 
 The fix here is to put each platform behind an MCP server and give one agent all five. The agent reads from every platform freely, correlates across them in a single turn, and proposes the write actions (open this case, add these observables, run this analyzer). The human reads the proposal and approves or rejects. The agent does the tab-switching and the copy-paste. The operator does the judgment.
 
-Every MCP server in this loop is first-party. They are not wrappers someone else shipped. They are my own code, now in the public `lidless-labs` GitHub org (they started under my personal account, and the old URLs redirect), which matters because the safety gates described below are auditable, not assumed:
+Every MCP server in this loop is first-party. They are my own code, now in the public `lidless-labs` GitHub org (they started under my personal account, and the old URLs redirect), so the safety gates described below can be audited:
 
 - [`lidless-labs/wazuh-mcp`](https://github.com/lidless-labs/wazuh-mcp)
 - [`lidless-labs/thehive-mcp`](https://github.com/lidless-labs/thehive-mcp)
@@ -33,7 +33,7 @@ Three design choices make this safe enough to actually run.
 
 **1. Reads are free, writes are gated.** Each server tiers its tools into read, safe-write, and destructive. The agent can query the SIEM, list cases, pull analyzer reports, and search threat intel all day without a confirmation. The actions that change state or cause real-world side effects are off by default and require either an environment opt-in, a per-call `confirm` flag, or both. The agent cannot delete a case or detonate a sample just because it decided to.
 
-**2. The human gate is structural, not a vibe.** "The agent proposes, the human approves" only works if the agent literally cannot execute the dangerous action without you. That is enforced in the server, not in the prompt. A prompt that says "ask before deleting" is a suggestion an LLM can rationalize past. An env var that the destructive tool checks before running is not.
+**2. The human gate is structural.** "The agent proposes, the human approves" only works if the agent literally cannot execute the dangerous action without you. That is enforced in the server. A prompt that says "ask before deleting" is a suggestion an LLM can rationalize past. An env var that the destructive tool checks before running is not.
 
 **3. One agent, many servers, cross-stack correlation in one turn.** The point of MCP is that the agent holds context across all five platforms simultaneously. It can take a Wazuh rule ID, map it to an ATT&CK technique, pull every MISP event tagged with that technique, and check whether the source IP is already a known indicator, without you brokering data between five tools. mitre-mcp goes further and offers its own cross-stack tools that reach into the other platforms directly.
 
@@ -101,7 +101,7 @@ get_rule    { "rule_id": "5710" }
 get_agent   { "agent_id": "007" }
 ```
 
-If it wants to know whether the box is actually compromised rather than just noisy, it pulls live inventory from the agent:
+If it wants to know whether the box is actually compromised or only noisy, it pulls live inventory from the agent:
 
 ```
 get_agent_processes { "agent_id": "007", "include_command": true }
@@ -158,7 +158,7 @@ cortex_wait_and_get_report { "jobId": "<illustrative-job-id>" }
 cortex_get_job_artifacts   { "jobId": "<illustrative-job-id>" }
 ```
 
-Two safety details matter here.
+Two safety details apply here.
 
 `cortex_analyze_observable` does **not** fan out to every analyzer by default. The agent must pass an explicit `analyzers` allowlist, or set `fanOut=true` to run all applicable analyzers (capped by `CORTEX_MAX_FANOUT`). That keeps a curious agent from submitting your internal IP to forty third-party services in one call.
 
@@ -181,7 +181,7 @@ misp_get_related_events { "value": "198.51.100.23" }
 
 `misp_check_warninglists` is the false-positive guard. If the IP is on a known-benign list (cloud provider ranges, public resolvers), the agent learns that before it escalates, and the case gets downgraded instead of over-reacted to.
 
-If the indicator is genuinely new and worth keeping, the agent proposes writing it back to a MISP event. This is gated.
+If the indicator is new and worth keeping, the agent proposes writing it back to a MISP event. This is gated.
 
 ```
 misp_add_attributes_bulk {
@@ -198,7 +198,7 @@ misp_add_attributes_bulk {
 
 ### Stage 5: Map to ATT&CK (mitre-mcp)
 
-Finally the agent frames the activity in ATT&CK terms so the case has analytic structure, not just raw events.
+Finally the agent frames the activity in ATT&CK terms so the case has analytic structure on top of the raw events.
 
 ```
 mitre_map_wazuh_alert { "ruleId": "5710", "ruleGroups": ["authentication_failed", "sshd"] }
@@ -231,7 +231,7 @@ These are the actions that must not happen without an explicit human approval. T
 | Add / delete IOC, publish event | `misp_add_attributes_bulk`, `misp_delete_event`, `misp_publish_event` | `confirm:true` (hard delete also `confirmHard:true`) |
 | Cross-stack SOC writes | `mitre_misp_create_event`, `mitre_thehive_create_case`, `mitre_cortex_run_analyzers` | dry-run unless `confirm:true` or `MITRE_SOC_ALLOW_WRITES=true` |
 
-The rule of thumb: anything that creates, mutates, deletes, publishes externally, or causes a real-world side effect is a gate. Everything that only reads is free. The operator's attention is the scarce resource, so it gets spent on the writes, not the reads.
+The rule of thumb: anything that creates, mutates, deletes, publishes externally, or causes a real-world side effect is a gate. Everything that only reads is free. The operator's attention is the scarce resource, so it gets spent on the writes.
 
 ## Credentials: read-only users, a custom indexer role, and CA verification
 
@@ -239,7 +239,7 @@ The first version of this loop connected wazuh-mcp as the Wazuh API's `wazuh-wui
 
 - **Wazuh API:** a dedicated user with the built-in `readonly` role. The role has no `security:*` permissions. Any API user can still read its own record.
 - **Wazuh Indexer:** a custom role with the cluster permission `cluster:monitor/main` and index permissions `read` plus `indices:admin/get` on `wazuh-alerts-*` and `wazuh-states-vulnerabilities-*`, mapped to its own internal user. I checked this against 4.14.8 where it covered the alert and vulnerability tools and the two index checks in `diagnose_wazuh_connection`. Wazuh's built-in read-only cluster role with `read` on `*` was not enough: it got a 403 on those index checks. Note that a default indexer install also maps every internal user to `own_index`, which allows all actions on an index named after the user, so look at what your new user inherits.
-- **TLS:** leave `WAZUH_VERIFY_SSL` and `WAZUH_INDEXER_VERIFY_SSL` at `true`, and point `WAZUH_CA_FILE` and `WAZUH_INDEXER_CA_FILE` at the root CA that signed your Wazuh certificates. The host in each URL must be a name listed in the certificate (the Docker single-node certificates are issued for `wazuh.manager` and `wazuh.indexer`, so connect by those names rather than by IP). A package install's manager API serves a self-signed `localhost` certificate until you replace the key pair in `/var/ossec/api/configuration/ssl/`, so replace it.
+- **TLS:** leave `WAZUH_VERIFY_SSL` and `WAZUH_INDEXER_VERIFY_SSL` at `true`, and point `WAZUH_CA_FILE` and `WAZUH_INDEXER_CA_FILE` at the root CA that signed your Wazuh certificates. The host in each URL must be a name listed in the certificate (the Docker single-node certificates are issued for `wazuh.manager` and `wazuh.indexer`, so connect by those names). A package install's manager API serves a self-signed `localhost` certificate until you replace the key pair in `/var/ossec/api/configuration/ssl/`, so replace it.
 - **Rebuilds delete custom users.** Wazuh's Docker password-change procedure runs `securityadmin.sh -cd`, which removes users, roles, and mappings created through the security REST API. Re-create the read-only identities afterward and keep the setup commands where you can re-run them.
 
 The server's own README has the exact `curl` commands for creating the role and user and a "TLS verification" section: see [`lidless-labs/wazuh-mcp`](https://github.com/lidless-labs/wazuh-mcp). Apply the same idea on the other platforms: a TheHive key from a read-capable role in a dedicated org, a Cortex key with only the permissions the analyzers need, and a MISP auth key bound to a role that cannot publish. Where you have a self-signed certificate on a lab box, prefer adding its CA to the server's trust over `*_VERIFY_SSL=false`.
@@ -297,7 +297,7 @@ claude mcp add mitre-attack \
   # NOT set: MITRE_SOC_ALLOW_WRITES (cross-stack writes stay dry-run)
 ```
 
-The deliberate omissions are the whole point. Every `# NOT set` line above is a destructive capability you are choosing to leave disabled. The default-deny posture means a misbehaving or jailbroken agent hits a wall at the server, not at the prompt. Turn a gate on only when you have a specific, supervised reason, and turn it back off after.
+Every `# NOT set` line above is a destructive capability you are choosing to leave disabled. The default-deny posture means a misbehaving or jailbroken agent hits a wall at the server. Turn a gate on only when you have a specific, supervised reason, and turn it back off after.
 
 A few env-gating notes worth keeping straight:
 
@@ -336,11 +336,11 @@ claude mcp list   # expect: wazuh, thehive, cortex, misp, mitre-attack
 #    -> cortex_run_responder must refuse (CORTEX_ALLOW_DESTRUCTIVE unset).
 ```
 
-Step 4 and step 5 are the ones that matter. A loop that reads is convenient. A loop that cannot delete or detonate without you is the actual safety property. Verify the refusals, not just the successes. If a destructive tool runs when its env gate is unset, treat that as a server bug and a stop-the-line event, not a config preference.
+Step 4 and step 5 carry the safety property. A loop that reads is convenient. A loop that cannot delete or detonate without you is safe. Verify the refusals as well as the successes. If a destructive tool runs when its env gate is unset, treat that as a server bug and a stop-the-line event.
 
 ## Gotchas
 
-1. **The indexer is separate from the API.** wazuh-mcp's alert and vulnerability tools (`get_alerts`, `search_alerts`, `list_vulnerabilities`) read from the Wazuh Indexer (OpenSearch), not the REST API. If `WAZUH_INDEXER_URL` is unset, those tools return a config message and your triage stage has no alerts to read. Agents, rules, and inventory still work without it.
+1. **The indexer is separate from the API.** wazuh-mcp's alert and vulnerability tools (`get_alerts`, `search_alerts`, `list_vulnerabilities`) read from the Wazuh Indexer (OpenSearch) and bypass the REST API. If `WAZUH_INDEXER_URL` is unset, those tools return a config message and your triage stage has no alerts to read. Agents, rules, and inventory still work without it.
 
 2. **TheHive `admin` org cannot manage cases.** If `thehive_create_case` fails with a permissions error, you keyed the server to the `admin` org. Create a dedicated org and an `org-admin` user. This bites everyone once.
 
@@ -348,26 +348,26 @@ Step 4 and step 5 are the ones that matter. A loop that reads is convenient. A l
 
 4. **Cortex fan-out is opt-in for a reason.** `cortex_analyze_observable` with `fanOut=true` submits the observable to every applicable analyzer, many of them third-party. For an internal IP or an internal hostname, that is data exfiltration with extra steps. Prefer an explicit `analyzers` allowlist. Reserve `fanOut` for indicators you are fine sending to VirusTotal-class services.
 
-5. **Warninglists before escalation.** Always run `misp_check_warninglists` before treating an indicator as bad. Public resolvers and cloud ranges trip naive correlation constantly. The agent should downgrade on a warninglist hit, not page you.
+5. **Warninglists before escalation.** Always run `misp_check_warninglists` before treating an indicator as bad. Public resolvers and cloud ranges trip naive correlation constantly. The agent should downgrade on a warninglist hit and leave you unpaged.
 
 6. **mitre-mcp writes are dry-run, which can look like a no-op.** When `mitre_thehive_create_case` "succeeds" but nothing appears in TheHive, it ran in dry-run and returned the action it *would* take. That is the default. Pass `confirm:true` (deliberately, per call) when you actually want the write.
 
 7. **Two MCP servers can touch the same platform.** Both thehive-mcp and mitre-mcp can create TheHive cases. Decide which one owns case creation in your loop so you do not get duplicate cases from one incident. The pattern here: thehive-mcp owns the case lifecycle, mitre-mcp only enriches an existing case with ATT&CK context.
 
-8. **Env opt-ins are session-wide, not per-action.** Setting `MISP_ALLOW_DESTRUCTIVE=true` or `MITRE_SOC_ALLOW_WRITES=true` removes the per-call confirm for *every* call in that session, not just the one you had in mind. If you flip a gate on for one supervised action, flip it back off, or scope it to a separate short-lived agent session.
+8. **Env opt-ins are session-wide.** Setting `MISP_ALLOW_DESTRUCTIVE=true` or `MITRE_SOC_ALLOW_WRITES=true` removes the per-call confirm for *every* call in that session, including calls beyond the one you had in mind. If you flip a gate on for one supervised action, flip it back off, or scope it to a separate short-lived agent session.
 
-9. **An agent with all five servers can move fast in the wrong direction.** Cross-stack convenience cuts both ways. The same agent that correlates an incident in one turn can, if a gate is wrong, cascade a mistake across five platforms in one turn. The default-deny env posture is what keeps the blast radius small. Treat every gate you turn on as temporary.
+9. **An agent with all five servers can move fast in the wrong direction.** Cross-stack convenience cuts both ways. The same agent that correlates an incident in one turn can, if a gate is wrong, cascade a mistake across five platforms in one turn. The default-deny env posture keeps the blast radius small. Treat every gate you turn on as temporary.
 
 10. **Read-only identities vanish on rebuild.** Wazuh's Docker password-change procedure runs `securityadmin.sh -cd`, which deletes API-created users, roles, and mappings. After any rebuild, check that the read-only indexer user still exists before assuming the loop broke for some other reason.
 
 11. **A custom indexer role needs the index-exists check.** A role copied from Wazuh's generic read-only recipe returns 403 on the HEAD index checks the diagnostics tool runs, which looks like a connection failure. Grant `indices:admin/get` on the alert and vulnerability patterns along with `read`.
 
-12. **Admin plus TLS-off is the lab default, not the production one.** If you started that way, the credentials the agent holds can delete the SIEM's own data. Replace them before the loop sees real incidents.
+12. **Admin plus TLS-off is the lab default and unfit for production.** If you started that way, the credentials the agent holds can delete the SIEM's own data. Replace them before the loop sees real incidents.
 
 ## Related
 
 - [`wazuh-triage.md`](wazuh-triage.md) - the RCA-fix-narrow-suppress discipline for deciding whether a Wazuh alert is real signal or tuning noise before you ever open a case
-- [`incident-runbook.md`](incident-runbook.md) - the calm ordering for agent-driven incidents (freeze, preserve, fix). The response sequence this loop plugs into when an alert turns out to be a real incident
+- [`incident-runbook.md`](incident-runbook.md) - the calm ordering for agent-driven incidents (freeze, preserve, fix). The response sequence this loop plugs into when an alert is a real incident
 - [`agent-security-hardening.md`](agent-security-hardening.md) - treating the agent as an untrusted actor. The philosophy behind the read-free / write-gated split
 - [`secret-management.md`](secret-management.md) - keeping the MCP server credentials (API keys, passwords) out of config files, history, and anything the agent can leak
 - [`../infrastructure/homelab-topology.md`](../infrastructure/homelab-topology.md) - the fleet and where the SIEM container, the case platform, and the threat-intel VMs actually live

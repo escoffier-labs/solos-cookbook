@@ -2,8 +2,8 @@
 
 > Block ads, trackers, and malware at the resolver instead of on every device, run a synced standby so a single reboot doesn't take DNS down, and let an AI agent query and tune it through tiered MCP tools where reads are open and anything that can break resolution stays gated. 🦞
 
-**Tested on:** AdGuard Home in an unprivileged LXC container on Proxmox VE 9.2.3, a second AdGuardHome Sync instance keeping a standby aligned, an eero mesh LAN, and the operator's own `adguardctrl` MCP adapter (published as `@solomonneas/adguard-mcp`, 50 tools across three write tiers).
-**Last updated:** 2026-06-30
+**Tested on:** AdGuard Home in an unprivileged LXC container on Proxmox VE 9.2.21 (AdGuard Home v0.107.79), a second AdGuardHome Sync instance keeping a standby aligned, an eero mesh LAN, and the operator's own `adguardctrl` MCP adapter (published as `@solomonneas/adguard-mcp`, 50 tools across three write tiers).
+**Last updated:** 2026-11-02
 
 ---
 
@@ -11,9 +11,9 @@
 
 A DNS sinkhole is a resolver that answers "no such host" (or a black-hole IP) for domains you don't want anything on the network to reach: ad servers, trackers, telemetry endpoints, known-malware domains. Everything else resolves normally. Because nearly every connection starts with a DNS lookup, blocking at that layer kills the request before the device ever opens a socket.
 
-This guide covers running [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) as the LAN's sinkhole on a home Proxmox lab: where it sits in the network, how a second synced instance gives you a standby, and how an AI agent reads and safely manages it through the operator's `adguardctrl` MCP adapter. It is the DNS-layer companion to the lab map in [`homelab-topology.md`](homelab-topology.md), where the resolver shows up as CT 100 with its sync sidecar at CT 118.
+This guide covers running [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) as the LAN's sinkhole on a home Proxmox lab: where it sits in the network, how a second synced instance gives you a standby, and how an AI agent reads and safely manages it through the operator's `adguardctrl` MCP adapter. It is the DNS-layer companion to the lab map in [`homelab-topology.md`](homelab-topology.md), where the resolver shows up as the DNS container with its sync sidecar beside it.
 
-This is not a guide to per-app content filtering, a VPN, or a firewall. It is one specific job: be the resolver the whole network points at, and answer honestly for the domains you trust while answering "gone" for the ones you don't.
+The job here is narrow: be the resolver the whole network points at, answer normally for the domains you trust, and answer "gone" for the ones you don't. Per-app content filtering, a VPN, and a firewall are out of scope.
 
 ## Why DNS-Level Blocking
 
@@ -24,7 +24,7 @@ The case for blocking at the resolver instead of on each device:
 - **It fails safe in the right direction.** A blocked domain just doesn't resolve. There's no broken-page interstitial to click through, no certificate warning, no MITM. The app gets `NXDOMAIN` or `0.0.0.0` and moves on.
 - **It's observable.** Every lookup lands in a query log. You can see exactly what a device is phoning home to, which is its own quiet form of network intelligence.
 
-The honest limits up front, because this matters for how you deploy: DNS blocking only sees what uses your DNS. A device that hardcodes its own resolver, or speaks DNS-over-HTTPS straight to a public endpoint, bypasses the sinkhole entirely. More on that in [Gotchas](#gotchas). The sinkhole is a high-leverage default, not a perimeter.
+The limits up front, because they affect how you deploy: DNS blocking only sees what uses your DNS. A device that hardcodes its own resolver, or speaks DNS-over-HTTPS straight to a public endpoint, bypasses the sinkhole entirely. More on that in [Gotchas](#gotchas). The sinkhole is a useful default, not a perimeter.
 
 ## Prerequisites
 
@@ -36,14 +36,14 @@ The honest limits up front, because this matters for how you deploy: DNS blockin
 
 ## Topology: Where It Sits
 
-The sinkhole sits between every client on the LAN and the upstream resolvers out on the internet. Clients are configured to use it as their DNS server; it consults its blocklists, and for anything not blocked it forwards the query upstream and caches the answer.
+The sinkhole sits between every client on the LAN and the upstream resolvers out on the internet. Clients are configured to use it as their DNS server. It consults its blocklists, and for anything not blocked it forwards the query upstream and caches the answer.
 
 ```
 LAN clients (phones, laptops, TVs, IoT, other guests)
         │  DNS queries (UDP/TCP 53)
         ▼
 ┌─────────────────────────────┐
-│  The DNS container (CT 100) │   AdGuard Home
+│  The DNS container          │   AdGuard Home
 │  - blocklists in memory     │   answers NXDOMAIN / 0.0.0.0 for blocked names
 │  - per-client rules         │   forwards everything else upstream
 │  - query log + stats        │
@@ -54,8 +54,8 @@ LAN clients (phones, laptops, TVs, IoT, other guests)
                ▲
                │  config push, one direction
 ┌──────────────┴──────────────┐
-│  The sync standby (CT 118)  │   AdGuardHome Sync
-│  keeps a second AGH aligned │   so a reboot/maintenance of CT 100
+│  The sync standby           │   AdGuardHome Sync
+│  keeps a second AGH aligned │   so a reboot/maintenance of the DNS container
 │  with the primary's config  │   doesn't mean no resolver at all
 └─────────────────────────────┘
 ```
@@ -73,21 +73,21 @@ This is not failover in the clustered sense, there's no shared state or automati
 
 ## Setup Outline
 
-The full AdGuard Home install docs are upstream; this is the shape that matters for a sinkhole.
+The full AdGuard Home install docs are upstream. This is the shape a sinkhole needs.
 
 ### 1. The DNS container
 
-Create a small unprivileged LXC (512MB RAM, a couple GB disk is plenty), give it a **static IP**, and install AdGuard Home inside it. Run its setup wizard, set an admin username and password, and bind the DNS listener to port 53 and the admin UI to its own port. Confirm the container is listening on 53 before you point anything at it.
+Create a small unprivileged LXC (512MB RAM is plenty, but give the disk room for the query log: mine was grown to 32G and still runs about 90% full), give it a **static IP**, and install AdGuard Home inside it. Run its setup wizard, set an admin username and password, and bind the DNS listener to port 53 and the admin UI to its own port. Confirm the container is listening on 53 before you point anything at it.
 
 ### 2. Upstreams
 
-Configure upstream resolvers so non-blocked queries leave the lab encrypted. Use DNS-over-HTTPS or DNS-over-TLS to a public provider rather than plain port 53 upstream, so your own queries aren't readable on the wire to your ISP. Set a bootstrap resolver (a plain IP) so AGH can resolve the DoH/DoT hostname itself at startup. Parallel upstream queries trade a little extra outbound traffic for lower tail latency, which is usually worth it at home.
+Configure upstream resolvers so non-blocked queries leave the lab encrypted. Use DNS-over-HTTPS or DNS-over-TLS to a public provider rather than plain port 53 upstream, so your own queries aren't readable on the wire to your ISP. Set a bootstrap resolver (a plain IP) so AGH can resolve the DoH/DoT hostname itself at startup. Parallel upstream queries trade a little extra outbound traffic for lower tail latency, which is usually a good trade at home.
 
 You can read the live upstream config back with the agent at any time via `adguard_get_dns_config`.
 
 ### 3. Blocklists
 
-Subscribe to a few well-maintained blocklists. AGH ships with a sensible default list; the common additions are a general ad/tracker list and a malware-domains list. Don't over-subscribe: ten overlapping lists mostly add load and false positives, not coverage. Start with two or three, watch the query log for a week, and add user rules for the specific things that slip through.
+Subscribe to a few well-maintained blocklists. AGH ships with a default list, and the common additions are a general ad/tracker list and a malware-domains list. Don't over-subscribe: ten overlapping lists mostly add load and false positives, not coverage. Start with two or three, watch the query log for a week, and add user rules for the specific things that slip through.
 
 Blocklists are just URLs to hosts-format or AdGuard-syntax files. A user rule for a single domain looks like:
 
@@ -183,7 +183,7 @@ adguard_replace_user_rules { "rules": ["||ads.example.com^"], "confirm": true, "
 adguard_clear_query_log { "confirm": true, "destructive": true }
 ```
 
-The practical rule: let the agent run reads freely, let it do safe writes with a clear instruction and the `confirm` flag, and keep the destructive tier as something you approve explicitly. `adguard_toggle_protection { enabled: false }` is the single most dangerous call in the set, because it silently turns the sinkhole into a pass-through resolver, and the tiering is built so a model can't reach it casually.
+The practical rule: let the agent run reads freely, let it do safe writes with a clear instruction and the `confirm` flag, and keep the destructive tier as something you approve explicitly. `adguard_toggle_protection { enabled: false }` is the most dangerous call in the set, because it silently turns the sinkhole into a pass-through resolver, and the tiering is built so a model can't reach it casually.
 
 ### Addressing the two boxes
 
@@ -231,7 +231,7 @@ Expected: the good domain returns an address, the bad domain returns NXDOMAIN or
 
 3. **DoH/DoT clients bypass the sinkhole entirely.** A device that speaks DNS-over-HTTPS or DNS-over-TLS straight to a public endpoint never asks your resolver, so your blocklists never see the query. Modern browsers ship DoH that can default on, and some apps hardcode their own resolver. Mitigations: turn off the browser's built-in secure DNS so it uses the system resolver, and where your network gear allows it, block outbound port 853 (DoT) and known public DoH IPs so devices fall back to your resolver. You won't catch every bypass on consumer gear. The sinkhole is a strong default, not an enforced perimeter, and a determined device or a hostile app can route around it.
 
-4. **DNS lives inside the lab, so the host going down takes DNS with it.** The resolver is a guest on the same hypervisor it serves. If the node is down, LAN DNS is down. The standby helps only if it's on different hardware; on a single node both AGH instances share the host's fate. For a single-node home lab that's an accepted circular dependency (see [`homelab-topology.md`](homelab-topology.md)), but know it before you debug an "internet is broken" panic that's really "the hypervisor rebooted."
+4. **DNS lives inside the lab, so the host going down takes DNS with it.** The resolver is a guest on the same hypervisor it serves. If the node is down, LAN DNS is down. The standby helps only if it's on different hardware. On a single node both AGH instances share the host's fate. For a single-node home lab that's an accepted circular dependency (see [`homelab-topology.md`](homelab-topology.md)), but know it before you debug an "internet is broken" panic that's really "the hypervisor rebooted."
 
 5. **`adguard_toggle_protection { enabled: false }` is the silent kill switch.** It doesn't error, it doesn't warn, it just turns the whole sinkhole into a pass-through resolver and every blocked domain starts resolving. That's exactly why it's in the destructive tier behind two flags. If blocking ever "just stops working" network-wide, check protection state first (`adguard_status`) before you go spelunking through blocklists.
 
@@ -243,7 +243,7 @@ Expected: the good domain returns an address, the bad domain returns NXDOMAIN or
 
 ## Related
 
-- [`homelab-topology.md`](homelab-topology.md) - the lab map: the DNS container (CT 100) and its sync sidecar (CT 118), the single-node circular dependency, and where everything else lives
+- [`homelab-topology.md`](homelab-topology.md) - the lab map: the DNS container and its sync sidecar, the single-node circular dependency, and where everything else lives
 - [`service-isolation.md`](service-isolation.md) - why the sync daemon is split into its own sidecar container so its failures can't take DNS resolution down with it
 - [`../security/wazuh-triage.md`](../security/wazuh-triage.md) - the SIEM that caught a DNS container crash-looping silently for 32 days behind a quiet alert channel
 - [`../security/incident-runbook.md`](../security/incident-runbook.md) - response sequence when query-log anomalies turn out to be a real device phoning somewhere it shouldn't

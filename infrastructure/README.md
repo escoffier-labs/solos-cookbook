@@ -13,5 +13,6 @@ The homelab. Hypervisor decisions, container layout, network storage, off-host b
 - [x] [`service-isolation.md`](service-isolation.md) - one service per unprivileged container, blast radius, ephemeral build containers
 - [x] [`proxmox-agent-lab.md`](proxmox-agent-lab.md) - Proxmox as the agent-stack substrate: service vs ephemeral CTs, RAM budget, PBS, proxmox-mcp + proxguard
 - [x] [`adguard-dns-sinkhole.md`](adguard-dns-sinkhole.md) - network DNS sinkhole with a synced standby, agent-managed via adguardctrl
+- [x] [`remote-access-tailnet-cloudflared.md`](remote-access-tailnet-cloudflared.md) - reaching the control host remotely: a tailnet for operator access, Cloudflare Tunnels for the few MCP endpoints cloud agents call
 
 > 🦞 Per-guide format lives in [`../automation/cron-patterns.md`](../automation/cron-patterns.md).
