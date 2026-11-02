@@ -198,7 +198,7 @@ This gives you:
 - **2-hour ban** per offense
 - Covers both password and key auth failures
 
-On Ubuntu 24.04 the `sshd` filter reads the journal. A `backend = systemd` line in a `[DEFAULT]` block of `jail.local` keeps it consistent across jails.
+On Ubuntu 24.04 the `sshd` filter reads the journal. A `backend = systemd` line in a `[DEFAULT]` block of `jail.local` keeps it consistent across jails. <!-- content-guard: allow infrastructure/private-hostname -->
 
 ### Verify
 

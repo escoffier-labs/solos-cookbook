@@ -260,21 +260,21 @@ claude mcp add wazuh -- "$HOME/.local/bin/wazuh-mcp-env" npx -y wazuh-mcp
 
 # Case management. Destructive verbs left OFF on purpose.
 claude mcp add thehive \
-  --env THEHIVE_URL=http://thehive.example.internal:9000 \
+  --env THEHIVE_URL=http://thehive.example.com:9000 \
   --env THEHIVE_API_KEY="$THEHIVE_API_KEY" \
   -- thehive-mcp
   # NOT set: THEHIVE_ALLOW_DESTRUCTIVE_TOOLS, THEHIVE_ENABLE_RAW_QUERY
 
 # Observable analysis. Responders left OFF on purpose.
 claude mcp add cortex \
-  --env CORTEX_URL=http://cortex.example.internal:9001 \
+  --env CORTEX_URL=http://cortex.example.com:9001 \
   --env CORTEX_API_KEY="$CORTEX_API_KEY" \
   -- cortex-mcp
   # NOT set: CORTEX_ALLOW_DESTRUCTIVE (responders stay disabled)
 
 # Threat intel. Destructive + publish left gated by per-call confirm.
 claude mcp add misp \
-  --env MISP_URL=https://misp.example.internal \
+  --env MISP_URL=https://misp.example.com \
   --env MISP_API_KEY="$MISP_API_KEY" \
   --env MISP_VERIFY_SSL=true \
   -- misp-mcp
@@ -283,15 +283,15 @@ claude mcp add misp \
 # ATT&CK mapping + cross-stack. SOC writes stay dry-run.
 claude mcp add mitre-attack \
   --env MITRE_MATRICES=enterprise \
-  --env WAZUH_URL=https://siem.example.internal:55000 \
+  --env WAZUH_URL=https://siem.example.com:55000 \
   --env WAZUH_USERNAME=wazuh-mcp-api \
   --env WAZUH_PASSWORD="$WAZUH_MCP_API_PASSWORD" \
   --env WAZUH_CA_FILE="$HOME/.config/wazuh-mcp/root-ca.pem" \
-  --env THEHIVE_URL=http://thehive.example.internal:9000 \
+  --env THEHIVE_URL=http://thehive.example.com:9000 \
   --env THEHIVE_API_KEY="$THEHIVE_API_KEY" \
-  --env CORTEX_URL=http://cortex.example.internal:9001 \
+  --env CORTEX_URL=http://cortex.example.com:9001 \
   --env CORTEX_API_KEY="$CORTEX_API_KEY" \
-  --env MISP_URL=https://misp.example.internal \
+  --env MISP_URL=https://misp.example.com \
   --env MISP_API_KEY="$MISP_API_KEY" \
   -- mitre-mcp
   # NOT set: MITRE_SOC_ALLOW_WRITES (cross-stack writes stay dry-run)

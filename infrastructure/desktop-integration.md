@@ -39,7 +39,7 @@ New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server' `
 Use key auth, not passwords. Windows OpenSSH reads keys from a per-user file, with a separate file for administrators. For a normal user account, append your public key to:
 
 ```
-C:\Users\you\.ssh\authorized_keys
+%USERPROFILE%\.ssh\authorized_keys
 ```
 
 If the account is in the Administrators group, Windows OpenSSH ignores that file and reads `C:\ProgramData\ssh\administrators_authorized_keys` instead, which must be owned by `Administrators`/`SYSTEM` with no inherited user ACLs. This is the most common reason "my key works on Linux but not Windows."

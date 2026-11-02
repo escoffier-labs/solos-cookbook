@@ -95,7 +95,7 @@ What it looked like: one stopped container per project that needed clean-room bu
 # Spin up a clean build CT for a PR, run the build, tear it back down.
 ssh hypervisor "pct rollback <ctid> pristine && pct start <ctid>"
 ssh hypervisor "pct exec <ctid> -- bash -lc '
-  cd /root/project && git fetch origin && git checkout pr-branch &&
+  cd /srv/project && git fetch origin && git checkout pr-branch &&
   pnpm install && pnpm build && pnpm test
 '"
 ssh hypervisor "pct stop <ctid>"
