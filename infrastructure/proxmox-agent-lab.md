@@ -84,7 +84,7 @@ The agent's entire relationship with the host is the MCP. The 96 tools split int
 The MCP authenticates to the Proxmox API with a token, configured by three required env vars:
 
 ```
-PROXMOX_URL=https://pve.example.local:8006
+PROXMOX_URL=https://pve.example.com:8006
 PROXMOX_TOKEN_ID=pve-admin@pam!api-token-1
 PROXMOX_TOKEN_SECRET=00000000-0000-0000-0000-000000000000
 ```

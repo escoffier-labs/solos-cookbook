@@ -49,7 +49,7 @@ describe('scrub scan', () => {
   it('flags API-key-shaped strings', () => {
     expect(rules('key: sk-abcdefghijklmnopqrstuvwxyz123456')).toContain('api-key');
     expect(rules('AKIAIOSFODNN7EXAMPLE7')).toContain('api-key');
-    expect(rules('AIzaSyA-1234567890abcdefghijklmnopqrstu')).toContain('api-key');
+    expect(rules('AIzaSyA-1234567890abcdefghijklmnopqrstu')).toContain('api-key'); // content-guard: allow secret/bare-token-prefix
   });
 
   it('flags emails but allows example domains and noreply', () => {
